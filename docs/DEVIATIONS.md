@@ -1,0 +1,49 @@
+# Deviations from ARCHITECTURE.md
+Format: what / why / impact. Append-only; reference the change that introduced each entry.
+
+## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
+- What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
+- Why: all-MiniLM-L6-v2 truncates at 256 word-pieces, so one vector per section silently ignores most of a long section.
+- Impact: FAISS holds more vectors than chunks (window→chunk_id map); results are still unique chunks; full text unchanged.
+
+## D2 Normalised embeddings in IndexFlatL2 (§4.1)
+- What: vectors are L2-normalised before indexing and querying.
+- Why: makes L2 ordering identical to cosine similarity, the metric MiniLM is trained for.
+- Impact: same index type; distances are in [0, 4] instead of unbounded.
+
+## D3 Domain filter applies to BM25 too, and widens on too few hits (§5.2)
+- What: routed Acts filter both FAISS and Whoosh; < 5 filtered hits reruns over the full corpus. Constitution is added as co-domain for
+  rights topics; explicit Act / "section N" / "Article N" mentions override the keyword table.
+- Why: §5.2 filters only FAISS, which would make RRF fuse a filtered and an unfiltered list inconsistently; narrow filters can starve retrieval.
+- Impact: router is slightly richer than a plain keyword table; no-match behaviour is unchanged (full corpus).
+
+## D4 Repealed sections excluded from the indexes (§2, §4)
+- What: sections whose body is only a repeal/deletion note are kept in chunks.json but not indexed.
+- Why: they carry no law and would crowd out real provisions in top-5.
+- Impact: chunk count in indexes < chunks.json count.
+
+## D5 Prompt additions and chunk truncation (§7.1)
+- What: one fixed line naming the three output headers is appended to the §7.1 prompt; chunks over the token budget are truncated with
+  "[... truncated]", and num_ctx 8192 / num_predict 1024 are set explicitly.
+- Why: §7.1 never asks for the headers that §7.3 parses; Ollama's default context would silently cut 5 long sections.
+- Impact: the LLM may see a truncated section; Sources still shows the full verbatim text with a `truncated` flag.
+
+## D6 Swahili: English draft streams live, translation replaces it (§8.2, §10 step 15)
+- What: §8.2 translates "before streaming"; we stream the English draft as tokens, then send translated sections in a `translated` event.
+- Why: MarianMT needs the whole text; buffering would lose the <3 s first-token target for Swahili users.
+- Impact: Swahili users briefly see English text. Citations are placeholder-masked through translation and verified.
+
+## D7 SSE events beyond tokens; single-generation queue (§8.1)
+- What: events status/token/translated/done/error/null; one LLM generation at a time with queue positions; disconnect cancels Ollama.
+- Why: one CPU Mistral cannot serve concurrent requests; clients need progress, warnings and a clean end-of-stream signal.
+- Impact: frontend must handle the event contract in DESIGN.md "SSE contract".
+
+## D8 Sixth endpoint POST /api/feedback; JSONL instead of a JSON file (§8, §9)
+- What: §8 lists five endpoints but §9's Feedback Bar needs a writer; feedback is appended as JSONL with a file lock.
+- Why: no endpoint exists to receive feedback; JSONL appends are atomic per line and need no read-modify-write.
+- Impact: one extra endpoint; stored records contain no question/answer text (privacy rule).
+
+## D9 Citation verification warnings (§7.4)
+- What: cited Act+section pairs are checked against the session's 5 chunks; unmatched ones produce a UI warning.
+- Why: §7.4 admits misattribution risk; this catches the common case automatically.
+- Impact: extra `warnings` in the `done` event and a warning banner in the Response Panel.

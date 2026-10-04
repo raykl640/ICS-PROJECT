@@ -1,43 +1,126 @@
 # HakiAI design (M0–M7) — read this instead of re-deriving
+Precedence: this file wins on names/signatures. Deviations from ARCHITECTURE.md are logged in docs/DEVIATIONS.md.
+
 ## Tree  (backend/app/...; tests mirror in backend/tests/, fixtures in backend/tests/fixtures/)
-config.py   Settings(pydantic-settings): paths, ACTS: list[ActSpec(name,year,file,url|None,unit:"Section"|"Article")],
-            RRF_K=60, TOP_N=20, RERANK_TOP=5, THRESHOLD=0.0, MIN_CHUNKS=2, models, OLLAMA_URL/MODEL, TEMP=0.1, SESSION_TTL=3600
-models.py   LegalChunk(chunk_id,act,part,section_num,section_title,text,page,act_year); ScoredChunk(chunk,score);
-            QueryRequest(question,language:"auto"|"en"|"sw"); QueryResponse(session_id,fallback:bool); ParsedResponse(rights,steps,letter)
+config.py   Settings(pydantic-settings, env prefix HAKI_): paths, ACTS: list[ActSpec(name,year,file,url|None,unit:"Section"|"Article")],
+            rrf_k=60, top_n=20, rerank_top=5, relevance_threshold (=RELEVANCE_MIN_SCORE), min_confident_chunks=2, models,
+            ollama_url/model, temperature=0.1, num_ctx, num_predict, budgets, session/rate/security limits (see sections below)
+models.py   LegalChunk(chunk_id,act,act_slug,act_year,unit_type,chapter,part,section_num,section_title,text,page,repealed,source_sha256);
+            ScoredChunk(chunk,score); QueryRequest(question,language:"auto"|"en"|"sw"); QueryResponse(session_id,fallback:bool);
+            ParsedResponse(rights,steps,letter); CitationCheck(verified,unmatched); FeedbackIn(session_id,rating:"up"|"down");
+            ErrorBody(code,message)
 ingestion/  download.py ensure_pdfs(specs)->list[Path] (skip existing; raise MissingPDFError) | extract.py extract_pages(pdf)->list[tuple[int,str]]
-            parse.py parse_act(pages,spec)->list[LegalChunk]; is_noise(line)->bool | build_index.py main()  (chunks.json + indexes)
-retrieval/  embedder.py Embedder(Protocol).encode(list[str])->np.ndarray[n,384]; STEmbedder; FakeEmbedder (hash→unit vec)
+            parse.py parse_act(pages,spec,sha256)->list[LegalChunk]; is_noise(line)->bool; is_repealed(text)->bool
+            build_index.py main()  (chunks.json + indexes)
+retrieval/  embedder.py Embedder(Protocol).encode(list[str])->np.ndarray[n,384] (L2-normalised); count_tokens(str)->int;
+            STEmbedder; FakeEmbedder (hash→unit vec, word-count tokens) | windows.py make_windows(chunk,tok)->list[str]
             dense.py DenseIndex.build(chunks,emb)/save(dir)/load(dir)/search(vec,k,acts|None)->list[tuple[str,float]]
-            sparse.py SparseIndex.build(chunks,dir)/open(dir)/search(q,k,acts|None)->list[tuple[str,float]]
-            store.py ChunkStore.save/load(path); get(ids)->list[LegalChunk] | router.py route(q)->set[str]
+            sparse.py SparseIndex.build(chunks,dir)/open(dir)/search(q,k,acts|None,refs)->list[tuple[str,float]]; sanitize(q)->str
+            store.py ChunkStore.save/load(path); get(ids)->list[LegalChunk]
+            router.py route(q)->set[str] (empty = full corpus); extract_refs(q)->list[Ref(unit,num,act|None)]
             rrf.py rrf(*ranked:list[str],k=60)->list[tuple[str,float]] | hybrid.py retrieve(q)->list[str] (top-20, 2 threads)
             reranker.py CrossEncoderLike(Protocol).score(q,list[str])->list[float]; CEReranker; FakeReranker(word overlap);
-            rerank(q,chunks,top=5)->list[ScoredChunk]; is_confident(scored)->bool  (≥2 with score>THRESHOLD)
-generation/ prompt.py build_prompt(q,chunks)->str (§7.1 verbatim + one fixed header-format line) | FALLBACK_MESSAGE
-            llm.py LLMClient(Protocol).stream(prompt)->Iterator[str]; OllamaClient(httpx, temp 0.1); FakeLLM(scripted tokens); health()->bool
+            rerank(q,chunks,top=5)->list[ScoredChunk]; is_confident(scored)->bool  (≥2 with score>relevance_threshold)
+generation/ prompt.py build_prompt(q,chunks)->PromptBuild(text,truncated_ids) (§7.1 verbatim + one fixed header line) | FALLBACK_MESSAGE
+            budget.py est_tokens(str)->int; fit_chunks(chunks,budget)->list[tuple[LegalChunk,str,bool]]
+            llm.py LLMClient(Protocol).stream(prompt)->AsyncIterator[str] (cancellable); OllamaClient(httpx); FakeLLM(scripted); health()
             parse.py split_sections(text)->ParsedResponse (case/ordering-tolerant; missing → "")
-lang/       detect.py detect_lang(text)->"en"|"sw" | translator.py Translator(Protocol).translate(text)->str; MarianTranslator(direction); FakeTranslator(tag)
+            citations.py check_citations(text,chunks)->CitationCheck | gate.py LLMGate (concurrency 1, FIFO, positions)
+lang/       detect.py detect_lang(text)->"en"|"sw" (seeded) | translator.py Translator(Protocol).translate(text)->str;
+            MarianTranslator(direction); FakeTranslator(tag) | protect.py mask(text)->(str,dict); unmask(text,map)->(str,missing:list)
             glossary.py apply_glossary(sw_text)->str ("haki [right]") | pipeline.py to_english(q,lang)->str; to_user_lang(text,lang)->str
-sessions.py SessionStore(ttl).create(SessionData)->str/get(id)->SessionData|None/update(...)  (dict + monotonic expiry)
+sessions.py SessionStore(ttl,max_sessions).create(SessionData)->str/get(id)->SessionData|None/update(...)  (dict + monotonic expiry)
 letter.py   letter_text(parsed)->str; letter_docx(parsed)->bytes (python-docx)
+security.py clean_question(q)->str; RateLimiter(per_min).allow(ip)->bool
+feedback.py append_feedback(path,record) (fcntl.flock, JSONL)
 main.py     create_app(deps: Deps)->FastAPI; Deps dataclass holds all interfaces (fakes injected in tests); routes:
-            POST /api/query, GET /api/stream/{id} (SSE: token|done|error), GET /api/sources/{id}, GET /api/letter/{id}?fmt=txt|docx,
-            GET /api/health, POST /api/feedback (→ data/feedback.jsonl)
-## Pins (co-resolved in existing uv.lock → mutually compatible; py3.11, torch from CPU index)
+            POST /api/query, GET /api/stream/{id} (SSE), GET /api/sources/{id}, GET /api/letter/{id}?fmt=txt|docx,
+            GET /api/health, POST /api/feedback
+
+## Chunks
+- chunk_id = "{act_slug}-{section_num}" lowercased, Articles too (employment-act-41a, constitution-of-kenya-41); schedules
+  "{act_slug}-sch{n}"; duplicates get "-2", "-3" in document order. Stable across rebuilds.
+- unit_type: "section"|"article"|"schedule". chapter: CHAPTER heading or "" ; part: PART heading or "". page = start page.
+- repealed=True when the body is only a repeal/deletion note ("[Repealed by ...]", "Deleted by ..."). Kept in chunks.json, excluded from both indexes.
+- source_sha256 = sha256 of the source PDF; build_index rebuilds when any hash changes.
+
+## Retrieval
+- Embedding: all-MiniLM-L6-v2 truncates at 256 word-pieces. Each chunk → overlapping windows of ≤ embed_window_tokens (256 incl. specials),
+  stride embed_window_stride (64 overlap), each prefixed "{act} {unit} {num} {title}: ". Window vectors map back to parent chunk_id;
+  chunk score = max over its windows. Text shown to users/LLM is always the full parent. Fake: word counts instead of word-pieces.
+- FAISS: IndexFlatL2 over L2-normalised vectors (L2 order == cosine order); parallel array window_idx→chunk_id saved alongside.
+  Domain filter via faiss IDSelectorBatch over the routed Acts' window ids; overfetch k*4 windows, aggregate to unique chunk_ids.
+  If filtered search yields < min_filtered_hits (5) chunks → rerun over the full corpus.
+- Whoosh schema: chunk_id ID(stored,unique); act ID; section_num ID (lowercase exact); section_title TEXT(StemmingAnalyzer, field_boost=2.0);
+  text TEXT(StemmingAnalyzer). BM25F. Query = OR-group over title+text; sanitize() strips query syntax (:*?~^(){}[]"+-!\/) and AND/OR/NOT;
+  extract_refs() adds boosted Term(section_num, n). Same Act filter + widen rule as FAISS.
+- Router: keyword table → set of Acts (multi-Act allowed). Rights-topic words (right, freedom, discriminat, fair, dignity, arrest, evict, ...)
+  add the Constitution as co-domain. Explicit mentions override keywords: an Act name/alias → that Act; "Article N" → Constitution;
+  "section N" + Act name → that Act. No match → full corpus.
+- Reranker: cross-encoder outputs unbounded logits (not probabilities). relevance_threshold default 0.0, tuned in M9 on in-corpus vs
+  out-of-corpus queries (eval/), result recorded in PROGRESS.md.
+
+## Generation
+- Ollama options: temperature 0.1, num_ctx 8192 (always sent explicitly), num_predict 1024.
+- Prompt budget: prompt_budget = num_ctx − num_predict − 256 safety. Per chunk ≤ chunk_token_budget (1200); fit_chunks truncates the chunk
+  body at a sentence/word boundary and appends "[... truncated]". est_tokens = ceil(chars/3) (conservative vs Mistral tokenizer).
+  Assert est_tokens(prompt) ≤ num_ctx − num_predict; else drop lowest-ranked chunks. Truncated chunk_ids → `truncated: true` in /api/sources.
+- Concurrency: LLMGate = one generation at a time (CPU). Waiters FIFO, max_queue (8) else error code "busy" (503). Stream emits status
+  events with queue position on every change. Client disconnect (request.is_disconnected) → cancel task → close httpx stream (stops Ollama)
+  → release gate.
+- Citation check: after generation, regex-extract (Act, Section/Article N) pairs from the English text; normalise ("s. 41(2)" → 41, Act
+  aliases from config); verify against the session's 5 chunks. Unmatched → warnings in `done` event; UI shows a warning banner.
+
+## SSE contract  (GET /api/stream/{id}; each event JSON)
+status {stage:"queued"|"generating"|"translating", position?:int} | token {text} | translated {rights,steps,letter} (sw only)
+done {warnings:list[str], citation_check:CitationCheck, truncated:bool} | error {code,message} | null {message:FALLBACK_MESSAGE}
+- Fallback sessions emit only `null` then close; the LLM is never called. Server accumulates the full text in the session
+  (answer_en, parsed, parsed_user) so /api/letter and reconnects work after the stream; letter returns 409 until done.
+
+## Language
+- UI language is authoritative: "en"|"sw" used as given; "auto" → langdetect (DetectorFactory.seed=0; short input unreliable).
+- sw: question sw→en before retrieval. English draft streams live as `token`; after done, each section is translated en→sw and sent as
+  `translated`, which replaces the draft in the UI.
+- Protection: before en→sw, mask Act names, "Section/Article N(…)", "Cap N" with placeholders ⟦i⟧; translate; unmask; any missing
+  placeholder → append the English citation list to that section + warning "citation_lost_in_translation". Glossary applied after unmask.
+
+## API / ops
+- Feedback: POST /api/feedback {session_id, rating} → JSONL at data/feedback.jsonl, fcntl.flock, record = {ts, session_id, rating, lang,
+  fallback, chunk_ids}. Never question/answer/chunk text.
+- Input: max_question_chars (1000) → 422; clean_question strips control chars and neutralises "[CHUNK", "SYSTEM:", "CONTEXT:", "USER QUESTION:".
+- Rate limit: in-memory per-IP token bucket, rate_limit_per_min (10) on /api/query and /api/feedback → 429.
+- Sessions: TTL session_ttl_s (3600), max_sessions (500): purge expired, then evict oldest; never block.
+- CORS: only cors_dev_origin (http://localhost:5173) and only when dev_mode=true; prod serves the static build same-origin.
+- Errors: every non-2xx body = {"error": {"code": str, "message": str}} (exception handlers incl. validation).
+- /api/health → {status:"ok"|"degraded", ollama:bool, model:bool, index:bool, models_loaded:bool}; 200 if ok else 503.
+- Privacy: logs carry ids, timings, counts, error codes only, unless log_content=true (default false).
+- Disclaimer added by API/frontend on every response (incl. fallback), never by the LLM.
+
+## Offline & tooling
+- scripts/setup_offline.py (online, once): huggingface_hub snapshot_download of the 4 HF models + `ollama pull` of ollama_model.
+- Runtime: main sets HF_HUB_OFFLINE=1 and TRANSFORMERS_OFFLINE=1 before any model import.
+- Tests: pytest-socket `--disable-socket --allow-unix-socket` in pytest.ini; real-model tests `@pytest.mark.real`, skipped by default.
+- scripts/check.sh = ruff check + ruff format --check + mypy (strict, backend/app) + pytest --cov; fail-under 85 on
+  ingestion/parse, retrieval, generation, lang (.coveragerc include). CI workflow runs check.sh (replaces ci.sh).
+
+## Pins (co-resolved in the former uv.lock → mutually compatible; py3.11, torch from CPU index)
 fastapi==0.142.2 uvicorn[standard]==0.54.0 pydantic==2.13.5 pydantic-settings==2.15.0 httpx==0.28.1 sse-starlette==3.5.0
 pdfplumber==0.11.10 sentence-transformers==6.1.0 faiss-cpu==1.15.1 whoosh==2.7.4 torch==2.14.1 transformers==5.18.0
-sentencepiece==0.2.2 sacremoses (latest) langdetect==1.0.9 numpy==2.4.6 python-docx (latest, pin at M0) | dev: pytest==9.1.1 (no pytest-asyncio: 0.23 breaks on pytest 9; TestClient is sync)
+sentencepiece==0.2.2 sacremoses (pin M6) langdetect==1.0.9 numpy==2.4.6 python-docx (pin M7) | dev: pytest==9.1.1, ruff, mypy,
+pytest-cov, pytest-socket (pin when added in M1). No pytest-asyncio: 0.23 breaks on pytest 9; TestClient is sync.
+
 ## Ambiguities → defaults
-- Constitution uses Chapters/Articles: parser treats CHAPTER as `part`, ActSpec.unit="Article" used in citations.
-- Domain filter "narrows FAISS": IndexFlatL2 can't filter → faiss IDSelectorBatch over the routed Acts; same Act filter on BM25; if <5 hits, rerun unfiltered.
-- "Translate back before streaming" vs token streaming: SW responses buffer the English stream, translate per section, emit as SSE chunks at end.
-- Explicit language toggle (en/sw) overrides langdetect; "auto" uses langdetect (unreliable on short input).
-- Prompt §7.1 lacks header instruction: append one fixed line naming the 3 headers; otherwise verbatim.
-- Disclaimer added by API/frontend, never by the LLM. Fallback: QueryResponse.fallback=true, stream emits FALLBACK_MESSAGE, no LLM call.
-- Feedback bar has no endpoint in §8 → add POST /api/feedback. Letter endpoint returns 409 until generation done.
-- ">512 tokens" measured by MiniLM tokenizer in prod, word-count proxy in Fake. chunk_id = "{act_slug}:{num}" (+"-2" on duplicates). page = start page.
+- Constitution uses Chapters/Articles: CHAPTER → `chapter`, unit_type "article", ActSpec.unit="Article" used in citations.
+- Prompt §7.1 lacks header instruction: append one fixed line naming the 3 headers; otherwise verbatim (plus truncation marker if needed).
+- Fallback: QueryResponse.fallback=true, stream emits `null` with FALLBACK_MESSAGE, no LLM call.
+
+## Carry-over (code not yet matching this file)
+- M1: add check.sh/ruff/mypy/pytest-cov/pytest-socket + .coveragerc; extend LegalChunk fields; chunk_id "-" form.
+- M2: replace config embed_token_limit/embed_max_words with embed_window_tokens/stride; normalised FAISS + window map.
+- M5/M7: num_ctx/num_predict/budgets, LLMGate, security + rate-limit + CORS + error config; setup_offline.py in M7.
+
 ## Needed from you
-1. Install Ollama and `ollama pull mistral:7b-instruct-q4_K_M` (not installed now). Needed only from M5 manual check / M7 health.
+1. Install Ollama and `ollama pull mistral:7b-instruct-q4_K_M`. Needed only from M5 manual check / M7 health.
 2. One-time internet for MiniLM, ms-marco cross-encoder, opus-mt-sw-en/en-sw (~1 GB) — tests never need them.
-3. Act years + kenyalaw URLs (optional; PDFs already present so download step will just skip). I'll read years from the PDFs in M1 for you to confirm.
+3. Act years + kenyalaw URLs (optional; PDFs already present). Years read from the PDFs in M1 for you to confirm.
 4. Confirm old frontend/ scaffold (Vite+TS) may be replaced in M8; confirm .docx/.pdf/legacy stay git-ignored.

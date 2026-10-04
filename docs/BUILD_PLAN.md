@@ -5,7 +5,7 @@
 - Relevance threshold for null fallback: cross-encoder score > 0 (tunable in config.py, tuned in M9).
 - Sessions: in-memory dict with 1-hour expiry. Feedback: append-only JSONL at data/feedback.jsonl.
 - Letter export: plain text + DOCX via python-docx.
-- Section-aware chunking: if a section > 512 tokens keep it whole for storage, but embed title+first 400 words.
+- Section-aware chunking: sections are stored whole; long ones are embedded as overlapping header-prefixed windows (see DESIGN.md "Retrieval").
 - Layout: fresh build in backend/app/ per CLAUDE.md; the earlier untracked app/, scripts/, tests/ etc. move to legacy/ (git-ignored, reference only) at the start of M0.
 - Corpus = 10 Acts: the 9 in ARCHITECTURE.md §2 + Legal Aid Act (the proposal's scope names only 2; the architecture is newer). PDFs live in data/raw_pdfs/ (rename from data/raw/ in M0).
 - Full M0–M7 signatures and further ambiguity defaults: see docs/DESIGN.md.
