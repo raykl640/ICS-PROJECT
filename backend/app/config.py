@@ -95,6 +95,8 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dim: int = 384
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    reranker_max_length: int = Field(512, gt=0)
+    reranker_batch_size: int = Field(8, gt=0)
     translator_sw_en: str = "Helsinki-NLP/opus-mt-sw-en"
     translator_en_sw: str = "Helsinki-NLP/opus-mt-en-sw"
 

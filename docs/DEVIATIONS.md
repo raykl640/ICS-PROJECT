@@ -71,3 +71,10 @@ Format: what / why / impact. Append-only; reference the change that introduced e
 - Impact: 105 of 2274 real-corpus windows (4.6%) exceed MiniLM's 256 word-pieces and lose their tail when embedded; for
   non-final windows the 60-word overlap re-embeds that tail in the next window. Sizes are tunable in config.py; build_index
   prints the over-limit count.
+
+## D13 Null-response threshold is inclusive (§7.5) — feat(M4)
+- What: a chunk counts as confident when rerank_score >= relevance_threshold; ARCHITECTURE §7.5 says "above", DESIGN said ">".
+- Why: the M4 milestone prompt specifies an inclusive boundary and wins on behaviour.
+- Impact: only a score exactly equal to the threshold changes outcome (negligible for float logits). The default 0.0 is
+  provisional: on the real corpus three in-scope lay questions (eviction, compulsory acquisition, legal aid) top out below 0
+  while off-topic/garbage queries score about -10; M9's tune_threshold sets the value.

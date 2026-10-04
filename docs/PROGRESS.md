@@ -5,7 +5,8 @@
 - [x] M1 Ingestion — 2026-10-04 (awaiting human review gate)
 - [x] M2 Indexes — 2026-10-04
 - [x] M3 Retrieval — 2026-10-04
-- [ ] M4 … [ ] M10 not started
+- [x] M4 Rerank — 2026-10-04
+- [ ] M5 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -100,3 +101,22 @@ Open issues:
 - "shop" routes refund questions to the Landlord & Tenant (Shops) Act too, which pulls in the Constitution co-domain; harmless, revisit in M9.
 Next: M4 Rerank.
 
+## M4 Rerank (2026-10-04)
+Done:
+- retrieval/reranker.py: CEReranker (ms-marco MiniLM, max_length 512, batch 8, Identity activation → raw logits, lazy model shared
+  per process under a lock, warmup()), pair_text, rerank (stable on ties), is_confident (inclusive). config: reranker_max_length/batch_size.
+- retrieval/pipeline.py: ContextPipeline.retrieve_context → ContextResult(chunks, null, debug ids/scores/timings); null → no chunks; load_pipeline.
+  hybrid.py timings now split embed from dense and name the fusion stage "rrf".
+- retrieval/bench.py + scripts/bench_retrieval.py (-n, --queries, --fake on the synthetic corpus). backend/tests/fake_pipeline.py shared by tests.
+- 315 tests green, coverage 97.6%; real cross-encoder test passes. Real bench (Ryzen 7 PRO 5850U, 16 threads, 15 GiB, n=30):
+  total p50 855 ms / p95 1033 ms; rerank p50 821 ms; embed 29 ms; sparse 20 ms; model load 7.8 s.
+Decisions:
+- DESIGN names kept over the milestone's (reranker.py/CEReranker, not rerank.py/CrossEncoderReranker); rerank() takes the model explicitly.
+- Threshold inclusive per the milestone → DEVIATIONS D13. A confident result keeps all top-5 chunks, including ones below the threshold.
+- pipeline.py imports no LLM code, so the null path cannot reach it; the endpoint-level spy test is M7's. warmup() is not on the
+  CrossEncoderLike protocol (fakes need none); the bench warms up with one untimed query instead.
+Open issues:
+- Threshold 0.0 is too strict for lay phrasing: 4/10 bench questions go null (eviction 0.6/-1.5, land acquisition -2.7, legal aid -5.2,
+  faulty-phone refund -8.5 with consumer-protection s.9 on top) while garbage/out-of-corpus score ≈ -10 to -11. M9 must tune it.
+- The faulty-phone refund query ranks badly even before the threshold (top score -8.5): check retrieval recall for it in M9.
+Next: M5 Generation.

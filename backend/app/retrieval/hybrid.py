@@ -41,7 +41,7 @@ class _Leg:
     name: str
     ids: list[str]
     widened: bool
-    ms: float
+    timings_ms: dict[str, float]
 
 
 def _ms_since(start: float) -> float:
@@ -97,14 +97,17 @@ class HybridRetriever:
 
     def _dense_leg(self, question: str, acts: list[str] | None) -> _Leg:
         """Dense top-k within the routed Acts, rerun over the full corpus if too few hits."""
-        start = time.perf_counter()
+        embed_start = time.perf_counter()
         vector = self._embedder.encode([question])[0]
+        embed_ms = _ms_since(embed_start)
+        start = time.perf_counter()
         k = self._settings.dense_k
         hits = self._dense.search(vector, k, acts)
         widened = bool(acts) and len(hits) < self._settings.min_filtered_hits
         if widened:
             hits = self._dense.search(vector, k)
-        return _Leg("dense", [chunk_id for chunk_id, _ in hits], widened, _ms_since(start))
+        timings = {"embed": embed_ms, "dense": _ms_since(start)}
+        return _Leg("dense", [chunk_id for chunk_id, _ in hits], widened, timings)
 
     def _sparse_leg(self, question: str, acts: list[str] | None) -> _Leg:
         """BM25 top-k with the same widening rule; explicitly referenced chunks are put first."""
@@ -115,7 +118,7 @@ class HybridRetriever:
         if widened:
             hits = self._sparse.search(question, k)
         ids = list(dict.fromkeys([*self._referenced_ids(question, acts), *(cid for cid, _ in hits)]))[:k]
-        return _Leg("sparse", ids, widened, _ms_since(start))
+        return _Leg("sparse", ids, widened, {"sparse": _ms_since(start)})
 
     def _referenced_ids(self, question: str, acts: list[str] | None) -> list[str]:
         """Indexed chunks the question cites exactly; a bare 'section N' resolves within the routed Acts."""
@@ -145,7 +148,8 @@ class HybridRetriever:
             for f, chunk in zip(fused, chunks, strict=True)
         ]
         only = {leg.name: [i for i in leg.ids if all(i not in o.ids for o in legs if o is not leg)] for leg in legs}
-        timings = {"route": route_ms, **{leg.name: leg.ms for leg in legs}, "fuse": _ms_since(fuse_start)}
+        timings = {"route": route_ms} | {n: ms for leg in legs for n, ms in leg.timings_ms.items()}
+        timings["rrf"] = _ms_since(fuse_start)
         return RetrievalResult(
             candidates=candidates,
             acts=acts,

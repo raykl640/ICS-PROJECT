@@ -29,9 +29,14 @@ retrieval/  embedder.py STEmbedder (implements interfaces.Embedder: encode(list[
             refs.py RefExtractor(acts,aliases).extract_refs(q)->list[Ref(unit,num,act|None)]; act_mentions(q)->list[slug]
             rrf.py rrf(*ranked:Sequence[str],k)->list[Fused(chunk_id,score,ranks)] (ties: best rank, then chunk_id)
             hybrid.py HybridRetriever(embedder,dense,sparse,store,router,settings).retrieve(q)->RetrievalResult(candidates:
-            list[RetrievedChunk] top_n, acts, widened, timings_ms, dense_only_ids, sparse_only_ids); retrieve_dense_only/
+            list[RetrievedChunk] top_n, acts, widened, timings_ms{route,embed,dense,sparse,rrf,total}, dense_only_ids, sparse_only_ids); retrieve_dense_only/
             retrieve_sparse_only (M9 baselines); load_retriever(settings, embedder|None); CLI prints candidates with ranks
-            reranker.py CEReranker (implements interfaces.CrossEncoderLike); rerank(q,chunks,top=5)->list[RetrievedChunk]; is_confident(scored)->bool  (≥2 with score>relevance_threshold)
+            reranker.py CEReranker(model,max_length=512,batch=8; lazy shared model; warmup()) implements CrossEncoderLike (raw logits);
+            pair_text(chunk) "{act} {unit} {num} {title}: {text}"; rerank(model,q,candidates,top)->list[RetrievedChunk] (desc, ties keep
+            RRF order); is_confident(scored,threshold,min_chunks)->bool  (≥min_confident_chunks with score >= relevance_threshold, D13)
+            pipeline.py ContextPipeline(retriever,reranker,settings).retrieve_context(q_en)->ContextResult(chunks ≤rerank_top, null,
+            debug: ContextDebug(acts,widened,candidates,scores[(id,score)],timings_ms route/embed/dense/sparse/rrf/rerank/total));
+            null → chunks=[]. load_pipeline(settings, embedder|None, reranker|None) | bench.py + scripts/bench_retrieval.py (p50/p95, --fake)
 generation/ prompt.py build_prompt(q,chunks)->PromptBuild(text,truncated_ids) (§7.1 verbatim + one fixed header line) | FALLBACK_MESSAGE
             budget.py est_tokens(str)->int; fit_chunks(chunks,budget)->list[tuple[LegalChunk,str,bool]]
             llm.py OllamaClient(httpx) implements interfaces.LLMClient (stream cancellable; async health())

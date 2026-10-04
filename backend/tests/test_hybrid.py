@@ -2,52 +2,24 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.config import ActSpec, Settings
+from backend.app.config import Settings
 from backend.app.ingestion.build_index import build_indexes
 from backend.app.retrieval.dense import DenseIndex
 from backend.app.retrieval.hybrid import HybridRetriever, load_retriever, main
-from backend.app.retrieval.refs import RefExtractor
-from backend.app.retrieval.router import DomainTable, Router
 from backend.app.retrieval.rrf import rrf
 from backend.app.retrieval.sparse import SparseIndex
-from backend.app.retrieval.store import ChunkStore
-from backend.app.retrieval.windows import WindowSpec
-from backend.tests.corpus import CONSTITUTION, EMPLOYMENT, TENANCY, corpus
-from backend.tests.fakes import FakeEmbedder
-
-ACTS = [
-    ActSpec(name="Sample Constitution", year=2000, file="c.pdf", unit="Article"),
-    ActSpec(name="Sample Employment Act", year=2000, file="e.pdf", cap="999"),
-    ActSpec(name="Sample Tenancy Act", year=2000, file="t.pdf"),
-]
-TABLE = DomainTable.build(
-    {
-        "co_domain": CONSTITUTION,
-        "co_domain_for": [EMPLOYMENT, TENANCY],
-        "acts": {
-            CONSTITUTION: {"aliases": ["constitution"], "terms": ["rights", "discrimination"]},
-            EMPLOYMENT: {"aliases": [], "terms": ["fired", "employer", "leave", "wages"]},
-            TENANCY: {"aliases": [], "terms": ["landlord", "tenant", "evict"]},
-        },
-    },
-    ACTS,
-)
-EMB = FakeEmbedder()
-STORE = ChunkStore(corpus())
+from backend.tests.corpus import CONSTITUTION, EMPLOYMENT, TENANCY
+from backend.tests.fake_pipeline import EMB, STORE, build_parts, fake_retriever
 
 
 @pytest.fixture(scope="module")
 def parts(tmp_path_factory: pytest.TempPathFactory) -> tuple[DenseIndex, SparseIndex]:
-    spec = WindowSpec(split_over=200, words=180, stride=120)
-    dense = DenseIndex.build(STORE.indexable(), EMB, spec=spec, model_name="fake", corpus_hash=STORE.corpus_hash)
-    sparse = SparseIndex.build(STORE.indexable(), tmp_path_factory.mktemp("sp"), corpus_hash=STORE.corpus_hash)
-    return dense, sparse
+    return build_parts(tmp_path_factory.mktemp("sp"))
 
 
 def _retriever(parts: tuple[DenseIndex, SparseIndex], **overrides: int) -> HybridRetriever:
     settings = Settings(top_n=10, **overrides)  # type: ignore[arg-type]
-    router = Router(TABLE, RefExtractor(ACTS, TABLE.aliases))
-    return HybridRetriever(EMB, parts[0], parts[1], STORE, router, settings)
+    return fake_retriever(parts, settings)
 
 
 def test_hybrid_equals_rrf_of_the_single_legs(parts: tuple[DenseIndex, SparseIndex]) -> None:
@@ -130,7 +102,7 @@ def test_article_reference_hits_the_constitution(parts: tuple[DenseIndex, Sparse
 
 def test_debug_fields_and_timings(parts: tuple[DenseIndex, SparseIndex]) -> None:
     result = _retriever(parts).retrieve("employer leave wages")
-    assert set(result.timings_ms) == {"route", "dense", "sparse", "fuse", "total"}
+    assert set(result.timings_ms) == {"route", "embed", "dense", "sparse", "rrf", "total"}
     assert all(v >= 0 for v in result.timings_ms.values())
     dense_ids = {c.chunk.chunk_id for c in result.candidates if c.dense_rank is not None}
     sparse_ids = {c.chunk.chunk_id for c in result.candidates if c.sparse_rank is not None}
@@ -146,7 +118,7 @@ def test_single_leg_results_use_their_own_ranks(parts: tuple[DenseIndex, SparseI
     assert [c.dense_rank for c in dense.candidates] == list(range(1, len(dense.candidates) + 1))
     assert all(c.sparse_rank is None for c in dense.candidates)
     assert [c.sparse_rank for c in sparse.candidates] == list(range(1, len(sparse.candidates) + 1))
-    assert set(dense.timings_ms) == {"route", "dense", "fuse", "total"}
+    assert set(dense.timings_ms) == {"route", "embed", "dense", "rrf", "total"}
 
 
 @pytest.fixture
