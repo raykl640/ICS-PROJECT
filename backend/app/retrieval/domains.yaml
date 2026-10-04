@@ -1,0 +1,71 @@
+# Keyword router table (loaded by backend/app/retrieval/router.py).
+# terms: lay-language words/phrases that suggest an Act. Matching is whole-word, case-insensitive, Porter-stemmed on both
+#        sides, so "evict" also matches "evicted"/"eviction". Phrases match as contiguous words.
+# aliases: explicit names for the Act beyond its full title and "Cap N" (both added from data/sources.yaml); any explicit
+#          mention overrides keyword routing.
+# Kiswahili entries are common everyday words used only as routing hints (unverified; see docs/HUMAN_TODO.md).
+co_domain: constitution-of-kenya
+# Rights topics (employment, housing, police, fair trial): the Constitution is added after these Acts.
+co_domain_for:
+  - employment-act
+  - landlord-and-tenant-shops-hotels-and-catering-establishments-act
+  - rent-restriction-act
+  - national-police-service-act
+  - criminal-procedure-code
+
+acts:
+  constitution-of-kenya:
+    aliases: [constitution, the constitution, constitution of kenya, katiba]
+    terms: [right, rights, human rights, bill of rights, freedom, freedom of expression, freedom of movement,
+            freedom of religion, religion, discriminate, discrimination, equality, equal treatment, dignity, privacy,
+            fair hearing, fair trial, torture, protest, demonstration, peaceful assembly, association, citizenship,
+            citizen, vote, health care, education, petition, constitutional, haki]
+  employment-act:
+    aliases: [employment act, labour law]
+    terms: [fired, sacked, dismissed, dismissal, summary dismissal, terminated my contract, termination of employment,
+            laid off, redundancy, redundant, employer, employee, boss, job, workplace, salary, wages, unpaid salary,
+            payslip, overtime, maternity leave, paternity leave, annual leave, sick leave, contract of employment,
+            employment contract, probation, warning letter, disciplinary, gratuity, severance, service pay,
+            casual worker, house help, domestic worker, notice pay, mwajiri, mshahara, kazi]
+  landlord-and-tenant-shops-hotels-and-catering-establishments-act:
+    aliases: [landlord and tenant act, shops act]
+    terms: [shop, business premises, commercial premises, commercial, business, hotel, restaurant, catering, kiosk,
+            stall, office space, commercial lease, controlled tenancy, tenancy notice, landlord, tenant, rent, lease,
+            evict, terminate tenancy, business rent, rent tribunal, rent increase, premises, lock out, duka, biashara]
+  rent-restriction-act:
+    aliases: [rent restriction act, rent act]
+    terms: [rent, rental, tenant, landlord, house, home, apartment, flat, bedsitter, room, residential, rent increase,
+            deposit, evict, vacate, notice to vacate, locked out, padlock, caretaker, rent arrears, arrears, repairs,
+            water, electricity, standard rent, rent tribunal, kodi ya nyumba, mpangaji, mwenye nyumba, kufukuzwa]
+  land-act:
+    aliases: [land act]
+    terms: [land, plot, title deed, land title, ownership, buy land, sell land, sale of land, land transfer, leasehold,
+            freehold, compulsory acquisition, compensation, easement, boundary, surveyor, land registry, registration,
+            land rates, mortgage, public land, private land, community land, squatter, land grabbing, grabbed, ardhi,
+            shamba, hati miliki]
+  consumer-protection-act:
+    aliases: [consumer protection act]
+    terms: [consumer, buyer, bought, purchase, refund, return the goods, warranty, guarantee, defective, faulty,
+            broken, fake, counterfeit, receipt, seller, supplier, goods, product, unfair contract, misleading,
+            advertisement, overcharged, price, online shopping, internet agreement, debt collector, mnunuzi, bidhaa]
+  national-police-service-act:
+    aliases: [national police service act, police act, nps act]
+    terms: [police, police officer, policeman, cop, police station, beat, beaten, assaulted, brutality,
+            use of force, shot, shooting, firearm, gun, bribe, bribery, harassed, harassment, ipoa,
+            complaint against police, ob number, occurrence book, custody, police cell, misconduct, polisi, askari]
+  criminal-procedure-code:
+    aliases: [criminal procedure code, cpc]
+    terms: [arrest, arrested, bail, bond, cash bail, charged, accused, court, magistrate, trial, plea, plead, guilty,
+            warrant, search warrant, summons, remand, detention, detained, 24 hours, appeal, sentence, conviction,
+            prosecution, prosecutor, witness, criminal case, dhamana, kukamatwa, mahakama]
+  traffic-act:
+    aliases: [traffic act]
+    terms: [traffic, driving, driver, driving licence, licence, license, car, vehicle, motorbike, boda boda, matatu,
+            speeding, overspeeding, accident, drunk driving, drink driving, fine, traffic fine, number plate,
+            inspection, seatbelt, helmet, overloading, parking, traffic offence, gari, dereva, leseni]
+  legal-aid-act:
+    aliases: [legal aid act]
+    terms: [legal aid, free lawyer, lawyer, advocate, afford, cannot afford, pro bono, legal representation,
+            represent me, legal assistance, legal advice, paralegal, nlas, national legal aid service, poor, indigent,
+            free legal, court appointed, legal clinic, legal help, counsel, defend me, public defender, need a lawyer,
+            legal fees, wakili, msaada wa kisheria]

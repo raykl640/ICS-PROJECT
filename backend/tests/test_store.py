@@ -24,6 +24,8 @@ def test_get_returns_chunks_in_requested_order_and_rejects_unknown_ids() -> None
     assert [c.section_title for c in got] == ["Eviction", "Unfair termination"]
     with pytest.raises(KeyError):
         store.get(["no-such-chunk"])
+    assert "sample-tenancy-act-3" in store
+    assert "no-such-chunk" not in store
 
 
 def test_indexable_excludes_repealed_but_store_keeps_them() -> None:

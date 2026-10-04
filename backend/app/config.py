@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT_DIR / "data"
 SOURCES_PATH = DATA_DIR / "sources.yaml"
+DOMAINS_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "domains.yaml"
 
 # Exact text from ARCHITECTURE.md §7.5; returned instead of calling the LLM when retrieval is not confident.
 FALLBACK_MESSAGE = (
@@ -63,6 +64,7 @@ class Settings(BaseSettings):
     feedback_path: Path = DATA_DIR / "feedback.jsonl"
     manifest_path: Path = DATA_DIR / "corpus_manifest.json"
     parse_report_path: Path = DATA_DIR / "processed" / "parse_report.md"
+    domains_path: Path = DOMAINS_PATH
     acts: list[ActSpec] = Field(default_factory=lambda: load_acts(SOURCES_PATH))
 
     download_retries: int = Field(3, gt=0)
@@ -79,6 +81,7 @@ class Settings(BaseSettings):
     dense_k: int = Field(20, gt=0)
     sparse_k: int = Field(20, gt=0)
     rrf_k: int = Field(60, gt=0)
+    min_filtered_hits: int = Field(5, gt=0)
     top_n: int = Field(20, gt=0)
     rerank_top: int = Field(5, gt=0)
     relevance_threshold: float = 0.0
@@ -114,6 +117,8 @@ class Settings(BaseSettings):
     def _check_consistency(self) -> "Settings":
         """Reject combinations that would break the retrieval funnel or the LLM context."""
         AnyHttpUrl(self.ollama_url)
+        if self.top_n > self.dense_k + self.sparse_k:
+            raise ValueError("top_n must be <= dense_k + sparse_k")
         if self.rerank_top > self.top_n:
             raise ValueError("rerank_top must be <= top_n")
         if self.min_confident_chunks > self.rerank_top:

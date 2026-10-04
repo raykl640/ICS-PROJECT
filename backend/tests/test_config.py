@@ -9,6 +9,8 @@ from backend.app.config import DISCLAIMER, FALLBACK_MESSAGE, ActSpec, Settings, 
 def test_defaults_match_spec() -> None:
     s = Settings()
     assert (s.dense_k, s.sparse_k, s.rrf_k, s.top_n, s.rerank_top) == (20, 20, 60, 20, 5)
+    assert s.min_filtered_hits == 5
+    assert s.domains_path.is_file()
     assert s.min_confident_chunks == 2
     assert s.relevance_threshold == 0.0
     assert (s.temperature, s.num_ctx, s.num_predict) == (0.1, 8192, 1500)
@@ -82,6 +84,7 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch, env: str, value: str, fie
         ("HAKI_MAX_QUESTION_CHARS", "abc"),
         ("HAKI_OLLAMA_URL", "localhost:11434"),
         ("HAKI_EMBED_WINDOW_STRIDE", "181"),
+        ("HAKI_TOP_N", "41"),
         ("HAKI_EMBED_WINDOW_WORDS", "201"),
     ],
 )

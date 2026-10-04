@@ -37,6 +37,9 @@ class ChunkStore:
     def __len__(self) -> int:
         return len(self._chunks)
 
+    def __contains__(self, chunk_id: object) -> bool:
+        return chunk_id in self._chunks
+
     def all(self) -> list[LegalChunk]:
         """Every chunk in document order."""
         return list(self._chunks.values())

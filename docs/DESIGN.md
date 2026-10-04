@@ -25,8 +25,12 @@ retrieval/  embedder.py STEmbedder (implements interfaces.Embedder: encode(list[
             sparse.py SparseIndex.build(chunks,dir,*,corpus_hash)/open(dir,*,corpus_hash)/search(q,k,acts|None[,refs in M3])->list[tuple[str,float]]; sanitize(q)->str
             meta.py IndexMeta, IndexMismatchError (stale/missing index → message with the rebuild command)
             store.py ChunkStore.save/load(path); get(ids)->list[LegalChunk]; all(); indexable() (non-repealed); corpus_hash
-            router.py route(q)->set[str] (empty = full corpus); extract_refs(q)->list[Ref(unit,num,act|None)]
-            rrf.py rrf(*ranked:list[str],k=60)->list[tuple[str,float]] | hybrid.py retrieve(q)->list[str] (top-20, 2 threads)
+            router.py Router(table,refs).route(q)->list[str]|None (ordered; None = full corpus); domains.yaml; load_domains(path,acts)
+            refs.py RefExtractor(acts,aliases).extract_refs(q)->list[Ref(unit,num,act|None)]; act_mentions(q)->list[slug]
+            rrf.py rrf(*ranked:Sequence[str],k)->list[Fused(chunk_id,score,ranks)] (ties: best rank, then chunk_id)
+            hybrid.py HybridRetriever(embedder,dense,sparse,store,router,settings).retrieve(q)->RetrievalResult(candidates:
+            list[RetrievedChunk] top_n, acts, widened, timings_ms, dense_only_ids, sparse_only_ids); retrieve_dense_only/
+            retrieve_sparse_only (M9 baselines); load_retriever(settings, embedder|None); CLI prints candidates with ranks
             reranker.py CEReranker (implements interfaces.CrossEncoderLike); rerank(q,chunks,top=5)->list[RetrievedChunk]; is_confident(scored)->bool  (≥2 with score>relevance_threshold)
 generation/ prompt.py build_prompt(q,chunks)->PromptBuild(text,truncated_ids) (§7.1 verbatim + one fixed header line) | FALLBACK_MESSAGE
             budget.py est_tokens(str)->int; fit_chunks(chunks,budget)->list[tuple[LegalChunk,str,bool]]
@@ -63,9 +67,13 @@ main.py     create_app(deps: Deps)->FastAPI; Deps dataclass holds all interfaces
   text TEXT(StemmingAnalyzer). BM25F. Query = OR-group (0.9 coord bonus) over title+text+section_num; sanitize() keeps only word chars and
   lower-cases (so AND/OR/NOT are plain stopwords);
   extract_refs() adds boosted Term(section_num, n). Same Act filter + widen rule as FAISS.
-- Router: keyword table → set of Acts (multi-Act allowed). Rights-topic words (right, freedom, discriminat, fair, dignity, arrest, evict, ...)
-  add the Constitution as co-domain. Explicit mentions override keywords: an Act name/alias → that Act; "Article N" → Constitution;
-  "section N" + Act name → that Act. No match → full corpus.
+- Router (domains.yaml): ≥25 Porter-stemmed terms/phrases per Act, Acts ordered by matched-term count then config order. The Constitution
+  has its own rights terms and is appended as co-domain after employment/housing/police/CPC Acts. Explicit mentions override keywords:
+  Act title/alias/"Cap N" → that Act; "Article N" → Constitution (named Acts first, in mention order). A bare "section N" names no
+  Act, so keywords decide. No match → None (full corpus).
+- Refs: "section N"/"s. N"/"sec N" bind to the nearest named Section-unit Act; bare ones resolve within the routed Acts. Each
+  resolved, indexed chunk whose unit_type matches is put at sparse rank 1 (guarantees exact-reference hits reach the reranker).
+- Widening: each leg (dense, sparse) with < min_filtered_hits (5) filtered hits is rerun unfiltered; widened = any leg widened.
 - Reranker: cross-encoder outputs unbounded logits (not probabilities). relevance_threshold default 0.0, tuned in M9 on in-corpus vs
   out-of-corpus queries (eval/), result recorded in PROGRESS.md.
 

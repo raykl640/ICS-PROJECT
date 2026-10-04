@@ -4,7 +4,8 @@
 - [x] M0 Scaffold — 2026-10-04 (redone to the amended DESIGN, same day)
 - [x] M1 Ingestion — 2026-10-04 (awaiting human review gate)
 - [x] M2 Indexes — 2026-10-04
-- [ ] M3 … [ ] M10 not started
+- [x] M3 Retrieval — 2026-10-04
+- [ ] M4 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -81,4 +82,21 @@ Open issues:
 - For "section 41 termination" BM25 ranks s.42/s.45 (which cite "section 41") above s.41: M3's extract_refs boost must fix this.
 - 105/2274 windows exceed 256 word-pieces (see D12); revisit window size if M9 retrieval eval shows misses on long sections.
 Next: M3 Retrieval.
+
+## M3 Retrieval (2026-10-04)
+Done:
+- retrieval/: domains.yaml (10 Acts, 25–39 terms each, aliases, Kiswahili hints), router.py (Router, Porter-stemmed whole-word/phrase
+  match, explicit override, Constitution co-domain), refs.py (RefExtractor: Act titles/aliases/Cap N, section/article refs),
+  rrf.py (rrf with per-list ranks, deterministic ties), hybrid.py (HybridRetriever, 2-thread dense+sparse, widening, ref injection,
+  dense-only/sparse-only baselines, load_retriever, CLI). config: min_filtered_hits=5, domains_path; validates top_n ≤ dense_k+sparse_k.
+- 274 tests green (38 router questions), coverage 98%. Real smoke (5 queries) routes correctly; hybrid ~50 ms after model load.
+Decisions:
+- Router returns ordered list | None (milestone behaviour) instead of DESIGN's set; refs live in refs.py per the milestone; DESIGN.md updated.
+- Widening is per leg: only the leg with < 5 filtered hits reruns unfiltered, so the other keeps its domain focus.
+- Injected refs must exist in the store, be non-repealed and match the ref's unit (a bare "section 41" never pulls Article 41).
+- Bare "section N" does not override keyword routing (it names no Act); it resolves within the routed Acts.
+Open issues:
+- Long schedules (e.g. Constitution Sch3) still score in BM25 for generic queries; M4's cross-encoder should demote them.
+- "shop" routes refund questions to the Landlord & Tenant (Shops) Act too, which pulls in the Constitution co-domain; harmless, revisit in M9.
+Next: M4 Rerank.
 
