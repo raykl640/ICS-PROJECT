@@ -61,3 +61,13 @@ Format: what / why / impact. Append-only; reference the change that introduced e
   Act numbers/years. Schedule numbering restarts, so splitting them by number would collide with section ids.
 - Impact: the Constitution preamble cannot be retrieved. Long Schedules (Constitution Sixth, CPC First/Second) rely on M2's
   embedding windows and M5's chunk truncation; they are listed under "long" in parse_report.md.
+
+## D12 Word-based embedding windows; exhaustive filtered FAISS search (§4.1, D1) — feat(M2)
+- What: windows are sized in words (180, stride 120, only for chunks > 200 words) with header "{act} — {unit} {num}: {title}. ",
+  as the M2 milestone specifies, instead of DESIGN's 256-token windows with 64-token overlap. Filtered dense search scans all
+  selected windows instead of over-fetching k*4.
+- Why: the milestone wins on behaviour. A flat index computes every distance regardless of k, so scanning all windows costs
+  nothing extra and always yields k unique parents when they exist.
+- Impact: 105 of 2274 real-corpus windows (4.6%) exceed MiniLM's 256 word-pieces and lose their tail when embedded; for
+  non-final windows the 60-word overlap re-embeds that tail in the next window. Sizes are tunable in config.py; build_index
+  prints the over-limit count.

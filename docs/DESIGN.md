@@ -20,10 +20,11 @@ logging_setup.py configure_logging(settings, stream) → JSON lines; RedactConte
 ingestion/  download.py ensure_pdfs(specs)->list[Path] (skip existing; raise MissingPDFError) | extract.py extract_pages(pdf)->list[tuple[int,str]]
             parse.py parse_act(pages,spec,sha256)->list[LegalChunk]; is_noise(line)->bool; is_repealed(text)->bool
             build_index.py main()  (chunks.json + indexes)
-retrieval/  embedder.py STEmbedder (implements interfaces.Embedder: encode(list[str])->np.ndarray[n,384] L2-normalised; count_tokens) | windows.py make_windows(chunk,tok)->list[str]
-            dense.py DenseIndex.build(chunks,emb)/save(dir)/load(dir)/search(vec,k,acts|None)->list[tuple[str,float]]
-            sparse.py SparseIndex.build(chunks,dir)/open(dir)/search(q,k,acts|None,refs)->list[tuple[str,float]]; sanitize(q)->str
-            store.py ChunkStore.save/load(path); get(ids)->list[LegalChunk]
+retrieval/  embedder.py STEmbedder (implements interfaces.Embedder: encode(list[str])->np.ndarray[n,384] L2-normalised; count_tokens) | windows.py make_windows(chunk,spec:WindowSpec)->list[str]
+            dense.py DenseIndex.build(chunks,emb,*,spec,model_name,corpus_hash)/save(dir)/load(dir,*,model_name,corpus_hash)/search(vec,k,acts|None)->list[tuple[str,float]]
+            sparse.py SparseIndex.build(chunks,dir,*,corpus_hash)/open(dir,*,corpus_hash)/search(q,k,acts|None[,refs in M3])->list[tuple[str,float]]; sanitize(q)->str
+            meta.py IndexMeta, IndexMismatchError (stale/missing index → message with the rebuild command)
+            store.py ChunkStore.save/load(path); get(ids)->list[LegalChunk]; all(); indexable() (non-repealed); corpus_hash
             router.py route(q)->set[str] (empty = full corpus); extract_refs(q)->list[Ref(unit,num,act|None)]
             rrf.py rrf(*ranked:list[str],k=60)->list[tuple[str,float]] | hybrid.py retrieve(q)->list[str] (top-20, 2 threads)
             reranker.py CEReranker (implements interfaces.CrossEncoderLike); rerank(q,chunks,top=5)->list[RetrievedChunk]; is_confident(scored)->bool  (≥2 with score>relevance_threshold)
@@ -50,14 +51,17 @@ main.py     create_app(deps: Deps)->FastAPI; Deps dataclass holds all interfaces
 - source_sha256 = sha256 of the source PDF; build_index rebuilds when any hash changes.
 
 ## Retrieval
-- Embedding: all-MiniLM-L6-v2 truncates at 256 word-pieces. Each chunk → overlapping windows of ≤ embed_window_tokens (256 incl. specials),
-  stride embed_window_stride (64 overlap), each prefixed "{act} {unit} {num} {title}: ". Window vectors map back to parent chunk_id;
-  chunk score = max over its windows. Text shown to users/LLM is always the full parent. Fake: word counts instead of word-pieces.
+- Embedding: all-MiniLM-L6-v2 truncates at 256 word-pieces. Chunks > embed_split_over_words (200) → windows of embed_window_words (180)
+  starting every embed_window_stride (120) words, each prefixed "{act} — {unit} {num}: {title}. " (schedules: "{act} — {num}: {title}. ").
+  Window vectors map back to parent chunk_id; chunk score = max over its windows. Text shown to users/LLM is always the full parent.
+  build_index reports windows over embed_max_tokens (real corpus: 105/2274). See DEVIATIONS D12.
 - FAISS: IndexFlatL2 over L2-normalised vectors (L2 order == cosine order); parallel array window_idx→chunk_id saved alongside.
-  Domain filter via faiss IDSelectorBatch over the routed Acts' window ids; overfetch k*4 windows, aggregate to unique chunk_ids.
+  Domain filter via faiss IDSelectorBatch over the routed Acts' window ids; search all selected windows (flat index is exhaustive
+  anyway), aggregate to unique chunk_ids. acts empty/None = full corpus.
   If filtered search yields < min_filtered_hits (5) chunks → rerun over the full corpus.
-- Whoosh schema: chunk_id ID(stored,unique); act ID; section_num ID (lowercase exact); section_title TEXT(StemmingAnalyzer, field_boost=2.0);
-  text TEXT(StemmingAnalyzer). BM25F. Query = OR-group over title+text; sanitize() strips query syntax (:*?~^(){}[]"+-!\/) and AND/OR/NOT;
+- Whoosh schema: chunk_id ID(stored,unique); act KEYWORD(lowercase); act_slug KEYWORD (filter); section_num ID (lowercase exact); section_title TEXT(StemmingAnalyzer, field_boost=2.0);
+  text TEXT(StemmingAnalyzer). BM25F. Query = OR-group (0.9 coord bonus) over title+text+section_num; sanitize() keeps only word chars and
+  lower-cases (so AND/OR/NOT are plain stopwords);
   extract_refs() adds boosted Term(section_num, n). Same Act filter + widen rule as FAISS.
 - Router: keyword table → set of Acts (multi-Act allowed). Rights-topic words (right, freedom, discriminat, fair, dignity, arrest, evict, ...)
   add the Constitution as co-domain. Explicit mentions override keywords: an Act name/alias → that Act; "Article N" → Constitution;
@@ -121,7 +125,6 @@ pytest==9.1.1 pytest-cov==5.0.0 pytest-socket==0.8.1 coverage==7.16.2 ruff==0.16
 - Fallback: QueryResponse.fallback=true, stream emits `null` with FALLBACK_MESSAGE, no LLM call.
 
 ## Carry-over (code not yet matching this file)
-- M2: replace config embed_token_limit/embed_max_words with embed_window_tokens/stride; normalised FAISS + window map.
 - M5/M7: chunk/prompt budgets, max_queue, min_filtered_hits, CORS/dev_mode config; LLMGate; setup_offline.py in M7.
 
 ## Needed from you

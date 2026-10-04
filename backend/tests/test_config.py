@@ -18,6 +18,13 @@ def test_defaults_match_spec() -> None:
     assert s.rate_limit_per_min == 10
     assert s.log_content is False
     assert s.ollama_url.endswith(":11434")
+    assert (s.embed_split_over_words, s.embed_window_words, s.embed_window_stride, s.embed_max_tokens) == (
+        200,
+        180,
+        120,
+        256,
+    )
+    assert (s.dense_index_dir.parent, s.sparse_index_dir.parent) == (s.index_dir, s.index_dir)
 
 
 def test_fallback_message_is_verbatim_from_architecture() -> None:
@@ -74,6 +81,8 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch, env: str, value: str, fie
         ("HAKI_NUM_PREDICT", "8192"),
         ("HAKI_MAX_QUESTION_CHARS", "abc"),
         ("HAKI_OLLAMA_URL", "localhost:11434"),
+        ("HAKI_EMBED_WINDOW_STRIDE", "181"),
+        ("HAKI_EMBED_WINDOW_WORDS", "201"),
     ],
 )
 def test_invalid_settings_are_rejected(monkeypatch: pytest.MonkeyPatch, env: str, value: str) -> None:

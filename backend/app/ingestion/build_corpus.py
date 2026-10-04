@@ -1,7 +1,6 @@
 """Build data/processed/chunks.json and parse_report.md from the PDFs in data/raw_pdfs (indexes are built in M2)."""
 
 import argparse
-import json
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -20,6 +19,7 @@ from backend.app.ingestion.extract import (
 from backend.app.ingestion.parse import parse_act
 from backend.app.ingestion.report import ActReport, act_report, render_report
 from backend.app.models import LegalChunk
+from backend.app.retrieval.store import ChunkStore
 
 
 @dataclass
@@ -68,9 +68,7 @@ def build_corpus(settings: Settings, ocr_engine: OcrEngine | None = None) -> lis
         manifest[spec.slug] = build.manifest
         reports.append(act_report(spec, build.chunks, settings, build.notes))
     update_manifest(settings.manifest_path, manifest)
-    settings.chunks_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps([c.model_dump() for c in chunks], indent=1, ensure_ascii=False)
-    settings.chunks_path.write_text(payload + "\n", encoding="utf-8")
+    ChunkStore(chunks).save(settings.chunks_path)
     settings.parse_report_path.parent.mkdir(parents=True, exist_ok=True)
     settings.parse_report_path.write_text(render_report(reports), encoding="utf-8")
     return reports

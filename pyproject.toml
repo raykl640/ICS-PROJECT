@@ -24,7 +24,7 @@ files = ["backend"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["pytest_socket", "pytesseract", "reportlab.*"]
+module = ["pytest_socket", "pytesseract", "reportlab.*", "whoosh.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

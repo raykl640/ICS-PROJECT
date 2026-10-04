@@ -83,8 +83,11 @@ class Settings(BaseSettings):
     rerank_top: int = Field(5, gt=0)
     relevance_threshold: float = 0.0
     min_confident_chunks: int = Field(2, gt=0)
-    embed_token_limit: int = 512
-    embed_max_words: int = 400
+    embed_split_over_words: int = Field(200, gt=0)
+    embed_window_words: int = Field(180, gt=0)
+    embed_window_stride: int = Field(120, gt=0)
+    embed_max_tokens: int = Field(256, gt=0)
+    embed_batch_size: int = Field(32, gt=0)
 
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dim: int = 384
@@ -117,7 +120,19 @@ class Settings(BaseSettings):
             raise ValueError("min_confident_chunks must be <= rerank_top")
         if self.num_predict >= self.num_ctx:
             raise ValueError("num_predict must be < num_ctx")
+        if not self.embed_window_stride <= self.embed_window_words <= self.embed_split_over_words:
+            raise ValueError("need embed_window_stride <= embed_window_words <= embed_split_over_words")
         return self
+
+    @property
+    def dense_index_dir(self) -> Path:
+        """FAISS index, window id map and meta.json."""
+        return self.index_dir / "dense"
+
+    @property
+    def sparse_index_dir(self) -> Path:
+        """Whoosh BM25 index and meta.json."""
+        return self.index_dir / "sparse"
 
     def pdf_path(self, act: ActSpec) -> Path:
         """Location of an Act's source PDF."""

@@ -3,7 +3,8 @@
 
 - [x] M0 Scaffold — 2026-10-04 (redone to the amended DESIGN, same day)
 - [x] M1 Ingestion — 2026-10-04 (awaiting human review gate)
-- [ ] M2 … [ ] M10 not started
+- [x] M2 Indexes — 2026-10-04
+- [ ] M3 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -62,3 +63,22 @@ Open issues:
   Land s.2, Consumer s.2, Rent s.14.
 Blocked: human review gate — see docs/HUMAN_TODO.md (inspect_chunks --per-act 20, then touch .gates/M1-reviewed.ok).
 Next: M2 Indexes, only after .gates/M1-reviewed.ok exists.
+
+## M2 Indexes (2026-10-04)
+Done:
+- retrieval/: store.py (ChunkStore, canonical corpus_hash), windows.py, embedder.py (STEmbedder, local_files_only under HF_HUB_OFFLINE),
+  dense.py (IndexFlatL2 + window id map, IDSelectorBatch act filter, best window per parent), sparse.py (Whoosh BM25F, sanitize),
+  meta.py (meta.json, IndexMismatchError with rebuild command). ingestion/build_index.py CLI; build_corpus now writes via ChunkStore.
+- Real corpus: 1519 chunks, 1386 indexed (133 repealed skipped), 2274 windows; dense 3.4 MB / 49 s, sparse 2.5 MB / 4 s (MiniLM now cached).
+- 189 tests green, coverage 97.7%; real MiniLM test passes ("wrongful dismissal" → unfair-termination chunk in top 5).
+Decisions:
+- DESIGN names kept over the milestone's (ChunkStore.get not get_many; STEmbedder in embedder.py; search(..., acts) by act_slug, not
+  allowed_chunk_ids). Empty/None acts = full corpus in both indexes. Index dirs are owned and wiped on rebuild (settings.dense/sparse_index_dir).
+- Word windows per milestone, exhaustive filtered dense search → DEVIATIONS D12. config: embed_token_limit/embed_max_words replaced by
+  embed_split_over_words/window_words/window_stride/max_tokens/batch_size.
+- sanitize() keeps only word chars and lower-cases (no Whoosh syntax can survive); section_num is a query field so "section 8" hits s.8.
+Open issues:
+- For "section 41 termination" BM25 ranks s.42/s.45 (which cite "section 41") above s.41: M3's extract_refs boost must fix this.
+- 105/2274 windows exceed 256 word-pieces (see D12); revisit window size if M9 retrieval eval shows misses on long sections.
+Next: M3 Retrieval.
+
