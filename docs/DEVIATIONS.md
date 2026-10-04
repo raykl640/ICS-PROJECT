@@ -129,3 +129,18 @@ Format: what / why / impact. Append-only; reference the change that introduced e
   the client leaves.
 - Impact: M8 must use these names. A health 503 body is the health object plus an "error" key (still has error.code/message).
   The model's own disclaimer line is removed from every section before storage/translation; the API adds the localized one.
+
+## D17 Frontend shape (ARCHITECTURE §9) — feat(M8)
+- What: (a) the stream hook parses `token.text` with a TS port of SectionSplitter (milestone) and ignores the server's `deltas`
+  (D16); the port adds `snapshot()`, `current` and `seen` for live rendering. (b) Limits the UI needs (max_question_chars,
+  max_comment_chars) are mirrored in frontend/src/limits.json, guarded by backend/tests/test_frontend_contract.py, because the
+  browser cannot read config.py. (c) All new UI labels live in backend/app/lang/ui_strings.json (78 keys per language; Kiswahili
+  unreviewed). (d) Referral contacts live at config/referral_resources.json (repo root, per HUMAN_STEPS) and are bundled at build
+  time; only `verified: true` entries render. (e) Model-written links are rendered as plain text, images are dropped, raw HTML
+  stays literal text (no rehype-raw). (f) The model's disclaimer line is stripped from displayed sections with the backend's
+  regex, so the streaming draft matches the stored answer. (g) The e2e drives Playwright's Chromium API on the system
+  /usr/bin/chromium (Playwright 1.63 wants revision 1243, not cached here); PLAYWRIGHT_CHROMIUM overrides.
+- Why: (a) the milestone asks for the port; it also keeps reconnect/replay simple (fresh splitter per connection). (b) Rule 4
+  keeps config in config.py; a test makes drift fail CI. (e)/(f) safety and consistency with /api/letter.
+- Impact: a change to the splitter regex must be made in both parse.py and sectionSplitter.ts (same test cases in both).
+  Changing either limit in config.py requires editing limits.json.

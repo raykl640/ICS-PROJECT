@@ -9,7 +9,8 @@
 - [x] M5 Generation — 2026-10-04
 - [x] M6 Language — 2026-10-04
 - [x] M7 API — 2026-10-04
-- [ ] M8 … [ ] M10 not started
+- [x] M8 Frontend — 2026-10-05
+- [ ] M9 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -198,3 +199,33 @@ Open issues:
 - Starlette 1.7 warns that TestClient's httpx backend is deprecated (asks for httpx2); harmless for now.
 - HEAD /api/health is 404 when the frontend is mounted (GET only); fine for browsers, note for external monitors.
 Next: M8 Frontend.
+
+## M8 Frontend (2026-10-05)
+Done:
+- frontend/ rebuilt (old untracked scaffold moved to legacy/frontend-scaffold/): Vite 8 + React 19 + TS + Tailwind 4, all deps pinned
+  exactly; react-markdown is the only runtime UI library. Components: QueryPanel, ResponsePanel (3 ARIA tabs, arrow keys, status
+  line, skeletons, throttled sr-only live region), AnswerMarkdown (citations → buttons), LetterTab, SourcesPanel, CitationWarning,
+  NullScreen, ErrorState/HealthBanner, FeedbackBar, ReferralFooter, Header. useQuerySession (reducer state machine, reconnect ×2
+  with fresh replay), useHealth, useAnnouncement; lib/sectionSplitter.ts (port of parse.py), citations.ts, rehypeCitations.ts.
+- Shared data: 64 new keys in ui_strings.json (EN + unreviewed SW), config/referral_resources.json (empty), frontend/src/limits.json
+  + backend/tests/test_frontend_contract.py.
+- 52 vitest tests (splitter port incl. all backend cases, hook state machine with mock EventSource, tab rules, citation click
+  highlight, feedback once-only, character limit, markdown sanitising, referral footer); console.error fails any test.
+  Playwright e2e (2) against FastAPI with HAKI_FAKE_BACKENDS=1 serving dist/: submit → stream → sources → .docx/.txt → feedback,
+  and the null path. Backend check.sh: 563 passed, coverage 97.5%.
+- Bundle: 117.6 KB gzipped JS, 5.6 KB CSS. Screenshots (375/1280, light/dark) reviewed: `npm run screenshots`.
+Decisions:
+- Identity: warm paper + law green, serif display (system fonts only, offline), § mark, thin Kenyan tricolour rule; colours are CSS
+  variables switched by prefers-color-scheme. Desktop: sources in a sticky side column, open by default; mobile: collapsed below.
+- Tabs follow the latest streamed section until the user picks one; auto-switching never moves focus. Citation click opens
+  Sources, scrolls (respecting reduced motion), focuses and highlights the chunk until the next click.
+- Letter shown as plain pre-wrapped text (markdown would join its lines). Example chips fill the box, they don't submit.
+- See DEVIATIONS D17 (splitter port over deltas, limits mirror, referral path, link/image policy, system Chromium for e2e).
+Fixed during visual/e2e review: duplicate React key (answer and feedback both keyed by session id) mounted a second answer panel
+in production only; tabs overflowing at 375 px; streaming caret on its own line; feedback buttons wrapping.
+Open issues:
+- CI runs only scripts/check.sh; frontend lint/test/build and e2e are not in CI yet (needs Node in the workflow) → M10.
+- Kiswahili UI strings and referral entries need a human (HUMAN_TODO). Real-backend TTFT (~78 s cold) still makes the
+  "queued/generating" states long; M10 preload.
+- frontend-design skill named in the milestone is not installed in this environment; design done by hand.
+Next: M9 Evaluation.

@@ -1,0 +1,35 @@
+import type { UiLanguage } from "../api/types";
+import referralFile from "../../../config/referral_resources.json";
+import { useI18n } from "../i18n";
+
+export interface Referral {
+  name: string;
+  description?: Partial<Record<UiLanguage, string>>;
+  contact?: string;
+  verified: boolean;
+}
+
+const FILE_ENTRIES = (referralFile as { entries: Referral[] }).entries;
+
+/** Help organisations from config/referral_resources.json; only human-verified entries; nothing if there are none. */
+export function ReferralFooter({ entries = FILE_ENTRIES }: { entries?: Referral[] }) {
+  const { language, t } = useI18n();
+  const verified = entries.filter((entry) => entry.verified === true);
+  if (!verified.length) return null;
+  return (
+    <section aria-labelledby="referral-title" className="rounded-xl border border-line bg-surface p-5">
+      <h2 id="referral-title" className="font-serif text-xl font-semibold">
+        {t("referral_title")}
+      </h2>
+      <ul className="mt-3 space-y-3">
+        {verified.map((entry) => (
+          <li key={entry.name}>
+            <p className="font-semibold">{entry.name}</p>
+            {entry.description?.[language] && <p className="text-muted">{entry.description[language]}</p>}
+            {entry.contact && <p className="font-medium text-brand-strong">{entry.contact}</p>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}

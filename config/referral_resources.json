@@ -1,0 +1,5 @@
+{
+  "status": "needs_human_entries",
+  "note": "Only agencies and contacts a human has verified. Each entry: {\"name\": str, \"description\": {\"en\": str, \"sw\": str} (optional), \"contact\": str (optional), \"verified\": true}. The UI shows nothing until at least one entry has verified: true. See docs/HUMAN_TODO.md.",
+  "entries": []
+}
