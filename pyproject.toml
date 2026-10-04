@@ -14,7 +14,8 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "D1"]
 ignore = ["D104", "D105", "D107"]
 
 [tool.ruff.lint.per-file-ignores]
-"backend/tests/**" = ["D1"]
+# Tests and fixtures contain the curly quotes/dashes the parser normalises.
+"backend/tests/**" = ["D1", "RUF001"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -23,7 +24,7 @@ files = ["backend"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["pytest_socket"]
+module = ["pytest_socket", "pytesseract", "reportlab.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

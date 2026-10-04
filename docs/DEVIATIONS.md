@@ -52,3 +52,12 @@ Format: what / why / impact. Append-only; reference the change that introduced e
 - What: num_predict 1500 (D5 said 1024); max_sessions 200 (DESIGN said 500); separate dense_k/sparse_k knobs (both 20).
 - Why: the milestone prompt wins on behaviour; prompt budget is still positive (8192 − 1500 − 256 = 6436 tokens for 5 chunks ≤ 1200).
 - Impact: slightly longer answers allowed; fewer concurrent sessions kept in memory. DESIGN.md updated to match.
+
+## D11 What the parser does not chunk; Schedules are single chunks (§3.1) — feat(M1)
+- What: text before the first unit heading (cover, licence page, TOC, gazette/assent block, long title, Constitution preamble),
+  editorial amendment notes ("[Act No. 19 of 2015, s. 148.]"), cross-headings and the CPC index ("not part of the Act") are dropped.
+  Each Schedule becomes one chunk (`{slug}-sch{n}`) however long; numbered items inside it never start a new unit.
+- Why: none of the dropped text is an operative provision (the index says so itself); amendment notes would pollute BM25 with
+  Act numbers/years. Schedule numbering restarts, so splitting them by number would collide with section ids.
+- Impact: the Constitution preamble cannot be retrieved. Long Schedules (Constitution Sixth, CPC First/Second) rely on M2's
+  embedding windows and M5's chunk truncation; they are listed under "long" in parse_report.md.

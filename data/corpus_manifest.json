@@ -1,0 +1,94 @@
+{
+  "acts": {
+    "constitution-of-kenya": {
+      "bytes": 1840152,
+      "file": "Constitution of Kenya.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 143,
+      "sha256": "edd6242e4fb96346320decfbe6b1e19b259aa69a3ff3ef8b3a054dc4471f402b"
+    },
+    "consumer-protection-act": {
+      "bytes": 465254,
+      "file": "Consumer Protection Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 37,
+      "sha256": "62c2c0c5ace1752e324bf6dda61b1ab9c59d40739df1048e78b24a4fb875b468"
+    },
+    "criminal-procedure-code": {
+      "bytes": 1613867,
+      "file": "Criminal Procedure Code.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 223,
+      "sha256": "98138f4a86339cb0b6376ef2e9fa112f41f83da38db8bd720b6a5816a1e94180"
+    },
+    "employment-act": {
+      "bytes": 584224,
+      "file": "Employment Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 45,
+      "sha256": "885b46dbf660b95dc98fd485dac785fc89b9261c559eac0fdd83879729781900"
+    },
+    "land-act": {
+      "bytes": 937489,
+      "file": "Land Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 90,
+      "sha256": "82dcf68d9fcb28c71432478d92063dac13e471767d78a664b68a1d81a90756af"
+    },
+    "landlord-and-tenant-shops-hotels-and-catering-establishments-act": {
+      "bytes": 265035,
+      "file": "Landlord and Tenant (Shops Hotels and Catering Establishments) Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 13,
+      "sha256": "651ec8ce4c63dcd2514bff4a57f14eda6524872e5484795eb01193a7ff7f6098"
+    },
+    "legal-aid-act": {
+      "bytes": 448610,
+      "file": "Legal Aid Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 33,
+      "sha256": "b89258c09013d73e75fdf51729069478fbabc419af8e1e967170f052f030b3f6"
+    },
+    "national-police-service-act": {
+      "bytes": 682383,
+      "file": "National Police Service Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 61,
+      "sha256": "efb9708a4c1f9756257d6ff170361039fd6988398063fa8c91b3f4028da38863"
+    },
+    "rent-restriction-act": {
+      "bytes": 343990,
+      "file": "Rent Restriction Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 22,
+      "sha256": "ae2104320f2f0ed58ede3935b92b06f2049286f7de0d7bea656747baf0c8abd8"
+    },
+    "traffic-act": {
+      "bytes": 794112,
+      "file": "Traffic Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 69,
+      "sha256": "635fe5293117085eacddc74906bac815154e9a45f342498a68a6c3fe716c7855"
+    }
+  }
+}

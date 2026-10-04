@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from backend.app.config import DISCLAIMER, FALLBACK_MESSAGE, ActSpec, Settings, get_settings
+from backend.app.config import DISCLAIMER, FALLBACK_MESSAGE, ActSpec, Settings, get_settings, load_acts
 
 
 def test_defaults_match_spec() -> None:
@@ -90,3 +90,16 @@ def test_actspec_slug() -> None:
     spec = ActSpec(name="Land Act", year=2012, file="Land Act.pdf")
     assert spec.slug == "land-act"
     assert isinstance(Path(spec.file), Path)
+
+
+def test_sources_yaml_years_match_frbr_uris() -> None:
+    for act in Settings().acts:
+        assert act.frbr_uri is not None
+        assert act.frbr_uri.split("/")[4] == str(act.year), act.name
+
+
+def test_load_acts_rejects_a_slug_that_differs_from_the_title(tmp_path: Path) -> None:
+    path = tmp_path / "sources.yaml"
+    path.write_text("acts:\n  - {slug: wrong-slug, title: Land Act, year: 2012, file: Land Act.pdf}\n")
+    with pytest.raises(ValueError, match="wrong-slug"):
+        load_acts(path)

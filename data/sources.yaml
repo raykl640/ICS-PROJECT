@@ -1,0 +1,84 @@
+# Corpus source list, loaded by backend/app/config.py (single source of truth for the Acts).
+# slug must equal the slug derived from title (checked on load). url: only a verified direct PDF link, else null.
+# frbr_uri is copied from page 2 of each PDF in data/raw_pdfs/ (Kenya Law / Laws.Africa identifier; its year is the Act year).
+acts:
+  - slug: constitution-of-kenya
+    title: Constitution of Kenya
+    year: 2010
+    cap: null
+    unit: Article
+    file: Constitution of Kenya.pdf
+    frbr_uri: /akn/ke/act/2010/constitution/eng@2010-09-03
+    url: null
+  - slug: employment-act
+    title: Employment Act
+    year: 2007
+    cap: "226"
+    unit: Section
+    file: Employment Act.pdf
+    frbr_uri: /akn/ke/act/2007/11/eng@2024-04-26
+    url: null
+  - slug: landlord-and-tenant-shops-hotels-and-catering-establishments-act
+    title: Landlord and Tenant (Shops, Hotels and Catering Establishments) Act
+    year: 1965
+    cap: "301"
+    unit: Section
+    file: Landlord and Tenant (Shops Hotels and Catering Establishments) Act.pdf
+    frbr_uri: /akn/ke/act/1965/13/eng@2022-12-31
+    url: null
+  - slug: rent-restriction-act
+    title: Rent Restriction Act
+    year: 1959
+    cap: "296"
+    unit: Section
+    file: Rent Restriction Act.pdf
+    frbr_uri: /akn/ke/act/1959/35/eng@2022-12-31
+    url: null
+  - slug: land-act
+    title: Land Act
+    year: 2012
+    cap: "280"
+    unit: Section
+    file: Land Act.pdf
+    frbr_uri: /akn/ke/act/2012/6/eng@2025-11-04
+    url: null
+  - slug: consumer-protection-act
+    title: Consumer Protection Act
+    year: 2012
+    cap: "501"
+    unit: Section
+    file: Consumer Protection Act.pdf
+    frbr_uri: /akn/ke/act/2012/46/eng@2022-12-31
+    url: null
+  - slug: national-police-service-act
+    title: National Police Service Act
+    year: 2011
+    cap: "84"
+    unit: Section
+    file: National Police Service Act.pdf
+    frbr_uri: /akn/ke/act/2011/11a/eng@2023-09-15
+    url: null
+  - slug: criminal-procedure-code
+    title: Criminal Procedure Code
+    year: 1930
+    cap: "75"
+    unit: Section
+    file: Criminal Procedure Code.pdf
+    frbr_uri: /akn/ke/act/1930/11/eng@2023-12-11
+    url: null
+  - slug: traffic-act
+    title: Traffic Act
+    year: 1953
+    cap: "403"
+    unit: Section
+    file: Traffic Act.pdf
+    frbr_uri: /akn/ke/act/1953/39/eng@2024-04-26
+    url: null
+  - slug: legal-aid-act
+    title: Legal Aid Act
+    year: 2016
+    cap: "16A"
+    unit: Section
+    file: Legal Aid Act.pdf
+    frbr_uri: /akn/ke/act/2016/6/eng@2022-12-31
+    url: null

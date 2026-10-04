@@ -2,7 +2,8 @@
 (Claude updates this at the end of every milestone: done, decisions made, open issues, next step.)
 
 - [x] M0 Scaffold — 2026-10-04 (redone to the amended DESIGN, same day)
-- [ ] M1 … [ ] M10 not started
+- [x] M1 Ingestion — 2026-10-04 (awaiting human review gate)
+- [ ] M2 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -39,3 +40,25 @@ Decisions:
 Open issues:
 - Act years still unconfirmed (M1). embed_token_limit/embed_max_words remain until M2 replaces them with window settings.
 Next: M1 Ingestion.
+
+## M1 Ingestion (2026-10-04)
+Done:
+- data/sources.yaml (10 Acts, FRBR URIs from the PDFs, url: null) is now the Act list loaded by config.py (slug checked on load).
+- ingestion/: download.py (verify/download, never overwrite, retries, sha256 → data/corpus_manifest.json), extract.py (pdfplumber,
+  density check, optional OCR behind OcrEngine + FakeOcrEngine), profiles.py (ParserProfile; default + Constitution), parse.py,
+  report.py, build_corpus.py, sample.py + scripts/inspect_chunks.py. docs/PARSING_NOTES.md written before the parser.
+- Real corpus: 1519 chunks (Constitution 264 Articles + 6 Schedules); 0 gaps/duplicates/out-of-order/mid-sentence; 133 repealed.
+- 121 tests green (synthetic reportlab PDFs, no real statute text), coverage 97%; ./scripts/check.sh passes.
+Decisions:
+- Act years confirmed against FRBR URIs (all config years were right). 10 Acts per BUILD_PLAN (milestone text says 9).
+- Headings accepted only in ascending order within heading_max_gap (10): rejects TOC remnants, footnotes, numbered lists.
+- Line-end hyphens are real compounds in this corpus → joined, hyphen kept. Em dash kept; other dashes → "-".
+- A unit whose heading is a repeal note is repealed=True even with an orphan body line (CPC s.185 in the official PDF).
+- Each Schedule = one chunk; preamble, amendment notes, cross-headings and the CPC index dropped → DEVIATIONS D11.
+- requests + PyYAML runtime pins; reportlab, types-requests, types-PyYAML dev pins; pytesseract stays an unpinned optional extra.
+Open issues:
+- build_corpus takes ~4 min (pdfplumber over ~740 pages); fine for a one-off build.
+- Long chunks for M2 windows: Constitution Sch6 (3761 words), CPC Sch1 offence table (7889, interleaved columns), CPC Sch2,
+  Land s.2, Consumer s.2, Rent s.14.
+Blocked: human review gate — see docs/HUMAN_TODO.md (inspect_chunks --per-act 20, then touch .gates/M1-reviewed.ok).
+Next: M2 Indexes, only after .gates/M1-reviewed.ok exists.

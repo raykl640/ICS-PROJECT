@@ -1,8 +1,9 @@
-"""Deterministic fakes for the Protocols in backend.app.interfaces; no models, no network."""
+"""Deterministic fakes for the Protocols in backend.app.interfaces (and extract.OcrEngine); no models, no network."""
 
 import hashlib
 import re
 from collections.abc import AsyncIterator, Mapping
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
@@ -81,3 +82,16 @@ class FakeTranslator:
         """Return the tagged, word-substituted text."""
         swapped = _WORD.sub(lambda m: self.dictionary.get(m.group().lower(), m.group()), text)
         return f"[{self.tag}] {swapped}"
+
+
+class FakeOcrEngine:
+    """Returns canned text per page with a fixed confidence; records which pages were OCR'd."""
+
+    def __init__(self, texts: Mapping[int, str], confidence: float) -> None:
+        self.texts = dict(texts)
+        self.confidence = confidence
+        self.calls: list[int] = []
+
+    def page_text(self, pdf: Path, page_no: int) -> tuple[str, float]:
+        self.calls.append(page_no)
+        return self.texts.get(page_no, ""), self.confidence

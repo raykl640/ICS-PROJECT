@@ -4,11 +4,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+import yaml
 from pydantic import AnyHttpUrl, BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT_DIR / "data"
+SOURCES_PATH = DATA_DIR / "sources.yaml"
 
 # Exact text from ARCHITECTURE.md §7.5; returned instead of calling the LLM when retrieval is not confident.
 FALLBACK_MESSAGE = (
@@ -28,6 +30,8 @@ class ActSpec(BaseModel):
     file: str
     url: str | None = None
     unit: Literal["Section", "Article"] = "Section"
+    cap: str | None = None
+    frbr_uri: str | None = None
 
     @property
     def slug(self) -> str:
@@ -35,23 +39,16 @@ class ActSpec(BaseModel):
         return "-".join("".join(c if c.isalnum() else " " for c in self.name.lower()).split())
 
 
-# Years are to be confirmed against the PDFs during M1 (see docs/PROGRESS.md).
-ACTS: tuple[ActSpec, ...] = (
-    ActSpec(name="Constitution of Kenya", year=2010, file="Constitution of Kenya.pdf", unit="Article"),
-    ActSpec(name="Employment Act", year=2007, file="Employment Act.pdf"),
-    ActSpec(
-        name="Landlord and Tenant (Shops, Hotels and Catering Establishments) Act",
-        year=1965,
-        file="Landlord and Tenant (Shops Hotels and Catering Establishments) Act.pdf",
-    ),
-    ActSpec(name="Rent Restriction Act", year=1959, file="Rent Restriction Act.pdf"),
-    ActSpec(name="Land Act", year=2012, file="Land Act.pdf"),
-    ActSpec(name="Consumer Protection Act", year=2012, file="Consumer Protection Act.pdf"),
-    ActSpec(name="National Police Service Act", year=2011, file="National Police Service Act.pdf"),
-    ActSpec(name="Criminal Procedure Code", year=1930, file="Criminal Procedure Code.pdf"),
-    ActSpec(name="Traffic Act", year=1953, file="Traffic Act.pdf"),
-    ActSpec(name="Legal Aid Act", year=2016, file="Legal Aid Act.pdf"),
-)
+def load_acts(path: Path) -> list[ActSpec]:
+    """Read the corpus list from sources.yaml, rejecting entries whose slug differs from the derived one."""
+    entries = yaml.safe_load(path.read_text(encoding="utf-8"))["acts"]
+    acts = []
+    for entry in entries:
+        spec = ActSpec(name=entry["title"], **{k: v for k, v in entry.items() if k not in ("slug", "title")})
+        if entry["slug"] != spec.slug:
+            raise ValueError(f"{path.name}: slug {entry['slug']!r} != derived {spec.slug!r}")
+        acts.append(spec)
+    return acts
 
 
 class Settings(BaseSettings):
@@ -64,7 +61,20 @@ class Settings(BaseSettings):
     index_dir: Path = DATA_DIR / "indexes"
     chunks_path: Path = DATA_DIR / "processed" / "chunks.json"
     feedback_path: Path = DATA_DIR / "feedback.jsonl"
-    acts: list[ActSpec] = Field(default_factory=lambda: list(ACTS))
+    manifest_path: Path = DATA_DIR / "corpus_manifest.json"
+    parse_report_path: Path = DATA_DIR / "processed" / "parse_report.md"
+    acts: list[ActSpec] = Field(default_factory=lambda: load_acts(SOURCES_PATH))
+
+    download_retries: int = Field(3, gt=0)
+    download_timeout_s: float = Field(60.0, gt=0)
+    download_user_agent: str = "HakiAI-corpus-fetcher/0.1 (academic research project)"
+    ocr_enabled: bool = False
+    ocr_min_page_chars: int = Field(25, ge=0)
+    ocr_max_low_page_ratio: float = Field(0.2, ge=0.0, le=1.0)
+    ocr_min_confidence: float = Field(60.0, ge=0.0, le=100.0)
+    heading_max_gap: int = Field(10, gt=0)
+    chunk_min_words: int = Field(15, gt=0)
+    chunk_max_words: int = Field(1500, gt=0)
 
     dense_k: int = Field(20, gt=0)
     sparse_k: int = Field(20, gt=0)
