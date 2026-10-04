@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.coverage
+
+# Secrets / editor
+.env
+.vscode/
+.idea/
+
+# Old implementation kept locally for reference only
+legacy/
+
+# Proposal and source documents (not redistributed)
+*.docx
+*.pdf
+!backend/tests/fixtures/*.pdf
+
+# Generated data
+data/processed/*
+data/indexes/*
+!data/processed/.gitkeep
+!data/indexes/.gitkeep
+data/feedback.jsonl
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
