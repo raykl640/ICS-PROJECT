@@ -16,11 +16,13 @@ ignore = ["D104", "D105", "D107"]
 [tool.ruff.lint.per-file-ignores]
 # Tests and fixtures contain the curly quotes/dashes the parser normalises.
 "backend/tests/**" = ["D1", "RUF001"]
+# eval/ entry points put the repo root on sys.path before importing the app.
+"eval/*.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["backend"]
+files = ["backend", "eval"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]

@@ -1,0 +1,142 @@
+[
+  {
+    "id": "F01",
+    "question": "My employer dismissed me without notice or a hearing. What are my rights?",
+    "lang": "en",
+    "category": "employment",
+    "expect_null": false
+  },
+  {
+    "id": "F02",
+    "question": "How many days of annual leave am I entitled to in a year?",
+    "lang": "en",
+    "category": "employment",
+    "expect_null": false
+  },
+  {
+    "id": "F03",
+    "question": "Mwajiri wangu hajanilipa mshahara kwa miezi mitatu. Nifanye nini?",
+    "lang": "sw",
+    "category": "employment",
+    "expect_null": false
+  },
+  {
+    "id": "F04",
+    "question": "My landlord increased the rent on my house without any notice. Is that allowed?",
+    "lang": "en",
+    "category": "tenancy",
+    "expect_null": false
+  },
+  {
+    "id": "F05",
+    "question": "The landlord of my shop locked the premises because I was late with the rent. What can I do?",
+    "lang": "en",
+    "category": "tenancy",
+    "expect_null": false
+  },
+  {
+    "id": "F06",
+    "question": "Mwenye nyumba anataka kunifukuza kwenye nyumba bila amri ya mahakama. Nina haki gani?",
+    "lang": "sw",
+    "category": "tenancy",
+    "expect_null": false
+  },
+  {
+    "id": "F07",
+    "question": "A shop sold me a faulty phone and refuses to refund me. What are my rights?",
+    "lang": "en",
+    "category": "consumer",
+    "expect_null": false
+  },
+  {
+    "id": "F08",
+    "question": "Nilinunua bidhaa iliyoharibika na muuzaji amekataa kunirudishia pesa. Nifanye nini?",
+    "lang": "sw",
+    "category": "consumer",
+    "expect_null": false
+  },
+  {
+    "id": "F09",
+    "question": "I was arrested and held at a police station for three days without being taken to court. Is this legal?",
+    "lang": "en",
+    "category": "police",
+    "expect_null": false
+  },
+  {
+    "id": "F10",
+    "question": "How do I complain about a police officer who assaulted me?",
+    "lang": "en",
+    "category": "police",
+    "expect_null": false
+  },
+  {
+    "id": "F11",
+    "question": "Polisi walinikamata bila kuniambia kosa langu. Nina haki gani?",
+    "lang": "sw",
+    "category": "police",
+    "expect_null": false
+  },
+  {
+    "id": "F12",
+    "question": "What is the penalty for driving without a valid driving licence?",
+    "lang": "en",
+    "category": "traffic",
+    "expect_null": false
+  },
+  {
+    "id": "F13",
+    "question": "A traffic police officer took my driving licence after an accident. What should I do?",
+    "lang": "en",
+    "category": "traffic",
+    "expect_null": false
+  },
+  {
+    "id": "F14",
+    "question": "The government wants to take my land to build a road. Am I entitled to compensation?",
+    "lang": "en",
+    "category": "land",
+    "expect_null": false
+  },
+  {
+    "id": "F15",
+    "question": "Serikali inataka kuchukua shamba langu. Je, nitalipwa fidia?",
+    "lang": "sw",
+    "category": "land",
+    "expect_null": false
+  },
+  {
+    "id": "F16",
+    "question": "My brother has been charged with theft. Can he be released on bail?",
+    "lang": "en",
+    "category": "criminal_procedure",
+    "expect_null": false
+  },
+  {
+    "id": "F17",
+    "question": "Can the police search my house without a warrant?",
+    "lang": "en",
+    "category": "criminal_procedure",
+    "expect_null": false
+  },
+  {
+    "id": "F18",
+    "question": "How do I apply for a work visa to move to Germany?",
+    "lang": "en",
+    "category": "out_of_corpus",
+    "expect_null": true
+  },
+  {
+    "id": "F19",
+    "question": "What is the best fertiliser for growing maize?",
+    "lang": "en",
+    "category": "out_of_corpus",
+    "expect_null": true
+  },
+  {
+    "id": "F20",
+    "question": "How do I register a copyright for a song I wrote?",
+    "lang": "en",
+    "category": "out_of_corpus",
+    "expect_null": true
+  }
+]

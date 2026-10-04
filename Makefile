@@ -12,10 +12,10 @@ test:     ## fast test run
 	$(PY) -m pytest -q -x
 
 lint:     ## lint and type-check only
-	$(PY) -m ruff check backend && $(PY) -m mypy
+	$(PY) -m ruff check backend eval && $(PY) -m mypy
 
 fmt:      ## auto-format and fix lint
-	$(PY) -m ruff format backend && $(PY) -m ruff check --fix backend
+	$(PY) -m ruff format backend eval && $(PY) -m ruff check --fix backend eval
 
 api:      ## run the API with reload
 	$(PY) -m uvicorn backend.app.main:app --reload

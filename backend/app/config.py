@@ -14,6 +14,7 @@ SOURCES_PATH = DATA_DIR / "sources.yaml"
 DOMAINS_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "domains.yaml"
 LANG_DIR = ROOT_DIR / "backend" / "app" / "lang"
 FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
+EVAL_DIR = ROOT_DIR / "eval"
 
 # Exact text from ARCHITECTURE.md §7.5; returned instead of calling the LLM when retrieval is not confident.
 FALLBACK_MESSAGE = (
@@ -146,6 +147,12 @@ class Settings(BaseSettings):
     # Synthetic corpus + fake models instead of indexes, MiniLM, Marian and Ollama (frontend development; devstack.py).
     fake_backends: bool = False
 
+    # Evaluation harness (eval/, M9). Input and result files are fixed names under eval_dir (see properties below).
+    eval_dir: Path = EVAL_DIR
+    eval_bootstrap_resamples: int = Field(10_000, gt=0)
+    eval_seed: int = 0
+    eval_raters: int = Field(3, ge=2)
+
     @model_validator(mode="after")
     def _check_consistency(self) -> "Settings":
         """Reject combinations that would break the retrieval funnel or the LLM context."""
@@ -179,6 +186,41 @@ class Settings(BaseSettings):
     def prompt_budget(self) -> int:
         """Estimated tokens the whole prompt may use: num_ctx minus the answer and a safety margin."""
         return self.num_ctx - self.num_predict - self.prompt_safety_tokens
+
+    @property
+    def ground_truth_path(self) -> Path:
+        """Human-written retrieval answer key (never generated)."""
+        return self.eval_dir / "ground_truth.json"
+
+    @property
+    def out_of_corpus_path(self) -> Path:
+        """Out-of-scope questions for the null-threshold sweep."""
+        return self.eval_dir / "out_of_corpus.json"
+
+    @property
+    def functional_queries_path(self) -> Path:
+        """End-to-end questions (no answers) for run_functional."""
+        return self.eval_dir / "queries_functional.json"
+
+    @property
+    def eval_results_dir(self) -> Path:
+        """JSON/markdown outputs of every evaluation step."""
+        return self.eval_dir / "results"
+
+    @property
+    def ratings_dir(self) -> Path:
+        """One rating sheet CSV per human rater."""
+        return self.eval_dir / "ratings"
+
+    @property
+    def usability_responses_path(self) -> Path:
+        """Survey answers entered by hand from eval/usability_survey.md."""
+        return self.eval_dir / "usability_responses.csv"
+
+    @property
+    def eval_report_path(self) -> Path:
+        """Assembled evaluation report."""
+        return self.eval_dir / "report.md"
 
     def pdf_path(self, act: ActSpec) -> Path:
         """Location of an Act's source PDF."""

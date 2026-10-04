@@ -144,3 +144,22 @@ Format: what / why / impact. Append-only; reference the change that introduced e
   keeps config in config.py; a test makes drift fail CI. (e)/(f) safety and consistency with /api/letter.
 - Impact: a change to the splitter regex must be made in both parse.py and sectionSplitter.ts (same test cases in both).
   Changing either limit in config.py requires editing limits.json.
+
+## D18 Evaluation harness shape — feat(M9)
+- What: (a) the logic lives in backend/app/evaluation/ (typed, linted, covered); the eval/*.py files named by the milestone
+  (schema.py, validate_ground_truth.py, run_retrieval.py, ...) are thin entry points, and eval/schema.py prints the JSON
+  Schema. eval/run_eval.py (named in CLAUDE.md and the Makefile) runs the offline steps. (b) Ground-truth `act` accepts the
+  title or the slug; `section` accepts "41", "Article 41", "First Schedule" or a chunk id suffix; repealed targets are
+  errors. (c) hybrid_rerank reorders all top_n hybrid candidates, so its Recall@20 equals hybrid's; P@k/Recall@n take k
+  and n from config (rerank_top, top_n). The bootstrap baseline is the single index with the higher mean on each metric.
+  (d) The threshold sweep uses each question's k-th best rerank score (k = min_confident_chunks); null is the positive
+  class; F1 ties go to fewer refused in-corpus questions. (e) Functional queries carry `expect_null` (true for the 3
+  deliberately out-of-corpus ones) and run through the HTTP API (TestClient over fakes in tests), not by calling the
+  modules. (f) Sheets are one CSV per rater plus responses.md with the verbatim sources (source text can exceed a
+  spreadsheet cell). (g) The gate file .gates/M9-ground-truth.ok was created at the owner's request before
+  eval/ground_truth.json existed; no answer key was written by the builder.
+- Why: (a) keeps rule 5 (types, tests) and the 85% coverage gate meaningful for eval code; scripts follow
+  scripts/bench_retrieval.py. (b) humans write Act titles, not slugs. (c)/(d) define the metrics unambiguously. (e) the
+  null-path check needs the expected outcome; going through the API measures what users get. (f) readability.
+- Impact: results are only meaningful once the human ground truth exists; the acceptance step "validate_ground_truth.py
+  passes on the human file" is still open.

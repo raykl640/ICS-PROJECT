@@ -69,6 +69,13 @@ web.py      BodyLimitMiddleware, SecurityHeadersMiddleware, SPAStaticFiles, erro
 main.py     create_app(deps, clock)->FastAPI; Runtime (sessions, gate, limiters, pipeline, models_warm) on app.state; module `app`
             = create_app(default_deps(get_settings())); routes: POST /api/query, GET /api/stream/{id} (SSE),
             GET /api/sources/{id}, GET /api/letter/{id}?format=txt|docx, GET /api/health, POST /api/feedback
+evaluation/ (M9; eval/*.py are thin entry points, data + results under settings.eval_dir) metrics.py precision_at_k, recall_at_k,
+            reciprocal_rank, paired_bootstrap_ci, fleiss_kappa, percent_agreement, describe | schema.py GroundTruthEntry(id,question,
+            lang,category,relevant[RelevantRef(act,section)]), RefResolver, validate_ground_truth/load_ground_truth->Validation(entries
+            [ResolvedEntry(entry,relevant_ids)],problems) | retrieval_eval.py (faiss,bm25,hybrid,hybrid_rerank; P@rerank_top, Recall@top_n,
+            MRR, per category, paired bootstrap vs best baseline) | threshold.py (k-th rerank score sweep, null = positive class) |
+            functional.py FunctionalQuery/FunctionalRecord via the HTTP API | grounding.py | rating.py (sheets, agreement) | usability.py
+            (SUS) | latency.py | report.py | suite.py (eval/run_eval.py) | common.py
 
 ## Chunks
 - chunk_id = "{act_slug}-{section_num}" lowercased, Articles too (employment-act-41a, constitution-of-kenya-41); schedules

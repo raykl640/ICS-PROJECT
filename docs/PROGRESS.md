@@ -10,7 +10,8 @@
 - [x] M6 Language — 2026-10-04
 - [x] M7 API — 2026-10-04
 - [x] M8 Frontend — 2026-10-05
-- [ ] M9 … [ ] M10 not started
+- [x] M9 Evaluation — 2026-10-05 (harness only; human ground truth, ratings, survey and laptop runs pending)
+- [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -229,3 +230,25 @@ Open issues:
   "queued/generating" states long; M10 preload.
 - frontend-design skill named in the milestone is not installed in this environment; design done by hand.
 Next: M9 Evaluation.
+
+## M9 Evaluation (2026-10-05)
+Done:
+- backend/app/evaluation/: metrics (P@k, Recall@k, MRR, paired bootstrap, Fleiss' kappa, percent agreement, describe), schema
+  (ground-truth model + resolver to chunk ids), retrieval_eval (faiss/bm25/hybrid/hybrid_rerank, per category, bootstrap vs best
+  baseline), threshold (k-th score sweep), functional (HTTP API runner), grounding, rating (sheets + agreement), usability (SUS),
+  latency, report, suite. eval/: 12 entry points, ground_truth.template.json (15 empty entries), out_of_corpus.json (15),
+  queries_functional.json (20: 5 sw, 3 out-of-corpus, questions only), usability_survey.md + responses template, README.md.
+- config: eval_dir (+ derived paths), eval_bootstrap_resamples 10000, eval_seed 0, eval_raters 3. ruff/mypy now cover eval/.
+- 620 tests green (57 new), coverage 97.4%; ./scripts/check.sh passes. Fleiss' kappa matches the published 10x14 example (0.210).
+- Real-stack plumbing smoke (throwaway one-entry file in the scratchpad, not a result): run_retrieval and tune_threshold run on the
+  real indexes and models; out-of-corpus k-th rerank scores were -11.2 to -8.4.
+Decisions:
+- See DEVIATIONS D18 (module shape, act/section formats, hybrid_rerank over all top_n, sweep rule, expect_null, sheet format).
+- No answer key written by the builder. .gates/M9-ground-truth.ok was created at the owner's request before ground_truth.json existed.
+- eval/usability_responses.csv is git-ignored (participant data); results/ratings are left for the owner to commit or not.
+- relevance_threshold stays 0.0: the sweep needs the human in-corpus questions before a value can be recommended.
+Open issues:
+- Acceptance "validate_ground_truth.py passes on the human file" is open until eval/ground_truth.json exists (HUMAN_TODO).
+- run_functional.py and bench_latency.py were tested only with fakes; the real runs need Ollama on the laptop (~1 h).
+Next: M10 Docs & hardening (after the human M9 tasks, ideally, so the README can quote real numbers).
+
