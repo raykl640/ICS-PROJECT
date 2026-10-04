@@ -1,0 +1,27 @@
+PY ?= $(shell [ -x .venv/bin/python ] && echo .venv/bin/python || echo python)
+
+.PHONY: install check test lint fmt api index eval
+
+install:  ## install runtime + dev dependencies
+	$(PY) -m pip install -r backend/requirements-dev.txt
+
+check:    ## ruff + format check + mypy + pytest with coverage
+	./scripts/check.sh
+
+test:     ## fast test run
+	$(PY) -m pytest -q -x
+
+lint:     ## lint and type-check only
+	$(PY) -m ruff check backend && $(PY) -m mypy
+
+fmt:      ## auto-format and fix lint
+	$(PY) -m ruff format backend && $(PY) -m ruff check --fix backend
+
+api:      ## run the API with reload
+	$(PY) -m uvicorn backend.app.main:app --reload
+
+index:    ## build chunks.json and indexes
+	$(PY) -m backend.app.ingestion.build_index
+
+eval:     ## run the evaluation suite
+	$(PY) eval/run_eval.py

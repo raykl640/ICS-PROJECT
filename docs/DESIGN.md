@@ -3,31 +3,36 @@ Precedence: this file wins on names/signatures. Deviations from ARCHITECTURE.md 
 
 ## Tree  (backend/app/...; tests mirror in backend/tests/, fixtures in backend/tests/fixtures/)
 config.py   Settings(pydantic-settings, env prefix HAKI_): paths, ACTS: list[ActSpec(name,year,file,url|None,unit:"Section"|"Article")],
-            rrf_k=60, top_n=20, rerank_top=5, relevance_threshold (=RELEVANCE_MIN_SCORE), min_confident_chunks=2, models,
-            ollama_url/model, temperature=0.1, num_ctx, num_predict, budgets, session/rate/security limits (see sections below)
+            dense_k=20, sparse_k=20, rrf_k=60, top_n=20 (=RERANK_IN), rerank_top=5 (=RERANK_OUT), relevance_threshold
+            (=RELEVANCE_MIN_SCORE), min_confident_chunks=2, models, ollama_url/model, temperature=0.1, num_ctx=8192,
+            num_predict=1500, max_question_chars=1000, session_ttl_s, max_sessions=200, rate_limit_per_min=10, log_content=false,
+            budgets (see sections below). Module constants FALLBACK_MESSAGE (§7.5 verbatim) and DISCLAIMER.
 models.py   LegalChunk(chunk_id,act,act_slug,act_year,unit_type,chapter,part,section_num,section_title,text,page,repealed,source_sha256);
-            ScoredChunk(chunk,score); QueryRequest(question,language:"auto"|"en"|"sw"); QueryResponse(session_id,fallback:bool);
-            ParsedResponse(rights,steps,letter); CitationCheck(verified,unmatched); FeedbackIn(session_id,rating:"up"|"down");
-            ErrorBody(code,message)
+            RetrievedChunk(chunk,dense_rank,sparse_rank,rrf_score,rerank_score,truncated); SessionData(question,question_en,lang,
+            chunks,fallback,answer_en,parsed,parsed_user,done); QueryRequest(question,language:"auto"|"en"|"sw");
+            QueryResponse(session_id,fallback:bool); ParsedResponse(rights,steps,letter); CitationCheck(verified,unmatched);
+            FeedbackIn(session_id,rating:"up"|"down"); ErrorBody(code,message)
+interfaces.py  Protocols (runtime_checkable): Embedder(dim; encode; count_tokens), CrossEncoderLike(score),
+            LLMClient(stream->AsyncIterator[str]; async health), Translator(translate). Fakes in backend/tests/fakes.py:
+            FakeEmbedder, FakeReranker, FakeLLM (DEFAULT_SCRIPT splits headers across tokens), FakeTranslator(tag="sw", dictionary).
+logging_setup.py configure_logging(settings, stream) → JSON lines; RedactContentFilter masks extra fields matching
+            question|answer|text unless log_content; exceptions log exc_type only (no traceback text).
 ingestion/  download.py ensure_pdfs(specs)->list[Path] (skip existing; raise MissingPDFError) | extract.py extract_pages(pdf)->list[tuple[int,str]]
             parse.py parse_act(pages,spec,sha256)->list[LegalChunk]; is_noise(line)->bool; is_repealed(text)->bool
             build_index.py main()  (chunks.json + indexes)
-retrieval/  embedder.py Embedder(Protocol).encode(list[str])->np.ndarray[n,384] (L2-normalised); count_tokens(str)->int;
-            STEmbedder; FakeEmbedder (hash→unit vec, word-count tokens) | windows.py make_windows(chunk,tok)->list[str]
+retrieval/  embedder.py STEmbedder (implements interfaces.Embedder: encode(list[str])->np.ndarray[n,384] L2-normalised; count_tokens) | windows.py make_windows(chunk,tok)->list[str]
             dense.py DenseIndex.build(chunks,emb)/save(dir)/load(dir)/search(vec,k,acts|None)->list[tuple[str,float]]
             sparse.py SparseIndex.build(chunks,dir)/open(dir)/search(q,k,acts|None,refs)->list[tuple[str,float]]; sanitize(q)->str
             store.py ChunkStore.save/load(path); get(ids)->list[LegalChunk]
             router.py route(q)->set[str] (empty = full corpus); extract_refs(q)->list[Ref(unit,num,act|None)]
             rrf.py rrf(*ranked:list[str],k=60)->list[tuple[str,float]] | hybrid.py retrieve(q)->list[str] (top-20, 2 threads)
-            reranker.py CrossEncoderLike(Protocol).score(q,list[str])->list[float]; CEReranker; FakeReranker(word overlap);
-            rerank(q,chunks,top=5)->list[ScoredChunk]; is_confident(scored)->bool  (≥2 with score>relevance_threshold)
+            reranker.py CEReranker (implements interfaces.CrossEncoderLike); rerank(q,chunks,top=5)->list[RetrievedChunk]; is_confident(scored)->bool  (≥2 with score>relevance_threshold)
 generation/ prompt.py build_prompt(q,chunks)->PromptBuild(text,truncated_ids) (§7.1 verbatim + one fixed header line) | FALLBACK_MESSAGE
             budget.py est_tokens(str)->int; fit_chunks(chunks,budget)->list[tuple[LegalChunk,str,bool]]
-            llm.py LLMClient(Protocol).stream(prompt)->AsyncIterator[str] (cancellable); OllamaClient(httpx); FakeLLM(scripted); health()
+            llm.py OllamaClient(httpx) implements interfaces.LLMClient (stream cancellable; async health())
             parse.py split_sections(text)->ParsedResponse (case/ordering-tolerant; missing → "")
             citations.py check_citations(text,chunks)->CitationCheck | gate.py LLMGate (concurrency 1, FIFO, positions)
-lang/       detect.py detect_lang(text)->"en"|"sw" (seeded) | translator.py Translator(Protocol).translate(text)->str;
-            MarianTranslator(direction); FakeTranslator(tag) | protect.py mask(text)->(str,dict); unmask(text,map)->(str,missing:list)
+lang/       detect.py detect_lang(text)->"en"|"sw" (seeded) | translator.py MarianTranslator(direction) implements interfaces.Translator | protect.py mask(text)->(str,dict); unmask(text,map)->(str,missing:list)
             glossary.py apply_glossary(sw_text)->str ("haki [right]") | pipeline.py to_english(q,lang)->str; to_user_lang(text,lang)->str
 sessions.py SessionStore(ttl,max_sessions).create(SessionData)->str/get(id)->SessionData|None/update(...)  (dict + monotonic expiry)
 letter.py   letter_text(parsed)->str; letter_docx(parsed)->bytes (python-docx)
@@ -61,7 +66,7 @@ main.py     create_app(deps: Deps)->FastAPI; Deps dataclass holds all interfaces
   out-of-corpus queries (eval/), result recorded in PROGRESS.md.
 
 ## Generation
-- Ollama options: temperature 0.1, num_ctx 8192 (always sent explicitly), num_predict 1024.
+- Ollama options: temperature 0.1, num_ctx 8192 (always sent explicitly), num_predict 1500.
 - Prompt budget: prompt_budget = num_ctx − num_predict − 256 safety. Per chunk ≤ chunk_token_budget (1200); fit_chunks truncates the chunk
   body at a sentence/word boundary and appends "[... truncated]". est_tokens = ceil(chars/3) (conservative vs Mistral tokenizer).
   Assert est_tokens(prompt) ≤ num_ctx − num_predict; else drop lowest-ranked chunks. Truncated chunk_ids → `truncated: true` in /api/sources.
@@ -89,7 +94,7 @@ done {warnings:list[str], citation_check:CitationCheck, truncated:bool} | error 
   fallback, chunk_ids}. Never question/answer/chunk text.
 - Input: max_question_chars (1000) → 422; clean_question strips control chars and neutralises "[CHUNK", "SYSTEM:", "CONTEXT:", "USER QUESTION:".
 - Rate limit: in-memory per-IP token bucket, rate_limit_per_min (10) on /api/query and /api/feedback → 429.
-- Sessions: TTL session_ttl_s (3600), max_sessions (500): purge expired, then evict oldest; never block.
+- Sessions: TTL session_ttl_s (3600), max_sessions (200): purge expired, then evict oldest; never block.
 - CORS: only cors_dev_origin (http://localhost:5173) and only when dev_mode=true; prod serves the static build same-origin.
 - Errors: every non-2xx body = {"error": {"code": str, "message": str}} (exception handlers incl. validation).
 - /api/health → {status:"ok"|"degraded", ollama:bool, model:bool, index:bool, models_loaded:bool}; 200 if ok else 503.
@@ -99,15 +104,16 @@ done {warnings:list[str], citation_check:CitationCheck, truncated:bool} | error 
 ## Offline & tooling
 - scripts/setup_offline.py (online, once): huggingface_hub snapshot_download of the 4 HF models + `ollama pull` of ollama_model.
 - Runtime: main sets HF_HUB_OFFLINE=1 and TRANSFORMERS_OFFLINE=1 before any model import.
-- Tests: pytest-socket `--disable-socket --allow-unix-socket` in pytest.ini; real-model tests `@pytest.mark.real`, skipped by default.
-- scripts/check.sh = ruff check + ruff format --check + mypy (strict, backend/app) + pytest --cov; fail-under 85 on
-  ingestion/parse, retrieval, generation, lang (.coveragerc include). CI workflow runs check.sh (replaces ci.sh).
+- Tests: pytest-socket `--disable-socket --allow-unix-socket` in pyproject.toml (TestClient is in-process, needs no TCP);
+  markers `real`/`slow` skipped by default (`-m "not real and not slow"`).
+- scripts/check.sh = ruff check + ruff format --check + mypy (strict, backend incl. tests) + pytest --cov; fail_under 85 over
+  backend/app ([tool.coverage] in pyproject.toml). CI workflow runs check.sh. Makefile wraps the common commands.
 
 ## Pins (co-resolved in the former uv.lock → mutually compatible; py3.11, torch from CPU index)
 fastapi==0.142.2 uvicorn[standard]==0.54.0 pydantic==2.13.5 pydantic-settings==2.15.0 httpx==0.28.1 sse-starlette==3.5.0
 pdfplumber==0.11.10 sentence-transformers==6.1.0 faiss-cpu==1.15.1 whoosh==2.7.4 torch==2.14.1 transformers==5.18.0
-sentencepiece==0.2.2 sacremoses (pin M6) langdetect==1.0.9 numpy==2.4.6 python-docx (pin M7) | dev: pytest==9.1.1, ruff, mypy,
-pytest-cov, pytest-socket (pin when added in M1). No pytest-asyncio: 0.23 breaks on pytest 9; TestClient is sync.
+sentencepiece==0.2.2 sacremoses (pin M6) langdetect==1.0.9 numpy==2.4.6 python-docx (pin M7) | dev (backend/requirements-dev.txt):
+pytest==9.1.1 pytest-cov==5.0.0 pytest-socket==0.8.1 coverage==7.16.2 ruff==0.16.10 mypy==1.20.2 PyYAML==6.0.3. No pytest-asyncio: 0.23 breaks on pytest 9; TestClient is sync.
 
 ## Ambiguities → defaults
 - Constitution uses Chapters/Articles: CHAPTER → `chapter`, unit_type "article", ActSpec.unit="Article" used in citations.
@@ -115,9 +121,8 @@ pytest-cov, pytest-socket (pin when added in M1). No pytest-asyncio: 0.23 breaks
 - Fallback: QueryResponse.fallback=true, stream emits `null` with FALLBACK_MESSAGE, no LLM call.
 
 ## Carry-over (code not yet matching this file)
-- M1: add check.sh/ruff/mypy/pytest-cov/pytest-socket + .coveragerc; extend LegalChunk fields; chunk_id "-" form.
 - M2: replace config embed_token_limit/embed_max_words with embed_window_tokens/stride; normalised FAISS + window map.
-- M5/M7: num_ctx/num_predict/budgets, LLMGate, security + rate-limit + CORS + error config; setup_offline.py in M7.
+- M5/M7: chunk/prompt budgets, max_queue, min_filtered_hits, CORS/dev_mode config; LLMGate; setup_offline.py in M7.
 
 ## Needed from you
 1. Install Ollama and `ollama pull mistral:7b-instruct-q4_K_M`. Needed only from M5 manual check / M7 health.

@@ -47,3 +47,8 @@ Format: what / why / impact. Append-only; reference the change that introduced e
 - What: cited Act+section pairs are checked against the session's 5 chunks; unmatched ones produce a UI warning.
 - Why: §7.4 admits misattribution risk; this catches the common case automatically.
 - Impact: extra `warnings` in the `done` event and a warning banner in the Response Panel.
+
+## D10 Parameter values set by the M0 milestone prompt — feat(M0)
+- What: num_predict 1500 (D5 said 1024); max_sessions 200 (DESIGN said 500); separate dense_k/sparse_k knobs (both 20).
+- Why: the milestone prompt wins on behaviour; prompt budget is still positive (8192 − 1500 − 256 = 6436 tokens for 5 chunks ≤ 1200).
+- Impact: slightly longer answers allowed; fewer concurrent sessions kept in memory. DESIGN.md updated to match.

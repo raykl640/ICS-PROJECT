@@ -1,19 +1,33 @@
 from pathlib import Path
 
-from backend.app.config import ActSpec, Settings, get_settings
+import pytest
+from pydantic import ValidationError
+
+from backend.app.config import DISCLAIMER, FALLBACK_MESSAGE, ActSpec, Settings, get_settings
 
 
 def test_defaults_match_spec() -> None:
     s = Settings()
-    assert s.rrf_k == 60
-    assert s.top_n == 20
-    assert s.rerank_top == 5
+    assert (s.dense_k, s.sparse_k, s.rrf_k, s.top_n, s.rerank_top) == (20, 20, 60, 20, 5)
     assert s.min_confident_chunks == 2
     assert s.relevance_threshold == 0.0
-    assert s.temperature == 0.1
+    assert (s.temperature, s.num_ctx, s.num_predict) == (0.1, 8192, 1500)
     assert s.embedding_dim == 384
-    assert s.session_ttl_s == 3600
+    assert (s.session_ttl_s, s.max_sessions) == (3600, 200)
+    assert s.max_question_chars == 1000
+    assert s.rate_limit_per_min == 10
+    assert s.log_content is False
     assert s.ollama_url.endswith(":11434")
+
+
+def test_fallback_message_is_verbatim_from_architecture() -> None:
+    assert FALLBACK_MESSAGE == (
+        "I cannot find a specific provision covering this in the current corpus. Please consult a qualified advocate."
+    )
+
+
+def test_disclaimer_states_information_not_advice() -> None:
+    assert "legal information, not legal advice" in DISCLAIMER
 
 
 def test_corpus_has_ten_acts_with_unique_files() -> None:
@@ -36,9 +50,36 @@ def test_act_pdf_path_is_under_raw_pdf_dir() -> None:
     assert s.raw_pdf_dir.name == "raw_pdfs"
 
 
-def test_env_override(monkeypatch) -> None:
-    monkeypatch.setenv("HAKI_TOP_N", "7")
-    assert Settings().top_n == 7
+@pytest.mark.parametrize(
+    ("env", "value", "field", "expected"),
+    [
+        ("HAKI_TOP_N", "7", "top_n", 7),
+        ("HAKI_DENSE_K", "30", "dense_k", 30),
+        ("HAKI_LOG_CONTENT", "true", "log_content", True),
+        ("HAKI_OLLAMA_MODEL", "mistral:test", "ollama_model", "mistral:test"),
+    ],
+)
+def test_env_override(monkeypatch: pytest.MonkeyPatch, env: str, value: str, field: str, expected: object) -> None:
+    monkeypatch.setenv(env, value)
+    assert getattr(Settings(), field) == expected
+
+
+@pytest.mark.parametrize(
+    ("env", "value"),
+    [
+        ("HAKI_TOP_N", "0"),
+        ("HAKI_TEMPERATURE", "-0.1"),
+        ("HAKI_RERANK_TOP", "21"),
+        ("HAKI_MIN_CONFIDENT_CHUNKS", "6"),
+        ("HAKI_NUM_PREDICT", "8192"),
+        ("HAKI_MAX_QUESTION_CHARS", "abc"),
+        ("HAKI_OLLAMA_URL", "localhost:11434"),
+    ],
+)
+def test_invalid_settings_are_rejected(monkeypatch: pytest.MonkeyPatch, env: str, value: str) -> None:
+    monkeypatch.setenv(env, value)
+    with pytest.raises(ValidationError):
+        Settings()
 
 
 def test_get_settings_is_cached() -> None:

@@ -1,0 +1,46 @@
+# Tool configuration only; dependencies are pinned in backend/requirements*.txt.
+[project]
+name = "hakiai"
+version = "0.1.0"
+requires-python = ">=3.11,<3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["legacy", "frontend", "prompts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "D1"]
+ignore = ["D104", "D105", "D107"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/**" = ["D1"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["backend"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["pytest_socket"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["backend/tests"]
+markers = [
+    "real: needs downloaded models or a running Ollama (skipped by default)",
+    "slow: long-running test (skipped by default)",
+]
+# Sockets are off: FastAPI's TestClient runs the ASGI app in-process, and asyncio's self-pipe needs only Unix sockets.
+addopts = "-ra --strict-markers -m 'not real and not slow' --disable-socket --allow-unix-socket"
+
+[tool.coverage.run]
+source = ["backend/app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
