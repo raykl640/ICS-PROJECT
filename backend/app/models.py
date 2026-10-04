@@ -9,6 +9,7 @@ from backend.app.config import get_settings
 Language = Literal["auto", "en", "sw"]
 UserLanguage = Literal["en", "sw"]
 UnitType = Literal["section", "article", "schedule"]
+SessionStatus = Literal["pending", "running", "done", "aborted", "error"]
 
 
 class LegalChunk(BaseModel):
@@ -59,17 +60,25 @@ class CitationCheck(BaseModel):
 
 
 class SessionData(BaseModel):
-    """Server-side state for one question, from retrieval through generation."""
+    """Server-side state for one question, from retrieval through generation (in memory only, never logged).
+
+    status: pending (retrieved) -> running (queued or generating) -> done | aborted (client left) | error.
+    Null (fallback) sessions start as done.
+    """
 
     question: str
     question_en: str
     lang: UserLanguage
     chunks: list[RetrievedChunk]
     fallback: bool
+    acts: list[str] = Field(default_factory=list)
+    status: SessionStatus = "pending"
     answer_en: str = ""
     parsed: ParsedResponse | None = None
     parsed_user: ParsedResponse | None = None
-    done: bool = False
+    citation_check: CitationCheck | None = None
+    untranslated: list[str] = Field(default_factory=list)
+    feedback_given: bool = False
 
 
 class QueryRequest(BaseModel):
@@ -89,10 +98,35 @@ class QueryRequest(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    """Response of POST /api/query."""
+    """Response of POST /api/query: acts are the routed Act slugs ([] = whole corpus), language the resolved one."""
 
     session_id: str
-    fallback: bool
+    null_response: bool
+    acts: list[str]
+    language: UserLanguage
+
+
+class SourceChunk(BaseModel):
+    """One retrieved chunk as shown in the Sources panel (verbatim text); rerank_score only in debug mode."""
+
+    chunk_id: str
+    act: str
+    unit_type: UnitType
+    section_num: str
+    section_title: str
+    part: str
+    page: int
+    text: str
+    truncated: bool
+    rank: int
+    rerank_score: float | None = None
+
+
+class SourcesResponse(BaseModel):
+    """Response of GET /api/sources/{session_id}."""
+
+    session_id: str
+    chunks: list[SourceChunk]
 
 
 class FeedbackIn(BaseModel):
@@ -100,6 +134,22 @@ class FeedbackIn(BaseModel):
 
     session_id: str
     rating: Literal["up", "down"]
+    comment: str = ""
+
+    @field_validator("comment")
+    @classmethod
+    def _within_comment_limit(cls, comment: str) -> str:
+        """Reject comments longer than the configured maximum."""
+        limit = get_settings().max_comment_chars
+        if len(comment) > limit:
+            raise ValueError(f"comment longer than {limit} characters")
+        return comment
+
+
+class FeedbackOut(BaseModel):
+    """Response of POST /api/feedback: False when this session already had feedback (nothing appended)."""
+
+    recorded: bool
 
 
 class ErrorBody(BaseModel):

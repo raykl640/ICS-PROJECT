@@ -1,7 +1,7 @@
 """End-to-end generation with FakeLLM: prompt -> token events -> sections + citation check (invented text only)."""
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -76,7 +76,7 @@ def test_default_fake_script_end_to_end() -> None:
 
 def test_llm_errors_propagate() -> None:
     class Broken(FakeLLM):
-        async def stream(self, prompt: str) -> AsyncIterator[str]:
+        async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
             yield "## RIGHTS"
             raise RuntimeError("ollama died")
 

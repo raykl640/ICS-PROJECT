@@ -111,3 +111,21 @@ Format: what / why / impact. Append-only; reference the change that introduced e
   the milestone wins on behaviour.
 - Impact: Swahili question quality depends on a Congo-Swahili model that renders some Kenyan legal words poorly; answers keep
   every citation byte-identical but may mix English sentences into Swahili; glossary output is unverified (HUMAN_TODO).
+
+## D16 API contract, module shape and session states (§8) — feat(M7)
+- What: (a) per the M7 milestone, POST /api/query returns {session_id, null_response, acts, language} (DESIGN: fallback), the
+  letter query parameter is `format` (DESIGN: fmt), health keys are ollama/model_present/indexes_loaded/models_warm (DESIGN:
+  model/index/models_loaded) and feedback stores {timestamp, session_id, rating, comment, language, null_response, chunk_ids}
+  (DESIGN: ts/lang/fallback, no comment); (b) SSE gains status "retrieved", done carries format_ok, truncated_chunks,
+  untranslated and the disclaimer, `translated` arrives before done (its untranslated list is part of done) instead of after
+  it, and token events also carry the SectionSplitter deltas so the UI need not re-parse headers; (c) SessionData.done becomes
+  status (pending/running/done/aborted/error) plus acts, citation_check, untranslated, feedback_given; aborted and failed
+  sessions are not regenerated (409; the user asks again); (d) new modules deps.py, devstack.py, stream.py, web.py beside
+  main.py (DESIGN put Deps in main.py); LLMClient gains status() and stream() is typed
+  AsyncGenerator so callers can aclose it; letter_text/letter_docx take the disclaimer (Kiswahili for sw sessions);
+  (e) HAKI_FAKE_BACKENDS imports the synthetic corpus and fakes from backend/tests (dev only).
+- Why: the milestone wins on behaviour; deltas and the extra done fields avoid duplicating parsing and state in the frontend;
+  explicit states make "generated once" and replay checkable; closing the generator chain is what actually stops Ollama when
+  the client leaves.
+- Impact: M8 must use these names. A health 503 body is the health object plus an "error" key (still has error.code/message).
+  The model's own disclaimer line is removed from every section before storage/translation; the API adds the localized one.

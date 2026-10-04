@@ -1,0 +1,105 @@
+"""HTTP plumbing: request body limit, security headers, and the built frontend served with an SPA fallback."""
+
+from collections.abc import Mapping
+
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import JSONResponse, Response
+from starlette.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+_BODYLESS = frozenset({"GET", "HEAD", "OPTIONS"})
+_HEADERS = (
+    (b"x-content-type-options", b"nosniff"),
+    (b"x-frame-options", b"DENY"),
+    (b"referrer-policy", b"no-referrer"),
+    (b"permissions-policy", b"camera=(), microphone=(), geolocation=()"),
+    (b"cross-origin-opener-policy", b"same-origin"),
+)
+_CSP = (
+    b"default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'; "
+    b"frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+)
+# FastAPI's Swagger/ReDoc pages load their assets from a CDN, which the CSP would block.
+_DOCS_PREFIXES = ("/docs", "/redoc")
+
+
+def error_response(status: int, code: str, message: str, headers: Mapping[str, str] | None = None) -> JSONResponse:
+    """The uniform error body {"error": {"code", "message"}}."""
+    return JSONResponse({"error": {"code": code, "message": message}}, status_code=status, headers=headers)
+
+
+class BodyLimitMiddleware:
+    """Reads request bodies up to max_bytes (413 beyond that) and hands the buffered body to the app."""
+
+    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Buffer and size-check the body of non-GET HTTP requests."""
+        if scope["type"] != "http" or scope["method"] in _BODYLESS:
+            await self.app(scope, receive, send)
+            return
+        body = b""
+        more = True
+        while more:
+            message = await receive()
+            if message["type"] != "http.request":
+                return  # client went away before sending the body
+            body += message.get("body", b"")
+            more = message.get("more_body", False)
+            if len(body) > self.max_bytes:
+                response = error_response(413, "body_too_large", f"Request body is larger than {self.max_bytes} bytes.")
+                await response(scope, receive, send)
+                return
+        sent = False
+
+        async def replay() -> Message:
+            nonlocal sent
+            if sent:
+                return await receive()
+            sent = True
+            return {"type": "http.request", "body": body, "more_body": False}
+
+        await self.app(scope, replay, send)
+
+
+class SecurityHeadersMiddleware:
+    """Adds hardening headers to every HTTP response, and Cache-Control: no-store to API responses."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Wrap send to extend the response headers."""
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        path: str = scope["path"]
+
+        async def send_with_headers(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                names = {name.lower() for name, _ in headers}
+                headers += [h for h in _HEADERS if h[0] not in names]
+                if not path.startswith(_DOCS_PREFIXES):
+                    headers.append((b"content-security-policy", _CSP))
+                if path.startswith("/api/") and b"cache-control" not in names:
+                    headers.append((b"cache-control", b"no-store"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
+
+
+class SPAStaticFiles(StaticFiles):
+    """Static build of the React app; unknown non-API paths get index.html so client-side routes work."""
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        """The file at path, else index.html (API paths keep their 404)."""
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404 or path.split("/", 1)[0] == "api":
+                raise
+            return await super().get_response("index.html", scope)

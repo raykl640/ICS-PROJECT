@@ -9,12 +9,15 @@ config.py   Settings(pydantic-settings, env prefix HAKI_): paths, ACTS: list[Act
             budgets (see sections below). Module constants FALLBACK_MESSAGE (§7.5 verbatim) and DISCLAIMER.
 models.py   LegalChunk(chunk_id,act,act_slug,act_year,unit_type,chapter,part,section_num,section_title,text,page,repealed,source_sha256);
             RetrievedChunk(chunk,dense_rank,sparse_rank,rrf_score,rerank_score,truncated); SessionData(question,question_en,lang,
-            chunks,fallback,answer_en,parsed,parsed_user,done); QueryRequest(question,language:"auto"|"en"|"sw");
-            QueryResponse(session_id,fallback:bool); ParsedResponse(rights,steps,letter); CitationCheck(verified,unmatched);
-            FeedbackIn(session_id,rating:"up"|"down"); ErrorBody(code,message)
+            chunks,fallback,acts,status:pending|running|done|aborted|error,answer_en,parsed,parsed_user,citation_check,
+            untranslated,feedback_given); QueryRequest(question,language:"auto"|"en"|"sw");
+            QueryResponse(session_id,null_response,acts,language); ParsedResponse(rights,steps,letter,format_ok);
+            CitationCheck(verified,unmatched); SourceChunk/SourcesResponse; FeedbackIn(session_id,rating:"up"|"down",comment);
+            FeedbackOut(recorded); ErrorBody(code,message)
 interfaces.py  Protocols (runtime_checkable): Embedder(dim; encode; count_tokens), CrossEncoderLike(score),
-            LLMClient(stream->AsyncIterator[str]; async health), Translator(translate; translate_batch). Fakes in backend/tests/fakes.py:
-            FakeEmbedder, FakeReranker, FakeLLM (DEFAULT_SCRIPT splits headers across tokens), FakeTranslator(tag="sw", dictionary).
+            LLMClient(stream->AsyncGenerator[str,None]; async status->(reachable,model); async health), Translator(translate;
+            translate_batch). Fakes in backend/tests/fakes.py: FakeEmbedder, FakeReranker, FakeLLM (DEFAULT_SCRIPT splits headers
+            across tokens; model_present, pause_after/resume, fail_with, delay_s, records cancelled), FakeTranslator(tag, dictionary).
 logging_setup.py configure_logging(settings, stream) → JSON lines; RedactContentFilter masks extra fields matching
             question|answer|text unless log_content; exceptions log exc_type only (no traceback text).
 ingestion/  download.py ensure_pdfs(specs)->list[Path] (skip existing; raise MissingPDFError) | extract.py extract_pages(pdf)->list[tuple[int,str]]
@@ -45,7 +48,8 @@ generation/ prompt.py build_prompt(q,chunks[,settings])->PromptBuild(system,user
             parse.py SectionSplitter.feed(token)->list[SectionDelta(section,text)]; finalize()->ParsedResponse(+format_ok); split_sections(text)
             citations.py extract_citations(text,refs|None)->list[Citation(unit,num,act|None)]; check_citations(text,chunks,refs|None)->CitationCheck
             service.py generate_stream(prompt,llm,refs|None)-> TokenEvent(text,deltas)… then GenerationResult(full_text,sections,citation_check,truncated)
-            gate.py LLMGate (M7: concurrency 1, FIFO, positions)
+            gate.py LLMGate(max_queue).enter()->Ticket (GateFull); Ticket.positions() yields queue position until 0; release()
+            (idempotent); active/waiting
 lang/       detect.py detect_lang(text,min_chars,min_prob)/resolve_language(text,ui_lang,…)->"en"|"sw" (seeded) | segment.py segment(text,max_tokens,
             per_word,pack)->list[Part(text,translate)] | translator.py MarianTranslator(direction,settings) implements interfaces.Translator
             (lazy shared model; translate_batch); warmup(direction) | protect.py Protector(act_names,glossary|None).mask(text,style)->Masked;
@@ -53,13 +57,18 @@ lang/       detect.py detect_lang(text,min_chars,min_prob)/resolve_language(text
             "mpangaji [tenant]" | service.py LanguageService.prepare_query(q,ui_lang)->PreparedQuery(english,original_lang,translated);
             translate_result(ParsedResponse)->TranslatedSections(sections_sw,untranslated_segments); load_language_service; load_ui_strings
             | glossary.json, ui_strings.json (both status needs_human_review)  (D15)
-sessions.py SessionStore(ttl,max_sessions).create(SessionData)->str/get(id)->SessionData|None/update(...)  (dict + monotonic expiry)
-letter.py   letter_text(parsed)->str; letter_docx(parsed)->bytes (python-docx)
-security.py clean_question(q)->str; RateLimiter(per_min).allow(ip)->bool
+sessions.py SessionStore(ttl,max_sessions,clock).create(SessionData)->str/get(id)->SessionData|None/purge()->int (dict, absolute
+            monotonic TTL; full → evict oldest done/aborted/error, then oldest pending; never running → SessionsFull)
+letter.py   without_disclaimer(parsed); letter_text(parsed,disclaimer)->str; letter_docx(parsed,disclaimer)->bytes (footer)
+security.py clean_question(q)->str; strip_invisible; clean_comment; RateLimiter(per_min,clock).allow(ip)->bool/retry_after/prune
 feedback.py append_feedback(path,record) (fcntl.flock, JSONL)
-main.py     create_app(deps: Deps)->FastAPI; Deps dataclass holds all interfaces (fakes injected in tests); routes:
-            POST /api/query, GET /api/stream/{id} (SSE), GET /api/sources/{id}, GET /api/letter/{id}?fmt=txt|docx,
-            GET /api/health, POST /api/feedback
+deps.py     Deps(settings,llm,language,refs,load_pipeline,setup_logging); real_deps(settings,*,embedder,reranker,llm,sw_en,en_sw);
+            default_deps(settings) (fake stack when settings.fake_backends) | devstack.py fake_deps(settings,workdir,*,llm,…)
+stream.py   AnswerStream(settings,llm,language,refs,ui).run(id,session,ticket)/replay(session) → ServerSentEvents; error_info
+web.py      BodyLimitMiddleware, SecurityHeadersMiddleware, SPAStaticFiles, error_response
+main.py     create_app(deps, clock)->FastAPI; Runtime (sessions, gate, limiters, pipeline, models_warm) on app.state; module `app`
+            = create_app(default_deps(get_settings())); routes: POST /api/query, GET /api/stream/{id} (SSE),
+            GET /api/sources/{id}, GET /api/letter/{id}?format=txt|docx, GET /api/health, POST /api/feedback
 
 ## Chunks
 - chunk_id = "{act_slug}-{section_num}" lowercased, Articles too (employment-act-41a, constitution-of-kenya-41); schedules
@@ -106,11 +115,18 @@ main.py     create_app(deps: Deps)->FastAPI; Deps dataclass holds all interfaces
   aliases from config); verify against the chunks in the prompt
   (Act-bound: same act+unit+num; no Act named: any chunk with that unit+num). Schedules are not extracted. Unmatched → warnings in `done` event; UI shows a warning banner.
 
-## SSE contract  (GET /api/stream/{id}; each event JSON)
-status {stage:"queued"|"generating"|"translating", position?:int} | token {text} | translated {rights,steps,letter} (sw only)
-done {warnings:list[str], citation_check:CitationCheck, truncated:bool} | error {code,message} | null {message:FALLBACK_MESSAGE}
-- Fallback sessions emit only `null` then close; the LLM is never called. Server accumulates the full text in the session
-  (answer_en, parsed, parsed_user) so /api/letter and reconnects work after the stream; letter returns 409 until done.
+## SSE contract  (GET /api/stream/{id}; each event JSON; D16)
+status {stage:"retrieved",chunks} → {stage:"queued",position} (on every change) → {stage:"generating"} | token {text, deltas:
+[{section,text}]} | status {stage:"translating"} + translated {sections:{rights,steps,letter}} (sw only, before done) |
+done {warnings:list[str] (user language), citation_check, format_ok, truncated_chunks:[ids], untranslated:[segments], disclaimer}
+| error {code,message} | null {message (user language), disclaimer}. Keep-alive comment every sse_ping_s (15 s).
+- Fallback sessions are created done and emit only `null` (every connection); the LLM is never called. The server accumulates
+  answer_en, parsed (model disclaimer line removed) and parsed_user, so /api/letter and reconnects work after the stream.
+- Generated once: pending → running (409 in_progress for other connections) → done (later connections replay: one token with
+  the whole text, translated, done) | aborted (client left; 409) | error (409 generation_failed). Gate full → 503 busy.
+- Disconnect: sse-starlette cancels the generator; generate_stream/llm.stream are closed with aclosing (closes the Ollama
+  response); a background task after the response closes the run, releases the ticket and marks a still-running session aborted.
+- Error codes: model_not_loaded, llm_unavailable, llm_timeout, llm_error, prompt_budget, internal.
 
 ## Language
 - UI language is authoritative: "en"|"sw" used as given; "auto" → langdetect (DetectorFactory.seed=0; short input unreliable).
@@ -122,14 +138,22 @@ done {warnings:list[str], citation_check:CitationCheck, truncated:bool} | error 
 - Answers are translated one sentence at a time, all sections in one translate_batch call. sw→en model is opus-mt-swc-en (sw-en absent).
 
 ## API / ops
-- Feedback: POST /api/feedback {session_id, rating} → JSONL at data/feedback.jsonl, fcntl.flock, record = {ts, session_id, rating, lang,
-  fallback, chunk_ids}. Never question/answer/chunk text.
+- Feedback: POST /api/feedback {session_id, rating, comment≤max_comment_chars} → JSONL at data/feedback.jsonl, fcntl.flock, record =
+  {timestamp, session_id, rating, comment (control chars stripped), language, null_response, chunk_ids}; once per session
+  ({"recorded": false} after). Never question/answer/chunk text.
 - Input: max_question_chars (1000) → 422; clean_question strips control chars and neutralises "[CHUNK", "SYSTEM:", "CONTEXT:", "USER QUESTION:".
-- Rate limit: in-memory per-IP token bucket, rate_limit_per_min (10) on /api/query and /api/feedback → 429.
+- Rate limit: in-memory per-IP token bucket, rate_limit_per_min (10), separate buckets for /api/query and /api/feedback → 429 +
+  Retry-After. Order on /api/query: validate → clean_question (empty → 422 empty_question) → rate limit → prepare → retrieve.
+- Body limit max_body_bytes (16 KiB) → 413 body_too_large. Security headers on every response (CSP except /docs, /redoc);
+  Cache-Control: no-store on /api/*. frontend/dist mounted at / after the API routes, unknown non-API paths → index.html.
 - Sessions: TTL session_ttl_s (3600), max_sessions (200): purge expired, then evict oldest; never block.
 - CORS: only cors_dev_origin (http://localhost:5173) and only when dev_mode=true; prod serves the static build same-origin.
 - Errors: every non-2xx body = {"error": {"code": str, "message": str}} (exception handlers incl. validation).
-- /api/health → {status:"ok"|"degraded", ollama:bool, model:bool, index:bool, models_loaded:bool}; 200 if ok else 503.
+- /api/health → {status:"ok"|"degraded", ollama, model_present, indexes_loaded, models_warm}; 200 if all true, else 503 with an
+  added error {code:"degraded", message: the fixes}. Startup: load indexes (IndexMismatchError / StartupError with the rebuild
+  and setup_offline commands), warm every model with one call, warn (not fail) if Ollama/model is missing, start the purge task.
+- HAKI_FAKE_BACKENDS=1 (settings.fake_backends): devstack.py serves the synthetic test corpus with fake models (threshold 1.0,
+  scripted answer with 50 ms/token) — frontend development only. `make api-fake` also sets HAKI_DEV_MODE for CORS.
 - Privacy: logs carry ids, timings, counts, error codes only, unless log_content=true (default false).
 - Disclaimer added by API/frontend on every response (incl. fallback), never by the LLM.
 
@@ -144,7 +168,7 @@ done {warnings:list[str], citation_check:CitationCheck, truncated:bool} | error 
 ## Pins (co-resolved in the former uv.lock → mutually compatible; py3.11, torch from CPU index)
 fastapi==0.142.2 uvicorn[standard]==0.54.0 pydantic==2.13.5 pydantic-settings==2.15.0 httpx==0.28.1 sse-starlette==3.5.0
 pdfplumber==0.11.10 sentence-transformers==6.1.0 faiss-cpu==1.15.1 whoosh==2.7.4 torch==2.14.1 transformers==5.18.0
-sentencepiece==0.2.2 sacremoses (pin M6) langdetect==1.0.9 numpy==2.4.6 python-docx (pin M7) | dev (backend/requirements-dev.txt):
+sentencepiece==0.2.2 sacremoses==0.2.0 langdetect==1.0.9 numpy==2.4.6 python-docx==1.2.0 | dev (backend/requirements-dev.txt):
 pytest==9.1.1 pytest-cov==5.0.0 pytest-socket==0.8.1 coverage==7.16.2 ruff==0.16.10 mypy==1.20.2 PyYAML==6.0.3. No pytest-asyncio: 0.23 breaks on pytest 9; TestClient is sync.
 
 ## Ambiguities → defaults
@@ -153,7 +177,7 @@ pytest==9.1.1 pytest-cov==5.0.0 pytest-socket==0.8.1 coverage==7.16.2 ruff==0.16
 - Fallback: QueryResponse.fallback=true, stream emits `null` with FALLBACK_MESSAGE, no LLM call.
 
 ## Carry-over (code not yet matching this file)
-- M7: max_queue, CORS/dev_mode config; LLMGate; RateLimiter in security.py; setup_offline.py.
+- none after M7.
 
 ## Needed from you
 1. Install Ollama and `ollama pull mistral:7b-instruct-q4_K_M`. Needed only from M5 manual check / M7 health.

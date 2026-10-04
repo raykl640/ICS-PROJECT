@@ -13,6 +13,7 @@ DATA_DIR = ROOT_DIR / "data"
 SOURCES_PATH = DATA_DIR / "sources.yaml"
 DOMAINS_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "domains.yaml"
 LANG_DIR = ROOT_DIR / "backend" / "app" / "lang"
+FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
 
 # Exact text from ARCHITECTURE.md §7.5; returned instead of calling the LLM when retrieval is not confident.
 FALLBACK_MESSAGE = (
@@ -125,17 +126,31 @@ class Settings(BaseSettings):
     tokens_per_word: float = Field(1.4, gt=0)
 
     max_question_chars: int = Field(1000, gt=0)
+    max_comment_chars: int = Field(500, ge=0)
+    max_body_bytes: int = Field(16_384, gt=0)
     session_ttl_s: int = Field(3600, gt=0)
+    session_purge_interval_s: float = Field(60.0, gt=0)
     max_sessions: int = Field(200, gt=0)
+    max_queue: int = Field(8, ge=0)
+    busy_retry_after_s: int = Field(30, gt=0)
+    sse_ping_s: float = Field(15.0, gt=0)
     rate_limit_per_min: int = Field(10, gt=0)
     log_content: bool = False
+    debug_scores: bool = False
     api_host: str = "127.0.0.1"
     api_port: int = Field(8000, gt=0, lt=65536)
+    frontend_dist: Path = FRONTEND_DIST
+    # CORS is only for the Vite dev server; the production build is served same-origin.
+    dev_mode: bool = False
+    cors_dev_origin: str = "http://localhost:5173"
+    # Synthetic corpus + fake models instead of indexes, MiniLM, Marian and Ollama (frontend development; devstack.py).
+    fake_backends: bool = False
 
     @model_validator(mode="after")
     def _check_consistency(self) -> "Settings":
         """Reject combinations that would break the retrieval funnel or the LLM context."""
         AnyHttpUrl(self.ollama_url)
+        AnyHttpUrl(self.cors_dev_origin)
         if self.top_n > self.dense_k + self.sparse_k:
             raise ValueError("top_n must be <= dense_k + sparse_k")
         if self.rerank_top > self.top_n:

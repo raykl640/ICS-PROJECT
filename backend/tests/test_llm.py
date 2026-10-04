@@ -165,7 +165,7 @@ def test_closing_the_consumer_closes_the_response() -> None:
     async def run() -> str:
         tokens = client.stream("p")
         first = await anext(tokens)
-        await tokens.aclose()  # type: ignore[attr-defined]
+        await tokens.aclose()
         return first
 
     assert asyncio.run(run()) == "t0"

@@ -1,6 +1,7 @@
 import asyncio
 
 import numpy as np
+import pytest
 
 from backend.app.interfaces import CrossEncoderLike, Embedder, LLMClient, Translator
 from backend.tests.fakes import FakeEmbedder, FakeLLM, FakeReranker, FakeTranslator
@@ -65,6 +66,14 @@ def test_fake_llm_custom_script_and_unhealthy() -> None:
     llm = FakeLLM(["a", "b"], healthy=False)
     assert _collect(llm, "p") == ["a", "b"]
     assert not asyncio.run(llm.health())
+    assert asyncio.run(llm.status()) == (False, False)
+    assert asyncio.run(FakeLLM(model_present=False).status()) == (True, False)
+
+
+def test_fake_llm_fails_after_its_tokens_when_told() -> None:
+    llm = FakeLLM(["a"], fail_with=RuntimeError("boom"))
+    with pytest.raises(RuntimeError, match="boom"):
+        _collect(llm, "p")
 
 
 def test_fake_translator_applies_dictionary_and_tag() -> None:

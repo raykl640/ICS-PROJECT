@@ -1,6 +1,7 @@
 """Run one generation: stream tokens with their section deltas, then a final result with sections and citation check."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
+from contextlib import aclosing
 from dataclasses import dataclass
 
 from backend.app.generation.citations import check_citations
@@ -31,13 +32,17 @@ class GenerationResult:
 
 async def generate_stream(
     prompt: PromptBuild, llm: LLMClient, refs: RefExtractor | None = None
-) -> AsyncIterator[TokenEvent | GenerationResult]:
-    """Yield a TokenEvent per LLM token, then one GenerationResult; LLM errors propagate unchanged."""
+) -> AsyncGenerator[TokenEvent | GenerationResult, None]:
+    """Yield a TokenEvent per LLM token, then one GenerationResult; LLM errors propagate unchanged.
+
+    Closing this generator early closes the LLM stream too (which stops Ollama).
+    """
     splitter = SectionSplitter()
     parts: list[str] = []
-    async for token in llm.stream(prompt.text):
-        parts.append(token)
-        yield TokenEvent(token, tuple(splitter.feed(token)))
+    async with aclosing(llm.stream(prompt.text)) as tokens:
+        async for token in tokens:
+            parts.append(token)
+            yield TokenEvent(token, tuple(splitter.feed(token)))
     full_text = "".join(parts)
     yield GenerationResult(
         full_text=full_text,

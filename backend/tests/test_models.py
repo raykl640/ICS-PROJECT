@@ -72,16 +72,19 @@ def test_query_request_enforces_max_question_chars() -> None:
         QueryRequest(question="a" * 1001)
 
 
-def test_session_data_starts_not_done() -> None:
+def test_session_data_starts_pending() -> None:
     session = SessionData(question="q", question_en="q", lang="en", chunks=[], fallback=True)
-    assert (session.done, session.answer_en, session.parsed, session.parsed_user) == (False, "", None, None)
+    assert (session.status, session.answer_en, session.parsed, session.parsed_user) == ("pending", "", None, None)
+    assert (session.acts, session.untranslated, session.feedback_given) == ([], [], False)
 
 
 def test_api_schemas() -> None:
-    assert QueryResponse(session_id="abc", fallback=True).fallback
+    assert QueryResponse(session_id="abc", null_response=True, acts=[], language="sw").null_response
     assert ParsedResponse().letter == ""
     assert CitationCheck().unmatched == []
     assert ErrorBody(code="busy", message="Try again").code == "busy"
-    assert FeedbackIn(session_id="abc", rating="up").rating == "up"
+    assert FeedbackIn(session_id="abc", rating="up").comment == ""
     with pytest.raises(ValidationError):
         FeedbackIn(session_id="abc", rating="meh")
+    with pytest.raises(ValidationError, match="500"):
+        FeedbackIn(session_id="abc", rating="up", comment="x" * 501)

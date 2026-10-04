@@ -1,7 +1,7 @@
 """Ollama streaming client (implements interfaces.LLMClient) with typed errors."""
 
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import httpx
@@ -54,7 +54,7 @@ class OllamaClient:
         model = self.settings.ollama_model
         return ModelNotLoaded(f"Model {model!r} is not available in Ollama. Run: ollama pull {model}")
 
-    async def stream(self, prompt: str) -> AsyncIterator[str]:
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
         """Yield generated tokens; closing or cancelling the consumer closes the HTTP response, which stops Ollama."""
         try:
             async with (

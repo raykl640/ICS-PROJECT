@@ -1,8 +1,9 @@
 """Deterministic fakes for the Protocols in backend.app.interfaces (and extract.OcrEngine); no models, no network."""
 
+import asyncio
 import hashlib
 import re
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncGenerator, Mapping
 from pathlib import Path
 
 import numpy as np
@@ -53,22 +54,54 @@ class FakeReranker:
 
 
 class FakeLLM:
-    """Streams a fixed token script and records every prompt it receives."""
+    """Streams a fixed token script and records every prompt; can pause, fail, run slowly or report itself down.
 
-    def __init__(self, tokens: list[str] | None = None, healthy: bool = True) -> None:
+    pause_after=n waits on `resume` before token n; `cancelled` turns True if the stream is cancelled or closed early.
+    """
+
+    def __init__(
+        self,
+        tokens: list[str] | None = None,
+        healthy: bool = True,
+        *,
+        model_present: bool = True,
+        pause_after: int | None = None,
+        fail_with: Exception | None = None,
+        delay_s: float = 0.0,
+    ) -> None:
         self.tokens = list(DEFAULT_SCRIPT) if tokens is None else tokens
         self.healthy = healthy
+        self.model_present = model_present
+        self.pause_after = pause_after
+        self.fail_with = fail_with
+        self.delay_s = delay_s
+        self.resume = asyncio.Event()
+        self.cancelled = False
         self.prompts: list[str] = []
 
-    async def stream(self, prompt: str) -> AsyncIterator[str]:
-        """Record the prompt, then yield the scripted tokens."""
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Record the prompt, then yield the scripted tokens (raising fail_with at the end, if set)."""
         self.prompts.append(prompt)
-        for token in self.tokens:
-            yield token
+        try:
+            for index, token in enumerate(self.tokens):
+                if index == self.pause_after:
+                    await self.resume.wait()
+                if self.delay_s:
+                    await asyncio.sleep(self.delay_s)
+                yield token
+        except (asyncio.CancelledError, GeneratorExit):
+            self.cancelled = True
+            raise
+        if self.fail_with:
+            raise self.fail_with
+
+    async def status(self) -> tuple[bool, bool]:
+        """(healthy, healthy and model_present)."""
+        return self.healthy, self.healthy and self.model_present
 
     async def health(self) -> bool:
-        """Return the configured health flag."""
-        return self.healthy
+        """True when reachable and the model is present."""
+        return all(await self.status())
 
 
 class FakeTranslator:

@@ -8,6 +8,7 @@ pydantic==2.13.5
 pydantic-settings==2.15.0
 httpx==0.28.1
 sse-starlette==3.5.0
+python-docx==1.2.0
 
 # Ingestion + indexing (OCR is an optional extra: pip install pytesseract + system tesseract)
 pdfplumber==0.11.10

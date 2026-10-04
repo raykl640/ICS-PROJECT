@@ -1,6 +1,6 @@
 """Protocols for every heavy external dependency; real implementations live in their stage modules, fakes in tests."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
 
 import numpy as np
@@ -35,8 +35,12 @@ class CrossEncoderLike(Protocol):
 class LLMClient(Protocol):
     """Streaming text generator (Ollama in production)."""
 
-    def stream(self, prompt: str) -> AsyncIterator[str]:
-        """Yield generated tokens in order; cancelling the consumer stops generation."""
+    def stream(self, prompt: str) -> AsyncGenerator[str, None]:
+        """Yield generated tokens in order; cancelling or closing the generator stops generation."""
+        ...
+
+    async def status(self) -> tuple[bool, bool]:
+        """(server reachable, model available)."""
         ...
 
     async def health(self) -> bool:

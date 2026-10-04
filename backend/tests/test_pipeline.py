@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -38,7 +38,7 @@ class SpyLLM:
         self.prompts: list[str] = []
         self.health_checks = 0
 
-    async def stream(self, prompt: str) -> AsyncIterator[str]:
+    async def stream(self, prompt: str) -> AsyncGenerator[str, None]:
         self.prompts.append(prompt)
         yield ""
 

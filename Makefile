@@ -1,6 +1,6 @@
 PY ?= $(shell [ -x .venv/bin/python ] && echo .venv/bin/python || echo python)
 
-.PHONY: install check test lint fmt api index eval
+.PHONY: install check test lint fmt api api-fake smoke index eval
 
 install:  ## install runtime + dev dependencies
 	$(PY) -m pip install -r backend/requirements-dev.txt
@@ -19,6 +19,12 @@ fmt:      ## auto-format and fix lint
 
 api:      ## run the API with reload
 	$(PY) -m uvicorn backend.app.main:app --reload
+
+api-fake: ## run the API on the synthetic corpus with fake models (frontend development)
+	HAKI_FAKE_BACKENDS=1 HAKI_DEV_MODE=true $(PY) -m uvicorn backend.app.main:app --reload
+
+smoke:    ## end-to-end check of a running real API
+	$(PY) scripts/smoke.py
 
 index:    ## build chunks.json and indexes
 	$(PY) -m backend.app.ingestion.build_index

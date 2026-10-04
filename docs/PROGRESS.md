@@ -8,7 +8,8 @@
 - [x] M4 Rerank — 2026-10-04
 - [x] M5 Generation — 2026-10-04
 - [x] M6 Language — 2026-10-04
-- [ ] M7 … [ ] M10 not started
+- [x] M7 API — 2026-10-04
+- [ ] M8 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -168,3 +169,32 @@ Open issues:
 - en-sw output is uneven (glossary renders inside headings, e.g. "kusitishwa [TERMINATION]"); human review of glossary/UI strings pending.
 - M7: emit untranslated_segments as a UI note (ui_strings untranslated_note) and show translation_note on every sw answer.
 Next: M7 API.
+
+## M7 API (2026-10-04)
+Done:
+- main.py: create_app(deps, clock) + Runtime on app.state; lifespan loads indexes (fail fast: IndexMismatchError / StartupError naming
+  build_index and scripts/setup_offline.py), warms every model with one call, warns if Ollama/model missing, runs the purge task.
+  Routes: POST /api/query, GET /api/stream/{id} (SSE), /api/sources/{id}, /api/letter/{id}?format=txt|docx, POST /api/feedback,
+  GET /api/health; uniform {"error":{code,message}} (validation messages never echo input); module-level `app` for uvicorn.
+- deps.py (Deps, real_deps, default_deps), devstack.py (HAKI_FAKE_BACKENDS=1: synthetic corpus + fakes, `make api-fake`),
+  stream.py (AnswerStream run/replay), web.py (body limit, security headers/CSP, SPA static after API routes), sessions.py,
+  letter.py (python-docx, disclaimer footer, model disclaimer line stripped), feedback.py (flock JSONL), generation/gate.py (LLMGate),
+  security.py RateLimiter/clean_comment. LLMClient gains status(); generate_stream closes the LLM stream (aclosing).
+- scripts/smoke.py and scripts/setup_offline.py; python-docx==1.2.0 pinned; .env.example documents the new flags.
+- 561 tests green (40 API tests incl. raw-ASGI disconnect and FIFO queue tests), coverage 97%; ./scripts/check.sh passes.
+- Real smoke (Ryzen 7 PRO 5850U, cold Ollama): startup 10 s; query 0.7 s; first token 78.5 s; total 151 s, 441 tokens,
+  format_ok, 1/1 citation verified; letter .docx 10 paragraphs. Fake-backend uvicorn: health 200, stream/letter/static OK.
+Decisions:
+- Milestone names win for the HTTP contract (null_response, format=, health keys, feedback fields) → DEVIATIONS D16.
+- Sessions: pending → running → done | aborted | error; generated once; aborted/error → 409 (ask again); null sessions start done.
+- Gate is held through translation (CPU-bound too) and released before the final `done` is sent; queue full → 503 busy.
+- `translated` precedes `done` (done lists untranslated segments); token events carry section deltas for the UI.
+- Disconnect: the generator chain is closed explicitly (aclosing + a background task after the response) so Ollama stops
+  even when cancellation lands during a send; a sync FastAPI dependency was made async (it hopped to a worker thread).
+- Ollama missing at startup only warns (health reports 503) so retrieval/UI work can continue; indexes/models fail fast.
+Open issues:
+- Time to first token on a cold Ollama model is ~78 s (model load + CPU prompt eval of ~2.3k tokens), far over the <3 s goal:
+  M10 could preload the model at startup (empty /api/generate with keep_alive) and M9 should measure warm TTFT.
+- Starlette 1.7 warns that TestClient's httpx backend is deprecated (asks for httpx2); harmless for now.
+- HEAD /api/health is 404 when the frontend is mounted (GET only); fine for browsers, note for external monitors.
+Next: M8 Frontend.
