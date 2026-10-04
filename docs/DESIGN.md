@@ -13,7 +13,7 @@ models.py   LegalChunk(chunk_id,act,act_slug,act_year,unit_type,chapter,part,sec
             QueryResponse(session_id,fallback:bool); ParsedResponse(rights,steps,letter); CitationCheck(verified,unmatched);
             FeedbackIn(session_id,rating:"up"|"down"); ErrorBody(code,message)
 interfaces.py  Protocols (runtime_checkable): Embedder(dim; encode; count_tokens), CrossEncoderLike(score),
-            LLMClient(stream->AsyncIterator[str]; async health), Translator(translate). Fakes in backend/tests/fakes.py:
+            LLMClient(stream->AsyncIterator[str]; async health), Translator(translate; translate_batch). Fakes in backend/tests/fakes.py:
             FakeEmbedder, FakeReranker, FakeLLM (DEFAULT_SCRIPT splits headers across tokens), FakeTranslator(tag="sw", dictionary).
 logging_setup.py configure_logging(settings, stream) → JSON lines; RedactContentFilter masks extra fields matching
             question|answer|text unless log_content; exceptions log exc_type only (no traceback text).
@@ -46,8 +46,13 @@ generation/ prompt.py build_prompt(q,chunks[,settings])->PromptBuild(system,user
             citations.py extract_citations(text,refs|None)->list[Citation(unit,num,act|None)]; check_citations(text,chunks,refs|None)->CitationCheck
             service.py generate_stream(prompt,llm,refs|None)-> TokenEvent(text,deltas)… then GenerationResult(full_text,sections,citation_check,truncated)
             gate.py LLMGate (M7: concurrency 1, FIFO, positions)
-lang/       detect.py detect_lang(text)->"en"|"sw" (seeded) | translator.py MarianTranslator(direction) implements interfaces.Translator | protect.py mask(text)->(str,dict); unmask(text,map)->(str,missing:list)
-            glossary.py apply_glossary(sw_text)->str ("haki [right]") | pipeline.py to_english(q,lang)->str; to_user_lang(text,lang)->str
+lang/       detect.py detect_lang(text,min_chars,min_prob)/resolve_language(text,ui_lang,…)->"en"|"sw" (seeded) | segment.py segment(text,max_tokens,
+            per_word,pack)->list[Part(text,translate)] | translator.py MarianTranslator(direction,settings) implements interfaces.Translator
+            (lazy shared model; translate_batch); warmup(direction) | protect.py Protector(act_names,glossary|None).mask(text,style)->Masked;
+            unmask(text,masked)->(str,lost:list); STYLES | glossary.py load_glossary(path)->Glossary(status,terms).lookup; render(sw,en)
+            "mpangaji [tenant]" | service.py LanguageService.prepare_query(q,ui_lang)->PreparedQuery(english,original_lang,translated);
+            translate_result(ParsedResponse)->TranslatedSections(sections_sw,untranslated_segments); load_language_service; load_ui_strings
+            | glossary.json, ui_strings.json (both status needs_human_review)  (D15)
 sessions.py SessionStore(ttl,max_sessions).create(SessionData)->str/get(id)->SessionData|None/update(...)  (dict + monotonic expiry)
 letter.py   letter_text(parsed)->str; letter_docx(parsed)->bytes (python-docx)
 security.py clean_question(q)->str; RateLimiter(per_min).allow(ip)->bool
@@ -111,8 +116,10 @@ done {warnings:list[str], citation_check:CitationCheck, truncated:bool} | error 
 - UI language is authoritative: "en"|"sw" used as given; "auto" → langdetect (DetectorFactory.seed=0; short input unreliable).
 - sw: question sw→en before retrieval. English draft streams live as `token`; after done, each section is translated en→sw and sent as
   `translated`, which replaces the draft in the UI.
-- Protection: before en→sw, mask Act names, "Section/Article N(…)", "Cap N" with placeholders ⟦i⟧; translate; unmask; any missing
-  placeholder → append the English citation list to that section + warning "citation_lost_in_translation". Glossary applied after unmask.
+- Protection (D15): mask letter placeholders "[…]", Act names (+year), "Section/s./Article N(…)" lists, "Cap N", numbers and (en→sw only)
+  glossary terms with "ZX{i}Q"; translate; unmask (glossary spans → "Kiswahili [English]"); a lost placeholder → retry with "#{i}";
+  still lost → that sentence stays English and is listed in untranslated_segments (UI note). Questions: spans lost twice are appended.
+- Answers are translated one sentence at a time, all sections in one translate_batch call. sw→en model is opus-mt-swc-en (sw-en absent).
 
 ## API / ops
 - Feedback: POST /api/feedback {session_id, rating} → JSONL at data/feedback.jsonl, fcntl.flock, record = {ts, session_id, rating, lang,

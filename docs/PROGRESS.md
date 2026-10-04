@@ -7,7 +7,8 @@
 - [x] M3 Retrieval — 2026-10-04
 - [x] M4 Rerank — 2026-10-04
 - [x] M5 Generation — 2026-10-04
-- [ ] M6 … [ ] M10 not started
+- [x] M6 Language — 2026-10-04
+- [ ] M7 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -143,3 +144,27 @@ Open issues:
 - The model ends with the DISCLAIMER line, which falls into the letter section: M7 letter export must strip it.
 - Schedule citations ("Sixth Schedule") are not extracted or verified.
 Next: M6 Language.
+
+## M6 Language (2026-10-04)
+Done:
+- lang/: detect.py (resolve_language: UI choice authoritative; "auto" → seeded langdetect, < 20 chars or prob < 0.7 → "en"),
+  segment.py (line → sentence → word pieces, list markers kept out, lossless join), translator.py (MarianTranslator: lazy shared
+  model, offline-capable, beam 4, no sampling, batched; warmup(direction)), protect.py (Protector/unmask, two placeholder styles),
+  glossary.py + glossary.json (86 terms, needs_human_review), service.py (LanguageService.prepare_query/translate_result,
+  load_language_service, load_ui_strings) + ui_strings.json (EN/SW, needs_human_review). Translator protocol gains translate_batch.
+- config: glossary_path, ui_strings_path, translate_max_tokens/batch_size/num_beams/max_new_tokens, lang_min_detect_chars/prob.
+- 503 tests green, coverage 98%; real test (both Marian models, "Section 41" intact both ways) passes. sacremoses==0.2.0 pinned.
+Decisions:
+- opus-mt-sw-en is not on the Hub → opus-mt-swc-en (bnt-en tried: unusable) → DEVIATIONS D15, HUMAN_TODO.
+- Placeholders measured on opus-mt-en-sw: ⟦i⟧/[i]/{i}/<i> are destroyed, ZX{i}Q and #{i} survive → used as primary/retry.
+- Questions are masked too (swc-en turned "Section 41" into "41th century"); lost spans are appended to the English query.
+- Answers go sentence by sentence in one batch (a lost placeholder costs one sentence, not a paragraph); letter placeholders and
+  the closings "Yours faithfully/sincerely" are masked (the model hallucinated religious text for them). Sample 3-section
+  answer: 6.2 s on CPU after warmup, 1 of 14 sentences left in English, all citations byte-identical.
+- Mixed Sheng under "auto" detects as "en" (langdetect sees pt 0.57); the user's explicit EN/SW choice always wins.
+Open issues:
+- swc-en quality on Kenyan legal Swahili is weak ("mwenye nyumba … kodi" → "householder … tax"): M9 must measure retrieval on the
+  5 Swahili functional queries; routing on the original Swahili via domains.yaml hints may be needed (M7/M9).
+- en-sw output is uneven (glossary renders inside headings, e.g. "kusitishwa [TERMINATION]"); human review of glossary/UI strings pending.
+- M7: emit untranslated_segments as a UI note (ui_strings untranslated_note) and show translation_note on every sw answer.
+Next: M7 API.

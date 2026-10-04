@@ -94,3 +94,20 @@ Format: what / why / impact. Append-only; reference the change that introduced e
 - Impact: the model is told to append the disclaimer although the API also adds it (DESIGN said "never by the LLM"); that line
   lands at the end of the letter section, so M7's letter export must strip it. Measured: the estimate is ~22% above Ollama's
   prompt_eval_count on real prompts (6396 vs 5207 worst case), so the budget holds with headroom.
+
+## D15 Kiswahili layer: sw→en model, placeholders, module shape (§8.2) — feat(M6)
+- What: (a) sw→en uses Helsinki-NLP/opus-mt-swc-en, because opus-mt-sw-en does not exist on the Hub (opus-mt-bnt-en was tried
+  and is unusable); (b) placeholders are "ZX{i}Q" with a "#{i}" retry, not DESIGN's ⟦i⟧ (opus-mt-en-sw drops ⟦i⟧, [i], {i},
+  <i> and __i__ in 3/3 test sentences and keeps ZX/QZ/XX/# placeholders); (c) per the M6 milestone, glossary terms are masked
+  before en→sw and come back as "Kiswahili [English]" (DESIGN applied the glossary to the Swahili output); a segment that still
+  loses a placeholder after the retry stays in English and is listed in untranslated_segments (DESIGN appended a citation list
+  plus a warning); (d) questions are masked too (citations/numbers only, no glossary): swc-en turned "Section 41" into "the
+  41th century", which would break explicit-reference retrieval; spans lost twice are appended to the English query;
+  (e) letter placeholders "[Your Name]" etc. are masked and stay English; (f) answers are translated one sentence at a time,
+  all segments in one batch, so a failure costs one sentence; (g) modules: translator.py (DESIGN name), protect.py, glossary.py,
+  detect.py with resolve_language + detect_lang, segment.py, and service.py with LanguageService.prepare_query/translate_result
+  (milestone names) instead of DESIGN's pipeline.py to_english/to_user_lang; Translator protocol gains translate_batch.
+- Why: the model named in the spec is unavailable; the other choices were measured on the real models (see PROGRESS M6), and
+  the milestone wins on behaviour.
+- Impact: Swahili question quality depends on a Congo-Swahili model that renders some Kenyan legal words poorly; answers keep
+  every citation byte-identical but may mix English sentences into Swahili; glossary output is unverified (HUMAN_TODO).

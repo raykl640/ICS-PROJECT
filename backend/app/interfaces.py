@@ -51,3 +51,7 @@ class Translator(Protocol):
     def translate(self, text: str) -> str:
         """Return text translated into the target language."""
         ...
+
+    def translate_batch(self, texts: list[str]) -> list[str]:
+        """Translate short texts in one call (one output per input, same order)."""
+        ...

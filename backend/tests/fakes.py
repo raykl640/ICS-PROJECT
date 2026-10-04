@@ -83,6 +83,10 @@ class FakeTranslator:
         swapped = _WORD.sub(lambda m: self.dictionary.get(m.group().lower(), m.group()), text)
         return f"[{self.tag}] {swapped}"
 
+    def translate_batch(self, texts: list[str]) -> list[str]:
+        """Translate each text independently."""
+        return [self.translate(t) for t in texts]
+
 
 class FakeOcrEngine:
     """Returns canned text per page with a fixed confidence; records which pages were OCR'd."""

@@ -23,3 +23,4 @@ sentence-transformers==6.1.0
 transformers==5.18.0
 sentencepiece==0.2.2
 langdetect==1.0.9
+sacremoses==0.2.0

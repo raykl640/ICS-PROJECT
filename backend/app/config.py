@@ -12,6 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT_DIR / "data"
 SOURCES_PATH = DATA_DIR / "sources.yaml"
 DOMAINS_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "domains.yaml"
+LANG_DIR = ROOT_DIR / "backend" / "app" / "lang"
 
 # Exact text from ARCHITECTURE.md §7.5; returned instead of calling the LLM when retrieval is not confident.
 FALLBACK_MESSAGE = (
@@ -65,6 +66,8 @@ class Settings(BaseSettings):
     manifest_path: Path = DATA_DIR / "corpus_manifest.json"
     parse_report_path: Path = DATA_DIR / "processed" / "parse_report.md"
     domains_path: Path = DOMAINS_PATH
+    glossary_path: Path = LANG_DIR / "glossary.json"
+    ui_strings_path: Path = LANG_DIR / "ui_strings.json"
     acts: list[ActSpec] = Field(default_factory=lambda: load_acts(SOURCES_PATH))
 
     download_retries: int = Field(3, gt=0)
@@ -97,8 +100,15 @@ class Settings(BaseSettings):
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     reranker_max_length: int = Field(512, gt=0)
     reranker_batch_size: int = Field(8, gt=0)
-    translator_sw_en: str = "Helsinki-NLP/opus-mt-sw-en"
+    # opus-mt-sw-en does not exist on the Hugging Face Hub; swc (Congo Swahili) is the closest sw→en Marian model (D15).
+    translator_sw_en: str = "Helsinki-NLP/opus-mt-swc-en"
     translator_en_sw: str = "Helsinki-NLP/opus-mt-en-sw"
+    translate_max_tokens: int = Field(350, gt=0)
+    translate_batch_size: int = Field(8, gt=0)
+    translate_num_beams: int = Field(4, gt=0)
+    translate_max_new_tokens: int = Field(512, gt=0)
+    lang_min_detect_chars: int = Field(20, ge=0)
+    lang_min_detect_prob: float = Field(0.7, ge=0.0, le=1.0)
 
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "mistral:7b-instruct-q4_K_M"
