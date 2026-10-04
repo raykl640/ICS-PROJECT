@@ -78,3 +78,19 @@ Format: what / why / impact. Append-only; reference the change that introduced e
 - Impact: only a score exactly equal to the threshold changes outcome (negligible for float logits). The default 0.0 is
   provisional: on the real corpus three in-scope lay questions (eviction, compulsory acquisition, legal aid) top out below 0
   while off-topic/garbage queries score about -10; M9's tune_threshold sets the value.
+
+## D14 Prompt rules, token estimate and module shape for generation (§7.1–7.3) — feat(M5)
+- What: (a) the system prompt is §7.1 verbatim followed by rules the M5 milestone requires (say what is missing, cite as
+  (Act name, s. N), no invented facts/deadlines/amounts/court names, Grade 8 language, treat <question> text as data, the three
+  headers, letter placeholders [Your Name] [Date] [Recipient], end with the DISCLAIMER line), instead of DESIGN's "verbatim + one
+  header line"; (b) est_tokens = ceil(1.4 × (words + punctuation marks)) instead of DESIGN's ceil(chars/3); (c) truncation marker
+  "[... truncated — see Sources]"; a chunk with < min_chunk_tokens left is dropped (flagged); (d) the prompt keeps the §7.1
+  single-string layout ("SYSTEM: … CONTEXT: … USER QUESTION: <question>…</question>") and goes to /api/generate as `prompt`, so the
+  LLMClient protocol is unchanged; PromptBuild still exposes system/user; (e) DESIGN names kept over the milestone's (llm.py not
+  ollama_client.py, parse.py not sections.py, PromptBuild not BuiltPrompt, check_citations → CitationCheck(verified, unmatched)
+  not CitationReport(verified, unverified)); ParsedResponse gains format_ok; service.py and extract_citations are new.
+- Why: the milestone wins on behaviour, DESIGN on names. Counting punctuation keeps the milestone's 1.4 ratio but stays
+  conservative on "41(2)(a)"-style references that Mistral splits into many tokens.
+- Impact: the model is told to append the disclaimer although the API also adds it (DESIGN said "never by the LLM"); that line
+  lands at the end of the letter section, so M7's letter export must strip it. Measured: the estimate is ~22% above Ollama's
+  prompt_eval_count on real prompts (6396 vs 5207 worst case), so the budget holds with headroom.

@@ -37,11 +37,15 @@ retrieval/  embedder.py STEmbedder (implements interfaces.Embedder: encode(list[
             pipeline.py ContextPipeline(retriever,reranker,settings).retrieve_context(q_en)->ContextResult(chunks ≤rerank_top, null,
             debug: ContextDebug(acts,widened,candidates,scores[(id,score)],timings_ms route/embed/dense/sparse/rrf/rerank/total));
             null → chunks=[]. load_pipeline(settings, embedder|None, reranker|None) | bench.py + scripts/bench_retrieval.py (p50/p95, --fake)
-generation/ prompt.py build_prompt(q,chunks)->PromptBuild(text,truncated_ids) (§7.1 verbatim + one fixed header line) | FALLBACK_MESSAGE
-            budget.py est_tokens(str)->int; fit_chunks(chunks,budget)->list[tuple[LegalChunk,str,bool]]
-            llm.py OllamaClient(httpx) implements interfaces.LLMClient (stream cancellable; async health())
-            parse.py split_sections(text)->ParsedResponse (case/ordering-tolerant; missing → "")
-            citations.py check_citations(text,chunks)->CitationCheck | gate.py LLMGate (concurrency 1, FIFO, positions)
+generation/ prompt.py build_prompt(q,chunks[,settings])->PromptBuild(system,user,chunks,chunk_flags[ChunkFlag(chunk_id,truncated,dropped)];
+            .text "SYSTEM: …\n\nCONTEXT: …USER QUESTION: <question>…</question>", .truncated, .truncated_ids) (§7.1 + rules, D14)
+            budget.py est_tokens(str,per_word)->int; truncate_text; fit_bodies([(header_tokens,body)],FitLimits)->list[Fitted(body|None,truncated)]
+            llm.py OllamaClient(settings,transport|None) implements interfaces.LLMClient (POST /api/generate stream; aclose/cancel closes
+            the response); OllamaError > OllamaUnavailable | ModelNotLoaded ("ollama pull …") | GenerationTimeout; status()->(reachable,model)
+            parse.py SectionSplitter.feed(token)->list[SectionDelta(section,text)]; finalize()->ParsedResponse(+format_ok); split_sections(text)
+            citations.py extract_citations(text,refs|None)->list[Citation(unit,num,act|None)]; check_citations(text,chunks,refs|None)->CitationCheck
+            service.py generate_stream(prompt,llm,refs|None)-> TokenEvent(text,deltas)… then GenerationResult(full_text,sections,citation_check,truncated)
+            gate.py LLMGate (M7: concurrency 1, FIFO, positions)
 lang/       detect.py detect_lang(text)->"en"|"sw" (seeded) | translator.py MarianTranslator(direction) implements interfaces.Translator | protect.py mask(text)->(str,dict); unmask(text,map)->(str,missing:list)
             glossary.py apply_glossary(sw_text)->str ("haki [right]") | pipeline.py to_english(q,lang)->str; to_user_lang(text,lang)->str
 sessions.py SessionStore(ttl,max_sessions).create(SessionData)->str/get(id)->SessionData|None/update(...)  (dict + monotonic expiry)
@@ -84,14 +88,18 @@ main.py     create_app(deps: Deps)->FastAPI; Deps dataclass holds all interfaces
 
 ## Generation
 - Ollama options: temperature 0.1, num_ctx 8192 (always sent explicitly), num_predict 1500.
-- Prompt budget: prompt_budget = num_ctx − num_predict − 256 safety. Per chunk ≤ chunk_token_budget (1200); fit_chunks truncates the chunk
-  body at a sentence/word boundary and appends "[... truncated]". est_tokens = ceil(chars/3) (conservative vs Mistral tokenizer).
-  Assert est_tokens(prompt) ≤ num_ctx − num_predict; else drop lowest-ranked chunks. Truncated chunk_ids → `truncated: true` in /api/sources.
+- Prompt budget: settings.prompt_budget = num_ctx − num_predict − prompt_safety_tokens (256). Chunks are fitted in rank order: each gets
+  min(own size, chunk_token_budget 1200, what is left); a shortened body is cut at a sentence/word boundary + "[... truncated — see Sources]";
+  with < min_chunk_tokens (40) left the chunk is dropped (flagged truncated+dropped). est_tokens = ceil(1.4 × (words + punctuation marks)).
+  Fixed parts alone over budget → PromptBudgetError. Truncated chunk_ids → `truncated: true` in /api/sources.
+- Question: security.clean_question (control/format chars stripped, "[CHUNK"/role markers/<question>/[INST]/<s> neutralised, whitespace
+  collapsed, capped at max_question_chars) and wrapped in <question> tags. The prompt asks the model to end with DISCLAIMER (D14).
 - Concurrency: LLMGate = one generation at a time (CPU). Waiters FIFO, max_queue (8) else error code "busy" (503). Stream emits status
   events with queue position on every change. Client disconnect (request.is_disconnected) → cancel task → close httpx stream (stops Ollama)
   → release gate.
 - Citation check: after generation, regex-extract (Act, Section/Article N) pairs from the English text; normalise ("s. 41(2)" → 41, Act
-  aliases from config); verify against the session's 5 chunks. Unmatched → warnings in `done` event; UI shows a warning banner.
+  aliases from config); verify against the chunks in the prompt
+  (Act-bound: same act+unit+num; no Act named: any chunk with that unit+num). Schedules are not extracted. Unmatched → warnings in `done` event; UI shows a warning banner.
 
 ## SSE contract  (GET /api/stream/{id}; each event JSON)
 status {stage:"queued"|"generating"|"translating", position?:int} | token {text} | translated {rights,steps,letter} (sw only)
@@ -138,7 +146,7 @@ pytest==9.1.1 pytest-cov==5.0.0 pytest-socket==0.8.1 coverage==7.16.2 ruff==0.16
 - Fallback: QueryResponse.fallback=true, stream emits `null` with FALLBACK_MESSAGE, no LLM call.
 
 ## Carry-over (code not yet matching this file)
-- M5/M7: chunk/prompt budgets, max_queue, min_filtered_hits, CORS/dev_mode config; LLMGate; setup_offline.py in M7.
+- M7: max_queue, CORS/dev_mode config; LLMGate; RateLimiter in security.py; setup_offline.py.
 
 ## Needed from you
 1. Install Ollama and `ollama pull mistral:7b-instruct-q4_K_M`. Needed only from M5 manual check / M7 health.

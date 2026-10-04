@@ -22,7 +22,9 @@ class Ref:
 
 
 @dataclass(frozen=True)
-class _Span:
+class ActSpan:
+    """An Act mention at [start, end) in lower-cased text."""
+
     act: str
     start: int
     end: int
@@ -38,38 +40,39 @@ class RefExtractor:
     """Finds Act mentions and section/article references; sections bind to the nearest mentioned Act."""
 
     def __init__(self, acts: Sequence[ActSpec], aliases: Mapping[str, Sequence[str]]) -> None:
-        self._names = [
+        self.names = {spec.slug: spec.name for spec in acts}
+        self._patterns = [
             (spec.slug, _phrase_pattern(name)) for spec in acts for name in [spec.name, *aliases.get(spec.slug, [])]
         ]
         self._caps = {spec.cap.lower(): spec.slug for spec in acts if spec.cap}
-        self._article_act = next((spec.slug for spec in acts if spec.unit == "Article"), None)
-        self._section_acts = {spec.slug for spec in acts if spec.unit == "Section"}
+        self.article_act = next((spec.slug for spec in acts if spec.unit == "Article"), None)
+        self.section_acts = {spec.slug for spec in acts if spec.unit == "Section"}
 
-    def _spans(self, text: str) -> list[_Span]:
+    def act_spans(self, text: str) -> list[ActSpan]:
         """Every Act mention in lower-cased text, in order of position."""
-        spans = [_Span(slug, m.start(), m.end()) for slug, pattern in self._names for m in pattern.finditer(text)]
+        spans = [ActSpan(slug, m.start(), m.end()) for slug, pattern in self._patterns for m in pattern.finditer(text)]
         spans += [
-            _Span(self._caps[m.group(1)], m.start(), m.end()) for m in _CAP.finditer(text) if m.group(1) in self._caps
+            ActSpan(self._caps[m.group(1)], m.start(), m.end()) for m in _CAP.finditer(text) if m.group(1) in self._caps
         ]
         return sorted(spans, key=lambda s: s.start)
 
     def act_mentions(self, query: str) -> list[str]:
         """Slugs of the Acts named in the question, in order of first mention."""
-        return list(dict.fromkeys(span.act for span in self._spans(query.lower())))
+        return list(dict.fromkeys(span.act for span in self.act_spans(query.lower())))
 
     def extract_refs(self, query: str) -> list[Ref]:
         """Section/article references in order, deduplicated; articles belong to the Constitution."""
         text = query.lower()
-        section_spans = [s for s in self._spans(text) if s.act in self._section_acts]
+        section_spans = [s for s in self.act_spans(text) if s.act in self.section_acts]
         found: list[tuple[int, Ref]] = [
             (m.start(), Ref("section", m.group(1), _nearest(section_spans, m.start(), m.end())))
             for m in _SECTION.finditer(text)
         ]
-        found += [(m.start(), Ref("article", m.group(1), self._article_act)) for m in _ARTICLE.finditer(text)]
+        found += [(m.start(), Ref("article", m.group(1), self.article_act)) for m in _ARTICLE.finditer(text)]
         return list(dict.fromkeys(ref for _, ref in sorted(found, key=lambda pair: pair[0])))
 
 
-def _nearest(spans: Sequence[_Span], start: int, end: int) -> str | None:
+def _nearest(spans: Sequence[ActSpan], start: int, end: int) -> str | None:
     """Act whose mention is closest to the reference at [start, end), or None if no Act is named."""
     if not spans:
         return None

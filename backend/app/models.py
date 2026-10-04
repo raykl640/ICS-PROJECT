@@ -43,11 +43,12 @@ class RetrievedChunk(BaseModel):
 
 
 class ParsedResponse(BaseModel):
-    """LLM answer split into its three headed sections; missing sections are empty."""
+    """LLM answer split into its three headed sections; missing sections are empty (and make format_ok False)."""
 
     rights: str = ""
     steps: str = ""
     letter: str = ""
+    format_ok: bool = True
 
 
 class CitationCheck(BaseModel):

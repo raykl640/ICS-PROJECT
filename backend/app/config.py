@@ -105,7 +105,14 @@ class Settings(BaseSettings):
     temperature: float = Field(0.1, ge=0.0, le=2.0)
     num_ctx: int = Field(8192, gt=0)
     num_predict: int = Field(1500, gt=0)
-    ollama_timeout_s: float = Field(300.0, gt=0)
+    ollama_connect_timeout_s: float = Field(5.0, gt=0)
+    ollama_read_timeout_s: float = Field(300.0, gt=0)
+    ollama_health_timeout_s: float = Field(3.0, gt=0)
+    ollama_keep_alive: str = "30m"
+    prompt_safety_tokens: int = Field(256, ge=0)
+    chunk_token_budget: int = Field(1200, gt=0)
+    min_chunk_tokens: int = Field(40, gt=0)
+    tokens_per_word: float = Field(1.4, gt=0)
 
     max_question_chars: int = Field(1000, gt=0)
     session_ttl_s: int = Field(3600, gt=0)
@@ -125,8 +132,10 @@ class Settings(BaseSettings):
             raise ValueError("rerank_top must be <= top_n")
         if self.min_confident_chunks > self.rerank_top:
             raise ValueError("min_confident_chunks must be <= rerank_top")
-        if self.num_predict >= self.num_ctx:
-            raise ValueError("num_predict must be < num_ctx")
+        if self.num_predict + self.prompt_safety_tokens >= self.num_ctx:
+            raise ValueError("num_predict + prompt_safety_tokens must be < num_ctx")
+        if self.min_chunk_tokens > self.chunk_token_budget:
+            raise ValueError("min_chunk_tokens must be <= chunk_token_budget")
         if not self.embed_window_stride <= self.embed_window_words <= self.embed_split_over_words:
             raise ValueError("need embed_window_stride <= embed_window_words <= embed_split_over_words")
         return self
@@ -140,6 +149,11 @@ class Settings(BaseSettings):
     def sparse_index_dir(self) -> Path:
         """Whoosh BM25 index and meta.json."""
         return self.index_dir / "sparse"
+
+    @property
+    def prompt_budget(self) -> int:
+        """Estimated tokens the whole prompt may use: num_ctx minus the answer and a safety margin."""
+        return self.num_ctx - self.num_predict - self.prompt_safety_tokens
 
     def pdf_path(self, act: ActSpec) -> Path:
         """Location of an Act's source PDF."""

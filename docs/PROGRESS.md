@@ -6,7 +6,8 @@
 - [x] M2 Indexes — 2026-10-04
 - [x] M3 Retrieval — 2026-10-04
 - [x] M4 Rerank — 2026-10-04
-- [ ] M5 … [ ] M10 not started
+- [x] M5 Generation — 2026-10-04
+- [ ] M6 … [ ] M10 not started
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -120,3 +121,25 @@ Open issues:
   faulty-phone refund -8.5 with consumer-protection s.9 on top) while garbage/out-of-corpus score ≈ -10 to -11. M9 must tune it.
 - The faulty-phone refund query ranks badly even before the threshold (top score -8.5): check retrieval recall for it in M9.
 Next: M5 Generation.
+
+## M5 Generation (2026-10-04)
+Done:
+- generation/: prompt.py (build_prompt → PromptBuild system/user/chunks/chunk_flags, §7.1 + rules, golden snapshot), budget.py
+  (est_tokens, sentence/word truncation, rank-order fitting), llm.py (OllamaClient: /api/generate NDJSON stream, typed errors,
+  cancellation closes the response, status/health via /api/tags), parse.py (incremental SectionSplitter + split_sections),
+  citations.py (extract_citations with ranges/lists/subsections, Act aliases + Cap N via RefExtractor; check_citations),
+  service.py (generate_stream → TokenEvent… GenerationResult). security.py clean_question (DESIGN's M7 module, needed now).
+- config: ollama_connect/read/health timeouts (replace ollama_timeout_s), ollama_keep_alive, prompt_safety_tokens, chunk_token_budget,
+  min_chunk_tokens, tokens_per_word; prompt_budget property; validators. RefExtractor exposes act_spans/names/article_act/section_acts.
+- 414 tests green, coverage 98%; real Ollama test passes (mistral:7b-instruct-q4_K_M pulled and running).
+Decisions:
+- DESIGN names kept; milestone behaviour (prompt rules, words×1.4 estimate, marker text, service.py) → DEVIATIONS D14.
+- Prompt sent as one §7.1-layout string (LLMClient protocol unchanged). format_ok = all three headers seen (order/duplicates allowed);
+  headers with inline text after a colon ("Formal Letter: Dear …") are split. Unbound "section N" verifies against any given chunk.
+- Fresh httpx.AsyncClient per call (no pool shared across event loops); read timeout 300 s covers CPU prompt evaluation.
+- Estimate vs Ollama prompt_eval_count on real 5-chunk prompts: 2788 vs 2282 (employment ss.35/41/44/45 + Art 41) and 6396 vs 5207
+  (five longest schedules/sections, all truncated, budget 6436): ~22% conservative, never under.
+Open issues:
+- The model ends with the DISCLAIMER line, which falls into the letter section: M7 letter export must strip it.
+- Schedule citations ("Sixth Schedule") are not extracted or verified.
+Next: M6 Language.

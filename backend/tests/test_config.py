@@ -27,6 +27,8 @@ def test_defaults_match_spec() -> None:
         256,
     )
     assert (s.dense_index_dir.parent, s.sparse_index_dir.parent) == (s.index_dir, s.index_dir)
+    assert (s.chunk_token_budget, s.prompt_safety_tokens, s.tokens_per_word) == (1200, 256, 1.4)
+    assert s.prompt_budget == 8192 - 1500 - 256
 
 
 def test_fallback_message_is_verbatim_from_architecture() -> None:
@@ -81,6 +83,8 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch, env: str, value: str, fie
         ("HAKI_RERANK_TOP", "21"),
         ("HAKI_MIN_CONFIDENT_CHUNKS", "6"),
         ("HAKI_NUM_PREDICT", "8192"),
+        ("HAKI_NUM_PREDICT", "7936"),
+        ("HAKI_MIN_CHUNK_TOKENS", "1201"),
         ("HAKI_MAX_QUESTION_CHARS", "abc"),
         ("HAKI_OLLAMA_URL", "localhost:11434"),
         ("HAKI_EMBED_WINDOW_STRIDE", "181"),
