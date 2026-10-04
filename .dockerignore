@@ -1,0 +1,17 @@
+.git
+.venv
+legacy
+data
+eval
+docs
+prompts
+.gates
+frontend/node_modules
+frontend/dist
+frontend/test-results
+frontend/playwright-report
+**/__pycache__
+**/*.pyc
+*.docx
+*.pdf
+.env

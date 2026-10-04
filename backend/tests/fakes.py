@@ -2,10 +2,13 @@
 
 import asyncio
 import hashlib
+import json
 import re
-from collections.abc import AsyncGenerator, Mapping
+from collections.abc import AsyncGenerator, AsyncIterator, Mapping
 from pathlib import Path
+from typing import Any
 
+import httpx
 import numpy as np
 import numpy.typing as npt
 
@@ -132,3 +135,29 @@ class FakeOcrEngine:
     def page_text(self, pdf: Path, page_no: int) -> tuple[str, float]:
         self.calls.append(page_no)
         return self.texts.get(page_no, ""), self.confidence
+
+
+def ndjson(*objs: dict[str, Any]) -> bytes:
+    """Ollama-style NDJSON body: one JSON object per line."""
+    return b"".join(json.dumps(o).encode() + b"\n" for o in objs)
+
+
+class ChunkedStream(httpx.AsyncByteStream):
+    """Response body delivered in arbitrary byte pieces; records whether it was closed."""
+
+    def __init__(self, pieces: list[bytes], fail: Exception | None = None) -> None:
+        self.pieces = pieces
+        self.fail = fail
+        self.closed = False
+        self.sent = 0
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        for piece in self.pieces:
+            self.sent += 1
+            yield piece
+            await asyncio.sleep(0)
+        if self.fail:
+            raise self.fail
+
+    async def aclose(self) -> None:
+        self.closed = True

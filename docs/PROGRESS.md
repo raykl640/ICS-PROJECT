@@ -11,7 +11,7 @@
 - [x] M7 API — 2026-10-04
 - [x] M8 Frontend — 2026-10-05
 - [x] M9 Evaluation — 2026-10-05 (harness only; human ground truth, ratings, survey and laptop runs pending)
-- [ ] M10 not started
+- [x] M10 Hardening & docs — 2026-10-05 (v1.0.0 tag waits for the final audit)
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -251,4 +251,52 @@ Open issues:
 - Acceptance "validate_ground_truth.py passes on the human file" is open until eval/ground_truth.json exists (HUMAN_TODO).
 - run_functional.py and bench_latency.py were tested only with fakes; the real runs need Ollama on the laptop (~1 h).
 Next: M10 Docs & hardening (after the human M9 tasks, ideally, so the README can quote real numbers).
+
+## M10 Hardening, offline packaging, docs (2026-10-05)
+Done:
+- **Offline setup and run:**
+  - backend/app/offline.py + thin scripts/setup_offline.py: cache 4 HF models, `ollama pull`, build_corpus (if missing) +
+    build_index, verify in a fresh HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE process.
+  - backend/app/preflight.py + scripts/run.sh / run.ps1: build the UI if missing; check Ollama, model, indexes and UI;
+    start Ollama when it is installed but down; one port.
+  - Real runs: setup_offline --verify-only all OK; run.sh → health 200; smoke OK (query 1.3 s, cold first token 218.6 s,
+    total 303.5 s, 445 tokens, 1/1 citation verified, .docx 13 paragraphs).
+- **Robustness and security:** test_hardening.py (22 tests):
+  - Ollama dying mid-stream through the real OllamaClient (error event, session error, gate freed, next answer works);
+  - 50-user mixed load (no leaked sessions, tasks or fds; purge empties the store);
+  - 120 seeded fuzz questions (no 5xx, no prompt markers inside <question>, no content in logs, feedback JSONL valid);
+  - hostile bodies → 4xx with the error schema; path traversal on the static route (also checked over TCP); headers on
+    every response type.
+  - llm.py maps any other httpx error to OllamaError.
+- **Audit and licences:** pip-audit (requirements + installed env) and npm audit: no known vulnerabilities (torch +cpu not
+  auditable). docs/LICENSES.md (all permissive; MPL-2.0 certifi/tqdm only).
+- **Docker:** Dockerfile (node build → python api), docker-compose.yml (ollama 0.33.3 service, data bind mount, model
+  volumes), .dockerignore; `docker compose config` OK, image not built (no daemon access).
+- **Docs:**
+  - new: USER_GUIDE, ARCHITECTURE_AS_BUILT (Mermaid), LIMITATIONS, TRACEABILITY, COVERAGE, LICENSES, CHANGELOG;
+  - rewritten: README (replaces the owner's uncommitted legacy-setup README);
+  - updated: data/README, DEVIATIONS finalised with an index and D19;
+  - scripts/check_links.py with test_doc_links.py (21 Markdown files, 0 broken).
+- **CI:** frontend job (lint, typecheck, vitest, build).
+- **Final checks:**
+  - check.sh: 660 passed, coverage 97% (ingestion 96.6, retrieval 98.1, generation 99.4, lang 96.9);
+  - `HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 pytest -m real`: 5 passed, 1 skipped (pytesseract);
+  - frontend: lint, typecheck, 52 vitest and build OK.
+Decisions:
+- Models stay in the default HF cache ($HF_HOME honoured); no new config path (D19). warm_up moved from main.py to deps.py
+  so the offline check reuses it.
+- Windows: feedback.py uses an in-process lock where fcntl is missing; run.ps1 written but untested.
+- Not tagged v1.0.0: prompts/FINAL_AUDIT.md owns the tag.
+Incident:
+- test_preflight.py first passed Settings(dense_index_dir=...), a property silently ignored (extra="ignore"), so
+  check.sh overwrote the real data/indexes with the synthetic corpus. Found by `pytest -m real` (stale index).
+- Fixed the test (index_dir=...), added backend/tests/conftest.py (non-real tests write data outputs to a temp dir) and
+  test_data_isolation.py, then rebuilt the real indexes from the unchanged chunks.json (1386 indexed, 2274 windows,
+  105 over 256 tokens: identical to M2).
+Open issues:
+- Cold first-token time varies 78.5 s (M7) to 218.6 s (M10) on the same laptop; not investigated (Ollama load + CPU
+  prompt eval). The spec's 2–3 s is not achievable on CPU (LIMITATIONS §4).
+- Docker image build, run.ps1 on Windows and the CI frontend job (Node 22) are unverified here.
+- All M9 human tasks remain (HUMAN_TODO); relevance_threshold is still the provisional 0.0.
+Next: final audit (prompts/FINAL_AUDIT.md), then tag v1.0.0 if no CRITICAL issue remains.
 

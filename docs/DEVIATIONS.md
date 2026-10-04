@@ -1,5 +1,22 @@
 # Deviations from ARCHITECTURE.md
 Format: what / why / impact. Append-only; reference the change that introduced each entry.
+Final as of v1.0 (M10). A one-page summary of the built system against the spec is in ARCHITECTURE_AS_BUILT.md §5.
+
+| Entry | Area | Status at v1.0 |
+|---|---|---|
+| D1, D2, D12 | dense embeddings (windows, normalisation) | in force; D12 replaces D1's token sizes with word sizes |
+| D3 | domain routing and widening | in force |
+| D4, D11 | what is chunked and indexed | in force |
+| D5 | prompt additions, truncation | partly superseded: num_predict 1500 (D10), marker and rules (D14) |
+| D6, D15 | Kiswahili flow and models | in force; the "<3 s first token" motive is not met on CPU (LIMITATIONS §4) |
+| D7, D8, D16 | SSE, endpoints, sessions | in force |
+| D9 | citation verification | in force |
+| D10 | parameter values | in force |
+| D13 | inclusive threshold, value 0.0 | in force; the value is provisional until tuned (HUMAN_TODO) |
+| D14 | generation prompt rules and budget | in force |
+| D17 | frontend shape | in force |
+| D18 | evaluation harness | in force; results pending human input |
+| D19 | operations: offline setup, preflight, run scripts, Docker, portability | in force |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -163,3 +180,22 @@ Format: what / why / impact. Append-only; reference the change that introduced e
   null-path check needs the expected outcome; going through the API measures what users get. (f) readability.
 - Impact: results are only meaningful once the human ground truth exists; the acceptance step "validate_ground_truth.py
   passes on the human file" is still open.
+
+## D19 Operations: offline setup, preflight, run scripts, Docker, portability — feat(M10)
+- What: (a) setup/verification logic lives in backend/app/offline.py (scripts/setup_offline.py is a thin entry point, like
+  bench_retrieval.py). It caches models in the Hugging Face default cache (honours $HF_HOME) rather than a new
+  project-specific cache directory, and verifies in a fresh process with HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1, because
+  huggingface_hub reads those at import time. (b) A new backend/app/preflight.py checks Ollama, the model, chunks and indexes,
+  and the frontend build for scripts/run.sh and run.ps1 (exit 3 = only Ollama down, so the script may start it). (c) Docker:
+  a multi-stage Dockerfile plus a compose file with an ollama service; data/ is bind-mounted and models live in named volumes.
+  The image was not built on the development machine (no Docker daemon access); `docker compose config` validates. (d)
+  feedback.py takes an in-process lock on Windows, where fcntl does not exist; POSIX keeps flock. run.ps1 is untested.
+  (e) generation/llm.py maps every remaining httpx error during a stream to OllamaError (code llm_error) instead of "internal".
+  (f) backend/tests/conftest.py points the data output paths of all non-`real` tests at a temp dir.
+- Why: (a) the existing ~1 GB cache stays usable and Docker can set HF_HOME without a config change; (b) the milestone asks
+  for an Ollama check before start; (c) the milestone allows skipping Docker, and not baking models keeps the image small;
+  (d) without it the API cannot import on Windows; (e) typed errors everywhere; (f) a test that built indexes from
+  Settings(dense_index_dir=...) (a read-only property, silently ignored) overwrote the real indexes during M10. They were
+  rebuilt from the unchanged chunks.json, with the same counts as M2.
+- Impact: no change to the pipeline or the API contract. `pytest -m real` needs `HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1`,
+  since default sockets are off and the hub would otherwise try the network (README "Tests").

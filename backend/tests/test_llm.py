@@ -2,8 +2,7 @@
 
 import asyncio
 import json
-from collections.abc import AsyncIterator, Callable
-from typing import Any
+from collections.abc import Callable
 
 import httpx
 import pytest
@@ -11,43 +10,19 @@ import pytest
 from backend.app.config import Settings
 from backend.app.generation.llm import GenerationTimeout, ModelNotLoaded, OllamaClient, OllamaError, OllamaUnavailable
 from backend.app.interfaces import LLMClient
+from backend.tests.fakes import ChunkedStream, ndjson
 
 SETTINGS = Settings()
 MODEL = SETTINGS.ollama_model
 
 
-def _ndjson(*objs: dict[str, Any]) -> bytes:
-    return b"".join(json.dumps(o).encode() + b"\n" for o in objs)
-
-
-TOKENS = _ndjson(
+TOKENS = ndjson(
     {"response": "## RIGHTS", "done": False},
     {"response": " EXPLANATION\n", "done": False},
     {"response": "", "done": False},
     {"response": "You have rights.", "done": False},
     {"response": "", "done": True, "done_reason": "stop"},
 )
-
-
-class ChunkedStream(httpx.AsyncByteStream):
-    """Response body delivered in arbitrary byte pieces; records whether it was closed."""
-
-    def __init__(self, pieces: list[bytes], fail: Exception | None = None) -> None:
-        self.pieces = pieces
-        self.fail = fail
-        self.closed = False
-        self.sent = 0
-
-    async def __aiter__(self) -> AsyncIterator[bytes]:
-        for piece in self.pieces:
-            self.sent += 1
-            yield piece
-            await asyncio.sleep(0)
-        if self.fail:
-            raise self.fail
-
-    async def aclose(self) -> None:
-        self.closed = True
 
 
 def _client(handler: Callable[[httpx.Request], httpx.Response]) -> OllamaClient:
@@ -90,7 +65,7 @@ def test_ndjson_split_into_partial_lines_is_parsed(size: int) -> None:
 
 
 def test_stops_at_done_even_if_more_lines_follow() -> None:
-    body = TOKENS + _ndjson({"response": "ignored", "done": False})
+    body = TOKENS + ndjson({"response": "ignored", "done": False})
     assert _collect(_client(lambda r: httpx.Response(200, content=body)))[-1] == "You have rights."
 
 
@@ -140,11 +115,20 @@ def test_dropped_connection_mid_stream_is_unavailable() -> None:
         _collect(_client(handler))
 
 
+@pytest.mark.parametrize("exc", [httpx.DecodingError("bad gzip"), httpx.WriteError("broken pipe")])
+def test_any_other_transport_error_is_a_typed_ollama_error(exc: httpx.HTTPError) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, stream=ChunkedStream([TOKENS[:30]], fail=exc))
+
+    with pytest.raises(OllamaError, match="Ollama request failed"):
+        _collect(_client(handler))
+
+
 def test_error_line_in_stream() -> None:
-    body = _ndjson({"response": "a", "done": False}, {"error": "out of memory"})
+    body = ndjson({"response": "a", "done": False}, {"error": "out of memory"})
     with pytest.raises(OllamaError, match="out of memory"):
         _collect(_client(lambda r: httpx.Response(200, content=body)))
-    missing = _ndjson({"error": f"model '{MODEL}' not found"})
+    missing = ndjson({"error": f"model '{MODEL}' not found"})
     with pytest.raises(ModelNotLoaded):
         _collect(_client(lambda r: httpx.Response(200, content=missing)))
 
@@ -155,7 +139,7 @@ def test_malformed_line_is_ollama_error() -> None:
 
 
 def _many_tokens(n: int) -> list[bytes]:
-    return [_ndjson({"response": f"t{i}", "done": False}) for i in range(n)]
+    return [ndjson({"response": f"t{i}", "done": False}) for i in range(n)]
 
 
 def test_closing_the_consumer_closes_the_response() -> None:

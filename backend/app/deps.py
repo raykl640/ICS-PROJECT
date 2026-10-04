@@ -9,9 +9,13 @@ from backend.app.config import Settings
 from backend.app.generation.llm import OllamaClient
 from backend.app.interfaces import CrossEncoderLike, Embedder, LLMClient, Translator
 from backend.app.lang.service import LanguageService, load_language_service
+from backend.app.models import ParsedResponse
 from backend.app.retrieval.pipeline import ContextPipeline, load_pipeline
 from backend.app.retrieval.refs import RefExtractor
 from backend.app.retrieval.router import Router
+
+WARMUP_EN = "My employer dismissed me without notice."
+WARMUP_SW = "Mwajiri wangu alinifukuza kazi bila notisi."
 
 
 @dataclass(frozen=True)
@@ -64,3 +68,10 @@ def default_deps(settings: Settings) -> Deps:
     else:
         deps = real_deps(settings)
     return dataclasses.replace(deps, setup_logging=True)
+
+
+def warm_up(pipeline: ContextPipeline, language: LanguageService) -> None:
+    """One tiny call through every lazy model (embedder, cross-encoder, both translators)."""
+    pipeline.retrieve_context(WARMUP_EN)
+    language.prepare_query(WARMUP_SW, "sw")
+    language.translate_result(ParsedResponse(rights=WARMUP_EN))

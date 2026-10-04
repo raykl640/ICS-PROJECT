@@ -76,6 +76,8 @@ class OllamaClient:
             raise GenerationTimeout(f"no token from Ollama within {self.settings.ollama_read_timeout_s} s") from exc
         except (httpx.RemoteProtocolError, httpx.ReadError) as exc:
             raise OllamaUnavailable("connection to Ollama dropped during generation") from exc
+        except httpx.HTTPError as exc:
+            raise OllamaError(f"Ollama request failed ({type(exc).__name__})") from exc
 
     async def _raise_for_status(self, response: httpx.Response) -> None:
         """Map a non-200 response to a typed error (404 = model missing)."""

@@ -115,6 +115,7 @@ async def call(
     disconnect_when: Callable[[str], bool] | None = None,
 ) -> Reply:
     """Drive the ASGI app directly; disconnect_when(body so far) triggers an http.disconnect."""
+    path, _, query = path.partition("?")
     payload = json.dumps(body).encode() if body is not None else b""
     disconnect = asyncio.Event()
     request_sent = False
@@ -146,7 +147,7 @@ async def call(
         "scheme": "http",
         "path": path,
         "raw_path": path.encode(),
-        "query_string": b"",
+        "query_string": query.encode(),
         "root_path": "",
         "headers": [(b"host", b"test"), (b"content-type", b"application/json")],
         "client": ("127.0.0.1", 50000),

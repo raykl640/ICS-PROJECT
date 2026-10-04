@@ -24,7 +24,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.app.config import get_settings
-from backend.app.deps import Deps, default_deps
+from backend.app.deps import Deps, default_deps, warm_up
 from backend.app.feedback import append_feedback
 from backend.app.generation.gate import GateFull, LLMGate, Ticket
 from backend.app.generation.prompt import build_prompt
@@ -34,7 +34,6 @@ from backend.app.logging_setup import configure_logging
 from backend.app.models import (
     FeedbackIn,
     FeedbackOut,
-    ParsedResponse,
     QueryRequest,
     QueryResponse,
     RetrievedChunk,
@@ -53,8 +52,6 @@ log = logging.getLogger("hakiai.api")
 
 SETUP_OFFLINE_COMMAND = "python scripts/setup_offline.py"
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-_WARMUP_EN = "My employer dismissed me without notice."
-_WARMUP_SW = "Mwajiri wangu alinifukuza kazi bila notisi."
 _HTTP_CODES = {404: "not_found", 405: "method_not_allowed"}
 _NOT_STREAMABLE: dict[str, tuple[str, str]] = {
     "running": ("in_progress", "This answer is being generated on another connection."),
@@ -317,11 +314,9 @@ def _load_pipeline(deps: Deps) -> ContextPipeline:
 
 
 def _warm_up(pipeline: ContextPipeline, language: LanguageService) -> None:
-    """One tiny call through every lazy model (embedder, cross-encoder, both translators)."""
+    """Warm every lazy model; a model missing from the local cache becomes a StartupError naming the fix."""
     try:
-        pipeline.retrieve_context(_WARMUP_EN)
-        language.prepare_query(_WARMUP_SW, "sw")
-        language.translate_result(ParsedResponse(rights=_WARMUP_EN))
+        warm_up(pipeline, language)
     except OSError as exc:
         raise StartupError(
             f"a model could not be loaded from the local cache ({type(exc).__name__}: {exc}). "

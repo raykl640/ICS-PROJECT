@@ -1,0 +1,25 @@
+# HakiAI with Ollama. Nothing large is baked into the images: ./data (PDFs, chunks, indexes, feedback) is bind-mounted,
+# Hugging Face models and the Ollama model live in named volumes. One-time setup (online) is in README "Docker".
+services:
+  ollama:
+    image: ollama/ollama:0.33.3
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+  api:
+    build: .
+    depends_on:
+      - ollama
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      HAKI_OLLAMA_URL: http://ollama:11434
+    volumes:
+      - ./data:/app/data
+      - hf-models:/models
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  hf-models:
