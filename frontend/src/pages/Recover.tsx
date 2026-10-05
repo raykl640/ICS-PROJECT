@@ -40,7 +40,7 @@ export function Recover() {
 
   if (done) {
     return (
-      <div className="mx-auto max-w-xl rounded-lg border border-line-subtle bg-surface p-5 shadow-raised sm:p-7">
+      <div className="mx-auto max-w-xl border-2 border-ink bg-surface p-5 sm:p-7">
         <RecoveryCode code={done.code} username={done.username} onDone={() => navigate("/")} />
       </div>
     );

@@ -29,8 +29,8 @@ export function LetterTab({ text, sessionId, finished, actions }: LetterTabProps
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="rounded-md border border-line-subtle bg-raised px-5 py-6 font-reading leading-relaxed whitespace-pre-wrap sm:px-8">
+    <div className="flex flex-col gap-4 text-base">
+      <div className="border border-ink bg-raised px-5 py-6 font-reading text-[1.0625rem] leading-relaxed whitespace-pre-wrap sm:px-10 sm:py-8">
         {text}
       </div>
       {text.includes("[") && <p className="text-ink-muted">{t("letter_hint")}</p>}

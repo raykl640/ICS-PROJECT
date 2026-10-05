@@ -158,7 +158,6 @@ function Gallery() {
       <Section title="Progress">
         <ProgressSteps
           label="Answer progress"
-          orientation="horizontal"
           statusText={{ done: "done", current: "in progress", todo: "waiting" }}
           steps={[
             { label: "Searching", status: "done" },

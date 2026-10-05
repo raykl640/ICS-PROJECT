@@ -23,7 +23,7 @@ export function Tooltip({
         <RTip.Content
           side={side}
           sideOffset={6}
-          className="z-50 rounded-sm bg-ink px-2 py-1 text-sm font-semibold text-canvas shadow-overlay"
+          className="label-mono z-50 rounded-sm bg-ink px-2 py-1 font-medium text-canvas"
         >
           {label}
         </RTip.Content>
@@ -43,7 +43,7 @@ export function PopoverContent({ className, sideOffset = 6, ...props }: Componen
       <RP.Content
         sideOffset={sideOffset}
         className={cx(
-          "z-50 w-[min(20rem,calc(100vw-2rem))] rounded-md border border-line-subtle bg-raised p-4 text-ink shadow-overlay",
+          "z-50 w-[min(20rem,calc(100vw-2rem))] rounded-sm bg-raised p-4 text-ink shadow-overlay",
           className,
         )}
         {...props}
@@ -68,7 +68,7 @@ export function ScrollArea({
         {children}
       </RSA.Viewport>
       <RSA.Scrollbar orientation="vertical" className="flex w-2 touch-none p-0.5 select-none">
-        <RSA.Thumb className="flex-1 rounded-full bg-line" />
+        <RSA.Thumb className="flex-1 bg-line" />
       </RSA.Scrollbar>
     </RSA.Root>
   );

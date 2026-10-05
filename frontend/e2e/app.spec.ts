@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
+import { settle } from "./settle";
 import { expect, test, type Page } from "@playwright/test";
 
 // Questions over the synthetic fake corpus (backend/tests/fake_pipeline.py).
@@ -26,6 +27,7 @@ async function ask(page: Page, question: string) {
 }
 
 async function axe(page: Page) {
+  await settle(page);
   const { violations } = await new AxeBuilder({ page }).analyze();
   return violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.help}`);
 }
@@ -115,7 +117,7 @@ test("saved settings are applied by the pre-paint script, before and without the
   const attrs = await page.evaluate(() => ({ ...document.documentElement.dataset }));
   expect(attrs).toMatchObject({ theme: "dark", text: "xl" });
   const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(background).toBe("rgb(14, 23, 18)");
+  expect(background).toBe("rgb(12, 14, 25)");
 });
 
 for (const scheme of ["light", "dark"] as const) {

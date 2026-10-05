@@ -76,9 +76,14 @@ function useBookmarks(enabled: boolean) {
 function QuestionBubble({ text }: { text: string }) {
   const { t } = useI18n();
   return (
-    <p className="ml-auto max-w-[36rem] rounded-lg rounded-br-sm bg-sunken px-4 py-3 whitespace-pre-wrap text-ink">
-      <span className="sr-only">{t("you_asked")} </span>
-      {text}
+    <p className="flex gap-4 border-l-[6px] border-brand py-1 pl-4 text-xl leading-snug font-bold whitespace-pre-wrap text-ink">
+      <span aria-hidden="true" className="label-mono shrink-0 pt-1.5 font-semibold text-ink-muted">
+        Re:
+      </span>
+      <span>
+        <span className="sr-only">{t("you_asked")} </span>
+        {text}
+      </span>
     </p>
   );
 }
@@ -165,8 +170,8 @@ function NewQuestion() {
 
   if (idle) {
     return (
-      <section className="max-w-3xl rounded-lg border border-line-subtle bg-surface p-4 shadow-raised sm:p-6">
-        <PageTitle className="mb-5">{t("ask_title")}</PageTitle>
+      <section className="max-w-3xl">
+        <PageTitle className="mb-6">{t("ask_title")}</PageTitle>
         {composer}
       </section>
     );
@@ -187,7 +192,9 @@ function NewQuestion() {
             composer={box}
           />
           {!busy && (
-            <section className="rounded-lg border border-line-subtle bg-surface p-4 sm:p-5">{composer}</section>
+            <section className="sticky bottom-[4.5rem] z-10 -mx-1 bg-canvas px-1 pt-3 pb-2 md:bottom-0">
+              {composer}
+            </section>
           )}
         </div>
       }
@@ -270,7 +277,7 @@ function Thread({ id }: { id: string }) {
     <SplitView
       main={
         <div className="flex flex-col gap-5">
-          <PageTitle>{data.title}</PageTitle>
+          <PageTitle hidden>{data.title}</PageTitle>
           {thread.map((turn) => (
             <SavedTurn
               key={turn.id}
@@ -289,8 +296,8 @@ function Thread({ id }: { id: string }) {
             />
           )}
           {!busy && (
-            <section className="rounded-lg border border-line-subtle bg-surface p-4 sm:p-5">
-              <p className="mb-3 text-sm text-ink-muted">{t("followup_hint")}</p>
+            <section className="sticky bottom-[4.5rem] z-10 -mx-1 bg-canvas px-1 pt-3 pb-2 md:bottom-0">
+              <p className="mb-2 text-sm text-ink-muted">{t("followup_hint")}</p>
               <Composer
                 label={t("followup_label")}
                 value={question}

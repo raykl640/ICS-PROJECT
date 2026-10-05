@@ -28,7 +28,7 @@ export type Remove = (id: string, del: () => Promise<unknown>) => void;
 
 function Row({ icon, children, menu }: { icon: ReactNode; children: ReactNode; menu: ReactNode }) {
   return (
-    <li className="flex items-start gap-3 rounded-md border border-line-subtle bg-surface p-3 sm:p-4">
+    <li className="flex items-start gap-3 border-t border-line bg-transparent py-3 sm:py-4">
       <span aria-hidden="true" className="mt-0.5 shrink-0 text-ink-muted">
         {icon}
       </span>

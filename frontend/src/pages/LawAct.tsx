@@ -46,7 +46,7 @@ export function LawAct() {
                 <li key={item.chunk_id}>
                   <Link
                     to={sectionHref(item.chunk_id, info.slug)}
-                    className={`-mx-2 flex items-baseline gap-3 rounded-md px-2 py-1.5 hover:bg-sunken ${item.repealed ? "text-ink-muted" : "text-ink"}`}
+                    className={`-mx-2 flex items-baseline gap-3 px-2 py-1.5 hover:bg-highlight ${item.repealed ? "text-ink-muted" : "text-ink"}`}
                   >
                     <span className="w-28 shrink-0 font-semibold">{unitName(t, item.unit_type, item.num)}</span>
                     <span className="min-w-0 flex-1">{item.title}</span>

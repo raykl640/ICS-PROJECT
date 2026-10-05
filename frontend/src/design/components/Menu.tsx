@@ -5,7 +5,7 @@ import { cx } from "../cx";
 export const Menu = RM.Root;
 export const MenuTrigger = RM.Trigger;
 
-const POPUP = "z-50 min-w-48 rounded-md border border-line-subtle bg-raised p-1 text-ink shadow-overlay";
+const POPUP = "z-50 min-w-48 rounded-sm bg-raised p-1 text-ink shadow-overlay";
 
 /** Menu popup (arrow keys move and wrap, typeahead, Escape closes and returns focus). */
 export function MenuContent({
@@ -30,7 +30,7 @@ export function MenuItem({ icon, tone = "default", className, children, ...props
     <RM.Item
       className={cx(
         "target flex cursor-pointer select-none items-center gap-2 rounded-sm px-3 outline-none",
-        "data-[highlighted]:bg-sunken data-[disabled]:cursor-not-allowed data-[disabled]:opacity-55",
+        "data-[highlighted]:bg-highlight data-[disabled]:cursor-not-allowed data-[disabled]:opacity-55",
         tone === "danger" ? "text-danger" : "text-ink",
         className,
       )}
@@ -48,10 +48,10 @@ export function MenuItem({ icon, tone = "default", className, children, ...props
 
 /** Divider between groups of menu items. */
 export function MenuSeparator() {
-  return <RM.Separator className="my-1 h-px bg-line-subtle" />;
+  return <RM.Separator className="my-1 h-0.5 bg-ink" />;
 }
 
 /** Non-interactive group label. */
 export function MenuLabel({ children }: { children: ReactNode }) {
-  return <RM.Label className="px-3 py-1.5 text-sm font-semibold text-ink-muted">{children}</RM.Label>;
+  return <RM.Label className="label-mono px-3 py-1.5 text-ink-muted">{children}</RM.Label>;
 }

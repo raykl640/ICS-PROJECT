@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { settle } from "./settle";
 import { expect, test } from "@playwright/test";
 
 const PASSWORD = "a long enough password";
@@ -11,6 +12,7 @@ test("sign up -> recovery code -> sign out -> sign in -> lock -> unlock", async 
   await page.getByLabel("Your name (shown in HakiAI)").fill("Test User");
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Repeat the password").fill(PASSWORD);
+  await settle(page);
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   await page.getByRole("button", { name: "Create account" }).click();

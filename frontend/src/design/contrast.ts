@@ -18,6 +18,9 @@ export const COLOR_ROLES = [
   "info",
   "focus",
   "highlight",
+  "mast",
+  "mast-ink",
+  "mast-muted",
 ] as const;
 
 export type ColorRole = (typeof COLOR_ROLES)[number];
@@ -68,4 +71,8 @@ export const PAIRS: { fg: ColorRole; bg: ColorRole; kind: PairKind }[] = [
   ...on("line", "ui", [...BACKGROUNDS, "sunken"]),
   // The focus ring has a 2px offset, so it always sits on a background, never on a filled control.
   ...on("focus", "ui", [...BACKGROUNDS, "sunken"]),
+  // The masthead's own text, and the highlighter mark that shows the current page on it.
+  { fg: "mast-ink", bg: "mast", kind: "body" },
+  { fg: "mast-muted", bg: "mast", kind: "body" },
+  { fg: "ink", bg: "highlight", kind: "body" },
 ];

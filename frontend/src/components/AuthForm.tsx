@@ -18,7 +18,7 @@ export function AuthForm({ title, intro, error, onSubmit, children, footer }: Au
     onSubmit();
   };
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-4 rounded-lg border border-line-subtle bg-surface p-5 shadow-raised sm:p-7">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-4 border-2 border-ink bg-surface p-5 sm:p-7">
       <PageTitle>{title}</PageTitle>
       {intro && <div className="text-ink-muted">{intro}</div>}
       {error && (

@@ -64,7 +64,7 @@ export function Answer({ state, sections, sources, onCite, onShowSources, onStop
     <AnswerCard
       title={t("answer_title")}
       meta={
-        <p role="status" className={cx("text-ink-muted", busy && !state.reconnecting && "sr-only")}>
+        <p role="status" className={cx("font-mono text-xs text-ink-muted", busy && !state.reconnecting && "sr-only")}>
           {statusText(state, t)}
         </p>
       }
@@ -85,9 +85,7 @@ export function Answer({ state, sections, sources, onCite, onShowSources, onStop
           <>
             {t(TAB_LABELS[section])}
             {busy && state.latest === section && (
-              <span className="rounded-sm bg-sunken px-1.5 py-0.5 text-xs font-semibold text-brand">
-                {t("tab_writing")}
-              </span>
+              <span className="label-mono bg-highlight px-1.5 py-0.5 font-semibold text-ink">{t("tab_writing")}</span>
             )}
           </>
         ),

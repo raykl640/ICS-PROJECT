@@ -1,9 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
+import { settle } from "./settle";
 import { expect, test, type Page } from "@playwright/test";
 
 const PASSWORD = "a long enough password";
 
 async function expectNoSeriousAxe(page: Page) {
+  await settle(page);
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
 }

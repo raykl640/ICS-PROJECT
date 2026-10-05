@@ -10,6 +10,8 @@ interface ToggleGroupProps<T extends string> {
   items: { value: T; label: string; icon?: ReactNode }[];
   /** Show only icons (labels become accessible names). */
   iconOnly?: boolean;
+  /** "mast" for use on the dark masthead. */
+  tone?: "default" | "mast";
   className?: string;
 }
 
@@ -20,15 +22,17 @@ export function ToggleGroup<T extends string>({
   onValueChange,
   items,
   iconOnly,
+  tone = "default",
   className,
 }: ToggleGroupProps<T>) {
+  const mast = tone === "mast";
   return (
     <RTG.Root
       type="single"
       aria-label={label}
       value={value}
       onValueChange={(next) => next && onValueChange(next as T)}
-      className={cx("inline-flex rounded-md border border-line bg-surface p-0.5", className)}
+      className={cx("inline-flex rounded-sm border-2", mast ? "border-mast-muted" : "border-ink", className)}
     >
       {items.map((item) => (
         <RTG.Item
@@ -36,9 +40,11 @@ export function ToggleGroup<T extends string>({
           value={item.value}
           aria-label={iconOnly ? item.label : undefined}
           className={cx(
-            "target inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-sm px-3 font-semibold",
-            "text-ink-muted motion-colors hover:text-ink",
-            "data-[state=on]:bg-brand data-[state=on]:text-brand-ink",
+            "target inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 font-semibold",
+            "motion-colors not-first:border-l-2",
+            mast
+              ? "border-mast-muted text-mast-muted hover:text-mast-ink data-[state=on]:bg-highlight data-[state=on]:text-ink"
+              : "border-ink text-ink hover:bg-highlight data-[state=on]:bg-ink data-[state=on]:text-canvas",
           )}
         >
           {item.icon && (

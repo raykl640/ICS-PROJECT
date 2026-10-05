@@ -23,6 +23,7 @@ for (const [name, width, height] of [
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
       await page.setViewportSize({ width, height });
       await page.goto("/");
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       await shoot(page, `${tag}-home`);
 

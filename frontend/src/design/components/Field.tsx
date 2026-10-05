@@ -2,8 +2,8 @@ import { useId, type ComponentProps, type ReactNode } from "react";
 import { cx } from "../cx";
 
 const CONTROL =
-  "w-full rounded-md border border-line bg-raised px-3 py-2 text-ink placeholder:text-ink-muted motion-colors " +
-  "hover:border-ink-muted aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-55";
+  "w-full rounded-sm border-2 border-line bg-raised px-3 py-2 text-ink placeholder:text-ink-muted motion-colors " +
+  "hover:border-ink focus:border-ink aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-55";
 
 interface FrameProps {
   label: string;
@@ -23,10 +23,10 @@ function Frame({ label, hint, error, aside, className, children }: FrameProps) {
   return (
     <div className={cx("flex flex-col gap-1.5", className)}>
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="font-semibold text-ink">
+        <label htmlFor={id} className="text-[0.9375rem] font-bold text-ink">
           {label}
         </label>
-        {aside && <span className="text-sm text-ink-muted">{aside}</span>}
+        {aside && <span className="font-mono text-xs text-ink-muted">{aside}</span>}
       </div>
       {hint && (
         <p id={hintId} className="text-sm text-ink-muted">

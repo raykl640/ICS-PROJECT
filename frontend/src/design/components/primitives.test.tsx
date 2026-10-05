@@ -8,7 +8,7 @@ import { Field } from "./Field";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "./Menu";
 import { Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipProvider } from "./Overlay";
 import { ProgressSteps } from "./ProgressSteps";
-import { Sidebar } from "./Shell";
+import { Masthead } from "./Shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./Tabs";
 import { ToastProvider } from "./Toast";
 import { useToast } from "./toastContext";
@@ -277,31 +277,27 @@ describe("own components", () => {
     expect(input).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("Sidebar marks the current page and reports the collapse state", async () => {
+  it("Masthead marks the current page and opens the palette from the search button", async () => {
     const user = userEvent.setup();
-    const onCollapsedChange = vi.fn();
+    const onOpen = vi.fn();
     render(
-      <TooltipProvider>
-        <Sidebar
-          label="Main"
-          items={[
-            { id: "h", label: "Home", icon: null, href: "#h", current: true, primary: true },
-            { id: "l", label: "Laws", icon: null, href: "#l", primary: true },
-          ]}
-          collapsed={false}
-          onCollapsedChange={onCollapsedChange}
-          collapseLabel="Collapse navigation"
-          expandLabel="Expand navigation"
-        />
-      </TooltipProvider>,
+      <Masthead
+        label="Main"
+        brand={<a href="#top">Brand</a>}
+        items={[
+          { id: "h", label: "Home", icon: null, href: "#h", current: true },
+          { id: "l", label: "Laws", icon: null, href: "#l" },
+        ]}
+        search={{ label: "Search", shortcut: "Ctrl K", onOpen }}
+        end={<button type="button">Account</button>}
+      />,
     );
     const nav = screen.getByRole("navigation", { name: "Main" });
     expect(within(nav).getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
     expect(within(nav).getByRole("link", { name: "Laws" })).not.toHaveAttribute("aria-current");
-    const toggle = screen.getByRole("button", { name: "Collapse navigation" });
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    await user.click(toggle);
-    expect(onCollapsedChange).toHaveBeenCalledWith(true);
+    await user.click(screen.getByRole("button", { name: /Search/ }));
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Account" })).toBeInTheDocument();
   });
 
   it("ProgressSteps marks the current step and reads each status", () => {

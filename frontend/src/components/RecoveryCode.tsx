@@ -32,7 +32,7 @@ export function RecoveryCode({ code, username, onDone }: { code: string; usernam
         {t("recovery_title")}
       </h2>
       <p className="text-ink">{t("recovery_body")}</p>
-      <div className="print-area rounded-md border-2 border-dashed border-accent bg-raised p-5 text-center">
+      <div className="print-area border-4 border-double border-accent bg-raised p-5 text-center">
         <p className="sr-only print:not-sr-only">{t("recovery_file_heading", { username })}</p>
         <p className="font-mono text-2xl font-semibold tracking-wider text-ink" data-testid="recovery-code">
           {code.split("-").map((group, i) => (

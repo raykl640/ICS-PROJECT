@@ -12,7 +12,7 @@ export function NotFound() {
       <p className="text-lg text-ink">{t("not_found_body")}</p>
       <Link
         to="/"
-        className="target inline-flex items-center gap-2 rounded-md border border-brand bg-brand px-4 py-2 font-semibold text-brand-ink hover:bg-brand/90"
+        className="target inline-flex items-center gap-2 rounded-sm border-2 border-brand bg-brand px-4 py-2 font-semibold text-brand-ink shadow-[0_3px_0_var(--hk-ink)] motion-colors hover:border-ink hover:bg-ink hover:text-canvas"
       >
         <Home aria-hidden="true" size={18} />
         {t("go_home")}

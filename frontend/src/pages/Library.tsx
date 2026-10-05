@@ -312,7 +312,7 @@ export function NewNote({ matterId }: { matterId: string | null }) {
     }
   };
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2 rounded-md border border-line-subtle bg-surface p-3">
+    <form onSubmit={submit} className="flex flex-col gap-2 border-2 border-ink bg-surface p-3">
       <TextArea label={t("note_label")} value={text} onChange={(e) => setText(e.target.value)} className="min-h-20" />
       <Button type="submit" icon={<Plus size={18} />} disabled={busy || !text.trim()} className="self-start">
         {t("add_note")}
@@ -344,7 +344,7 @@ function Matters() {
             <li key={matter.id}>
               <Link
                 to={`/matters/${matter.id}`}
-                className="-mx-2 flex items-center justify-between gap-2 rounded-md px-2 py-2 text-ink hover:bg-sunken"
+                className="-mx-2 flex items-center justify-between gap-2 px-2 py-2 text-ink hover:bg-highlight"
               >
                 <span className="min-w-0 truncate font-semibold">{matter.name}</span>
                 <Badge tone={matter.status === "open" ? "success" : "neutral"}>

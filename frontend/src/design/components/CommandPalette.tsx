@@ -86,10 +86,10 @@ export function CommandPalette({
         <RD.Overlay className="fixed inset-0 z-40 bg-scrim" />
         <RD.Content
           aria-describedby={undefined}
-          className="fixed top-[10vh] left-1/2 z-50 flex max-h-[70vh] w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 flex-col overflow-hidden rounded-lg border border-line-subtle bg-raised text-ink shadow-overlay"
+          className="fixed top-[10vh] left-1/2 z-50 flex max-h-[70vh] w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 flex-col overflow-hidden rounded-sm bg-raised text-ink shadow-overlay"
         >
           <RD.Title className="sr-only">{title}</RD.Title>
-          <div className="flex items-center gap-2 border-b border-line-subtle px-4">
+          <div className="flex items-center gap-2 border-b-[3px] border-ink px-4">
             <Search aria-hidden="true" size={20} className="shrink-0 text-ink-muted" />
             <input
               role="combobox"
@@ -112,7 +112,7 @@ export function CommandPalette({
             {ordered.length === 0 && <p className="px-3 py-6 text-center text-ink-muted">{emptyText}</p>}
             {groups.map((group) => (
               <div key={group} role="group" aria-labelledby={`${base}-group-${group}`}>
-                <p id={`${base}-group-${group}`} className="px-3 pt-2 pb-1 text-sm font-semibold text-ink-muted">
+                <p id={`${base}-group-${group}`} className="label-mono px-3 pt-2 pb-1 text-ink-muted">
                   {group}
                 </p>
                 {ordered
@@ -127,7 +127,7 @@ export function CommandPalette({
                       onMouseMove={() => setActive(ordered.indexOf(item))}
                       className={cx(
                         "target flex cursor-pointer items-center gap-3 rounded-sm px-3",
-                        item === activeItem && "bg-sunken",
+                        item === activeItem && "bg-highlight",
                       )}
                     >
                       {item.icon && (

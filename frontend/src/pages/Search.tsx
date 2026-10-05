@@ -49,7 +49,7 @@ export function Search() {
               type="button"
               aria-pressed={selected.includes(act.slug)}
               onClick={() => toggle(act.slug)}
-              className="target rounded-full border border-line px-3 py-1 text-sm text-ink motion-colors hover:bg-sunken aria-pressed:border-brand aria-pressed:bg-brand aria-pressed:text-brand-ink"
+              className="target rounded-sm border-2 border-ink px-3 py-1 text-sm font-semibold text-ink motion-colors hover:bg-highlight aria-pressed:bg-ink aria-pressed:text-canvas"
             >
               {act.name}
             </button>
@@ -90,9 +90,12 @@ export function Search() {
 function Hit({ hit }: { hit: SearchHit }) {
   const { t } = useI18n();
   return (
-    <article className="rounded-md border border-line-subtle bg-surface p-4">
+    <article className="border-t-2 border-ink pt-4">
       <h2 className="font-semibold text-ink">
-        <Link to={sectionHref(hit.chunk_id, hit.act_slug)} className="text-brand underline underline-offset-3">
+        <Link
+          to={sectionHref(hit.chunk_id, hit.act_slug)}
+          className="text-brand underline underline-offset-3 hover:bg-highlight hover:text-ink"
+        >
           {hit.act}, {unitName(t, hit.unit_type, hit.num)}: {hit.title}
         </Link>
       </h2>

@@ -69,12 +69,12 @@ export function LawSection() {
       <div>
         <Link
           to={`/laws/${chunk.act_slug}`}
-          className="inline-flex items-center gap-1 font-semibold text-brand underline underline-offset-3"
+          className="inline-flex items-center gap-1 font-semibold text-brand underline underline-offset-3 hover:bg-highlight hover:text-ink"
         >
           <ChevronLeft aria-hidden="true" size={18} />
           {chunk.act}
         </Link>
-        {heading && <p className="mt-2 text-sm font-semibold text-accent">{heading}</p>}
+        {heading && <p className="label-mono mt-2 text-accent">{heading}</p>}
         <PageTitle className="mt-1">{`${unitName(t, chunk.unit_type, chunk.section_num)} — ${chunk.section_title}`}</PageTitle>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
           <span>{t("laws_page", { page: chunk.page })}</span>
@@ -84,7 +84,9 @@ export function LawSection() {
 
       <Actions chunk={chunk} signedIn={signedIn} />
 
-      <LawText className="whitespace-pre-line">{chunk.text}</LawText>
+      <div className="border-l-[6px] border-ink bg-raised py-4 pr-4 pl-5 sm:pl-7">
+        <LawText className="whitespace-pre-line">{chunk.text}</LawText>
+      </div>
 
       <RefList title={t("laws_refs_out")} links={view.refs_out} href={href} />
       <RefList title={t("laws_refs_in")} links={view.refs_in} href={href} />
@@ -124,7 +126,7 @@ function RefList({ title, links, href }: { title: string; links: RefLink[]; href
   if (!links.length) return null;
   return (
     <section aria-label={title}>
-      <h2 className="mb-2 font-display-style text-lg text-ink">{title}</h2>
+      <h2 className="mb-2 font-display-style text-xl text-ink">{title}</h2>
       <ul className="flex flex-wrap gap-x-4 gap-y-2">
         {links.map((link) => (
           <li key={link.label}>

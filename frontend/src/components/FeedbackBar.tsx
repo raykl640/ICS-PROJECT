@@ -19,7 +19,7 @@ export function FeedbackBar({ sessionId }: { sessionId: string }) {
 
   if (state === "sent") {
     return (
-      <p role="status" className="rounded-lg border border-line-subtle bg-surface px-5 py-4 font-semibold text-ink">
+      <p role="status" className="border-t border-line pt-4 font-semibold text-ink">
         {t("feedback_thanks")}
       </p>
     );
@@ -37,7 +37,7 @@ export function FeedbackBar({ sessionId }: { sessionId: string }) {
   };
 
   return (
-    <section aria-labelledby="feedback-title" className="rounded-lg border border-line-subtle bg-surface px-5 py-4">
+    <section aria-labelledby="feedback-title" className="border-t border-line pt-4">
       <div className="flex flex-wrap items-center gap-3">
         <h2 id="feedback-title" className="w-full font-semibold text-ink sm:w-auto">
           {t("feedback_prompt")}

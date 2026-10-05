@@ -1,90 +1,99 @@
-/* HakiAI theme (M11 gate: "Mahakama colours + Jua radius"). The only place raw colour values live.
-   index.html's pre-paint script sets data-theme (light|dark) and data-contrast (standard|more) on <html>.
+/* HakiAI theme: "Registry". Photocopy-grey paper, court-registry ink, an ultramarine stamp pad and a highlighter.
+   The only place raw colour values live. index.html's pre-paint script sets data-theme (light|dark) and
+   data-contrast (standard|more) on <html>.
    Cascade: :root < [data-theme=dark] < [data-contrast=more] < dark + more, so the last block must override every key the
    more-contrast block sets. src/design/contrast.test.ts parses this file and checks every pair in all four states. */
 
 :root {
   color-scheme: light;
-  --hk-canvas: #f6f2e7;
-  --hk-surface: #fdfaf2;
+  --hk-canvas: #f2f1ec;
+  --hk-surface: #faf9f5;
   --hk-raised: #ffffff;
-  --hk-sunken: #ece5d3;
-  --hk-ink: #14231b;
-  --hk-ink-muted: #4a5a50;
-  --hk-line: #857f6e;
-  --hk-line-subtle: #ddd5c1;
-  --hk-brand: #1c5a3b;
-  --hk-brand-ink: #fdfaf2;
-  --hk-accent: #7a5712;
-  --hk-success: #2a6631;
-  --hk-warn: #7f4d00;
-  --hk-danger: #9e2a19;
-  --hk-info: #1f4e78;
-  --hk-focus: #7a5712;
-  --hk-highlight: #f2e2ad;
+  --hk-sunken: #e5e3da;
+  --hk-ink: #0e1120;
+  --hk-ink-muted: #474b5c;
+  --hk-line: #6d7185;
+  --hk-line-subtle: #cfcdc2;
+  --hk-brand: #2231b0;
+  --hk-brand-ink: #ffffff;
+  --hk-accent: #b23a10;
+  --hk-success: #1b6535;
+  --hk-warn: #7d4a00;
+  --hk-danger: #a3142e;
+  --hk-info: #1c5189;
+  --hk-focus: #2231b0;
+  --hk-highlight: #ffe45e;
+  /* The masthead is always dark, in both themes. */
+  --hk-mast: #0e1120;
+  --hk-mast-ink: #f2f1ec;
+  --hk-mast-muted: #b4b7c8;
 
-  --hk-shadow-raised: 0 1px 2px rgb(20 35 27 / 0.08);
-  --hk-shadow-overlay: 0 8px 24px rgb(20 35 27 / 0.18);
-  --hk-scrim: rgb(14 23 18 / 0.45);
+  --hk-shadow-raised: none;
+  --hk-shadow-overlay: 0 0 0 1px var(--hk-ink), 4px 4px 0 rgb(14 17 32 / 0.85);
+  --hk-scrim: rgb(14 17 32 / 0.55);
 
-  --hk-font-ui: "Source Sans 3 Variable", "Segoe UI", system-ui, sans-serif;
-  --hk-font-display: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
+  --hk-font-ui: "Archivo Variable", "Segoe UI", system-ui, sans-serif;
+  --hk-font-display: "Archivo Variable", "Segoe UI", system-ui, sans-serif;
   --hk-font-reading: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
-  --hk-display-weight: 620;
-  --hk-display-tracking: -0.01em;
+  --hk-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --hk-display-weight: 800;
+  --hk-display-stretch: 76%;
+  --hk-display-tracking: -0.012em;
 
-  --hk-radius-sm: 8px;
-  --hk-radius-md: 14px;
-  --hk-radius-lg: 22px;
+  --hk-radius-sm: 2px;
+  --hk-radius-md: 3px;
+  --hk-radius-lg: 4px;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --hk-canvas: #0e1712;
-  --hk-surface: #142019;
-  --hk-raised: #1a2920;
-  --hk-sunken: #09100c;
-  --hk-ink: #ede7d7;
-  --hk-ink-muted: #b3b8a8;
-  --hk-line: #6f7d71;
-  --hk-line-subtle: #28382e;
-  --hk-brand: #83c89d;
-  --hk-brand-ink: #0a1a11;
-  --hk-accent: #d8b45f;
-  --hk-success: #8fcf91;
-  --hk-warn: #e9b45c;
-  --hk-danger: #f29c88;
-  --hk-info: #90c1ea;
-  --hk-focus: #d8b45f;
-  --hk-highlight: #463a14;
+  --hk-canvas: #0c0e19;
+  --hk-surface: #131626;
+  --hk-raised: #1a1e33;
+  --hk-sunken: #07080f;
+  --hk-ink: #ecebe3;
+  --hk-ink-muted: #a8abbb;
+  --hk-line: #6a6f8f;
+  --hk-line-subtle: #272b46;
+  --hk-brand: #96a2ff;
+  --hk-brand-ink: #0c0e19;
+  --hk-accent: #ff9266;
+  --hk-success: #84d69e;
+  --hk-warn: #f2bb6b;
+  --hk-danger: #ff93a6;
+  --hk-info: #8cc3f7;
+  --hk-focus: #96a2ff;
+  --hk-highlight: #3d360d;
+  --hk-mast: #05060d;
+  --hk-mast-ink: #ecebe3;
+  --hk-mast-muted: #a8abbb;
 
-  --hk-shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4);
-  --hk-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.55);
-  --hk-scrim: rgb(0 0 0 / 0.6);
+  --hk-shadow-overlay: 0 0 0 1px var(--hk-line), 4px 4px 0 rgb(0 0 0 / 0.7);
+  --hk-scrim: rgb(0 0 0 / 0.65);
 }
 
 :root[data-contrast="more"] {
-  --hk-ink: #08120d;
-  --hk-ink-muted: #2f3a33;
-  --hk-line: #5d584b;
-  --hk-brand: #123f29;
-  --hk-accent: #5a3f08;
-  --hk-success: #1b4a21;
-  --hk-warn: #5c3800;
-  --hk-danger: #761c0f;
-  --hk-info: #143856;
-  --hk-focus: #5a3f08;
+  --hk-ink: #05070f;
+  --hk-ink-muted: #2c3040;
+  --hk-line: #4a4e60;
+  --hk-brand: #141f8a;
+  --hk-accent: #8f2a08;
+  --hk-success: #124a24;
+  --hk-warn: #5c3500;
+  --hk-danger: #7c0c20;
+  --hk-info: #123b69;
+  --hk-focus: #141f8a;
 }
 
 :root[data-theme="dark"][data-contrast="more"] {
-  --hk-ink: #fbf7ec;
-  --hk-ink-muted: #d6dacb;
-  --hk-line: #9aa69b;
-  --hk-brand: #a9e0bc;
-  --hk-accent: #ecd08e;
-  --hk-success: #b3e4b4;
-  --hk-warn: #f4cf8e;
-  --hk-danger: #f8c0b2;
-  --hk-info: #b8d8f3;
-  --hk-focus: #ecd08e;
+  --hk-ink: #fbfaf4;
+  --hk-ink-muted: #d3d6e2;
+  --hk-line: #9aa0c4;
+  --hk-brand: #b9c2ff;
+  --hk-accent: #ffb08e;
+  --hk-success: #aee8c0;
+  --hk-warn: #f8d29a;
+  --hk-danger: #ffbfca;
+  --hk-info: #b5dbfb;
+  --hk-focus: #b9c2ff;
 }

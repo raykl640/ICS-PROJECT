@@ -24,10 +24,14 @@
   --color-focus: var(--hk-focus);
   --color-highlight: var(--hk-highlight);
   --color-scrim: var(--hk-scrim);
+  --color-mast: var(--hk-mast);
+  --color-mast-ink: var(--hk-mast-ink);
+  --color-mast-muted: var(--hk-mast-muted);
 
   --font-ui: var(--hk-font-ui);
   --font-display: var(--hk-font-display);
   --font-reading: var(--hk-font-reading);
+  --font-mono: var(--hk-font-mono);
 
   --radius-sm: var(--hk-radius-sm);
   --radius-md: var(--hk-radius-md);
@@ -44,7 +48,11 @@
 :root {
   --hk-duration-fast: 120ms;
   --hk-duration-base: 180ms;
+  --hk-stagger: 16ms;
 }
+
+/* Registry look: Archivo for the interface, a heavy semi-condensed cut for headings, Source Serif for what the law says,
+   Plex Mono for the marks a registry clerk would stamp (section numbers, labels, counters). */
 
 /* Text size setting: everything is in rem, so the root size scales the whole UI. */
 :root[data-text="sm"] {
@@ -61,11 +69,13 @@
 :root[data-motion="reduce"] {
   --hk-duration-fast: 0ms;
   --hk-duration-base: 0ms;
+  --hk-stagger: 0ms;
 }
 @media (prefers-reduced-motion: reduce) {
   :root {
     --hk-duration-fast: 0ms;
     --hk-duration-base: 0ms;
+    --hk-stagger: 0ms;
   }
 }
 
@@ -79,8 +89,12 @@
     -webkit-font-smoothing: antialiased;
   }
   :focus-visible {
-    outline: 2px solid var(--hk-focus);
+    outline: 3px solid var(--hk-focus);
     outline-offset: 2px;
+  }
+  mark {
+    background: var(--hk-highlight);
+    color: var(--hk-ink);
   }
   ::selection {
     background: var(--hk-highlight);
@@ -109,6 +123,9 @@
     content: "(" counter(law, lower-alpha) ")";
     position: absolute;
     right: calc(100% + 0.5rem);
+    font-family: var(--hk-font-mono);
+    font-size: 0.85em;
+    color: var(--hk-ink-muted);
   }
 }
 
@@ -121,7 +138,54 @@
 @utility font-display-style {
   font-family: var(--hk-font-display);
   font-weight: var(--hk-display-weight);
+  font-stretch: var(--hk-display-stretch);
   letter-spacing: var(--hk-display-tracking);
+  line-height: 1.05;
+}
+
+/* Small registry label: mono capitals, e.g. "YOUR QUESTION", "ACT", "PAGE 3". */
+@utility label-mono {
+  font-family: var(--hk-font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+/* A highlighter stroke across the lower part of the text, like a marked line in a statute book. */
+@utility marker {
+  background-image: linear-gradient(to top, transparent 12%, var(--hk-highlight) 12% 62%, transparent 62%);
+  padding-inline: 0.15em;
+  margin-inline: -0.15em;
+}
+
+/* Newspaper rule: thick, gap, thin. */
+@utility rule-double {
+  height: 6px;
+  background: linear-gradient(
+    to bottom,
+    var(--hk-ink) 0 3px,
+    transparent 3px 4px,
+    var(--hk-ink) 4px 5px,
+    transparent 5px
+  );
+}
+
+/* Ruled writing lines behind a textarea; the line height must match the textarea's, so they scale with the text. */
+.ruled {
+  line-height: 2.25rem;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(2.25rem - 1px),
+    var(--hk-line-subtle) calc(2.25rem - 1px) 2.25rem
+  );
+  background-attachment: local;
+}
+
+/* Diagonal hatching, the way a form marks space left unused. */
+@utility hatch {
+  background-image: repeating-linear-gradient(135deg, transparent 0 9px, var(--hk-line-subtle) 9px 10px);
 }
 
 /* Model-written markdown in the answer tabs. */
@@ -140,9 +204,15 @@
   .prose-answer li + li {
     margin-top: 0.45em;
   }
+  .prose-answer {
+    font-family: var(--hk-font-reading);
+    max-width: 66ch;
+  }
   .prose-answer li::marker {
     color: var(--hk-brand);
-    font-weight: 650;
+    font-family: var(--hk-font-mono);
+    font-weight: 600;
+    font-size: 0.85em;
   }
   .prose-answer strong {
     font-weight: 650;
@@ -150,41 +220,53 @@
   .prose-answer :is(h1, h2, h3, h4) {
     font-family: var(--hk-font-display);
     font-weight: var(--hk-display-weight);
-    font-size: 1.1em;
+    font-stretch: var(--hk-display-stretch);
+    font-size: 1.2em;
+    line-height: 1.15;
   }
   .prose-answer code {
-    font-size: 0.9em;
+    font-family: var(--hk-font-mono);
+    font-size: 0.85em;
     background: var(--hk-sunken);
     border-radius: var(--hk-radius-sm);
     padding: 0.05em 0.3em;
   }
   .prose-answer blockquote {
-    border-left: 3px solid var(--hk-line);
+    border-left: 3px solid var(--hk-ink);
     padding-left: 0.9em;
     color: var(--hk-ink-muted);
   }
 
-  /* A citation that jumps to its source. */
+  /* A citation that jumps to its source: set like a stamped reference, and it marks itself like a highlighter on hover. */
   .cite {
+    font-family: var(--hk-font-mono);
+    font-size: 0.8em;
+    font-weight: 500;
     color: var(--hk-brand);
-    font-weight: 600;
-    text-decoration: underline;
-    text-decoration-color: var(--hk-accent);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.18em;
+    border-bottom: 2px solid var(--hk-brand);
+    padding: 0 0.15em;
     cursor: pointer;
+    background-image: linear-gradient(var(--hk-highlight), var(--hk-highlight));
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+    transition: background-size var(--hk-duration-base) var(--ease-standard);
   }
-  .cite:hover {
-    background: var(--hk-highlight);
+  .cite:hover,
+  .cite:focus-visible {
+    background-size: 100% 100%;
     color: var(--hk-ink);
   }
 
   /* Caret after the last line being written, not on a line of its own; static when motion is reduced. */
   .stream-caret .prose-answer > :last-child:not(ol, ul)::after,
   .stream-caret .prose-answer > :is(ol, ul):last-child > li:last-child::after {
-    content: "▍";
-    margin-left: 0.1em;
-    color: var(--hk-brand);
+    content: "";
+    display: inline-block;
+    width: 0.5em;
+    height: 1em;
+    margin-left: 0.15em;
+    vertical-align: text-bottom;
+    background: var(--hk-brand);
     animation: caret 1s steps(1) infinite;
   }
   :root[data-motion="reduce"] .stream-caret .prose-answer *::after {
@@ -197,6 +279,71 @@
     opacity: 0;
   }
 }
+
+/* The cited provision is marked like a highlighter pass. Two names alternate so a second click on the same
+   citation sweeps again. */
+@keyframes sweep-a {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+@keyframes sweep-b {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+.sweep {
+  background-image: linear-gradient(var(--hk-highlight), var(--hk-highlight));
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+.sweep[data-sweep="0"] {
+  animation: sweep-a calc(var(--hk-duration-base) * 2.5) var(--ease-standard);
+}
+.sweep[data-sweep="1"] {
+  animation: sweep-b calc(var(--hk-duration-base) * 2.5) var(--ease-standard);
+}
+
+/* The current step of a long job: hazard-tape stripes slide along its rule (still when motion is reduced). */
+@keyframes tape {
+  to {
+    background-position: 20px 0;
+  }
+}
+.tape {
+  background-image: repeating-linear-gradient(135deg, var(--hk-brand) 0 5px, transparent 5px 10px);
+  background-size: 20px 100%;
+  animation: tape 0.9s linear infinite;
+}
+:root[data-motion="reduce"] .tape {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tape {
+    animation: none;
+  }
+}
+
+/* A page and the rows of an index arrive with a short rise; delays are tiny so the whole list lands within ~0.35 s. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.page-enter > * {
+  animation: rise var(--hk-duration-base) var(--ease-standard) backwards;
+}
+.stagger > * {
+  animation: rise var(--hk-duration-base) var(--ease-standard) backwards;
+  animation-delay: calc(var(--i, 0) * var(--hk-stagger));
+}
 @media (prefers-reduced-motion: reduce) {
   .stream-caret .prose-answer *::after {
     animation: none;
@@ -204,7 +351,7 @@
 }
 
 @utility motion-colors {
-  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
   transition-duration: var(--hk-duration-fast);
   transition-timing-function: var(--ease-standard);
 }

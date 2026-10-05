@@ -6,6 +6,7 @@ import { ToastContext, type ToastInput } from "./toastContext";
 
 const ICONS = { info: Info, success: CircleCheck, danger: CircleAlert } as const;
 const TONES = { info: "text-info", success: "text-success", danger: "text-danger" } as const;
+const EDGES = { info: "border-l-info", success: "border-l-success", danger: "border-l-danger" } as const;
 
 interface ToastProviderProps {
   /** Accessible name of the close button on each toast. */
@@ -36,7 +37,10 @@ export function ToastProvider({ closeLabel, regionLabel, children }: ToastProvid
               key={id}
               duration={duration}
               onOpenChange={(open) => !open && drop(id)}
-              className="flex items-start gap-3 rounded-md border border-line-subtle bg-raised p-3 text-ink shadow-overlay"
+              className={cx(
+                "flex items-start gap-3 rounded-sm border-l-[6px] bg-raised p-3 text-ink shadow-overlay",
+                EDGES[tone],
+              )}
             >
               <Icon aria-hidden="true" size={20} className={cx("mt-0.5 shrink-0", TONES[tone])} />
               <div className="min-w-0 flex-1">

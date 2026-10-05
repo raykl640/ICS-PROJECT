@@ -1,5 +1,5 @@
-import { BookOpen, FileText, MessageSquare, Scale, Sun } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, FileText, MessageSquare, Scale, Sun } from "lucide-react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import type { UiLanguage } from "../api/types";
 import { listConversations, listLetters } from "../api/library";
@@ -61,11 +61,11 @@ export function Home() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <div className="flex min-w-0 flex-col gap-6">
-        <section className="rounded-lg border border-line-subtle bg-surface p-4 shadow-raised sm:p-6">
+    <div className="mx-auto flex max-w-4xl flex-col gap-10">
+      <div className="flex flex-col gap-10">
+        <section className="min-w-0">
           <PageTitle className="text-balance">{t("hero_title")}</PageTitle>
-          <p className="mt-2 mb-5 text-lg text-ink-muted">{t("hero_body")}</p>
+          <p className="mt-2 mb-5 max-w-[60ch] text-ink-muted">{t("hero_body")}</p>
           <Composer
             label={t("question_label")}
             value={question}
@@ -77,46 +77,55 @@ export function Home() {
           />
         </section>
 
-        <section aria-labelledby="topics-title">
-          <h2 id="topics-title" className="font-display-style text-2xl text-ink">
+        <section aria-labelledby="topics-title" className="min-w-0">
+          <h2 id="topics-title" className="font-display-style border-t-[3px] border-ink pt-3 text-2xl text-ink">
             {t("topics_title")}
           </h2>
-          <p className="mt-1 mb-3 text-ink-muted">{t("topics_hint")}</p>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {TOPICS.map((topic) => {
+          <p className="mt-1 mb-4 text-ink-muted">{t("topics_hint")}</p>
+          <ol className="stagger grid gap-x-8 border-t-2 border-ink sm:grid-cols-2">
+            {TOPICS.map((topic, index) => {
               const act = t(`act_${topic}` as StringKey);
               return (
-                <li key={topic}>
+                <li key={topic} style={{ "--i": index } as CSSProperties} className="border-b border-line-subtle">
                   <button
                     type="button"
                     onClick={() => startWith(act)}
-                    className="target flex h-full w-full cursor-pointer flex-col items-start gap-1 rounded-md border border-line-subtle bg-surface p-3 text-left motion-colors hover:border-line hover:bg-raised"
+                    className="group target grid w-full cursor-pointer grid-cols-[2rem_1fr_auto] items-baseline gap-x-2 px-1 py-2.5 text-left motion-colors hover:bg-highlight"
                   >
-                    <span className="flex items-center gap-2 font-semibold text-ink">
-                      <BookOpen aria-hidden="true" size={18} className="shrink-0 text-brand" />
-                      {act}
+                    <span aria-hidden="true" className="font-mono text-xs text-ink-muted">
+                      {String(index + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-sm text-ink-muted">{t(`domain_${topic}` as StringKey)}</span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-ink">{act}</span>
+                      <span className="block text-sm text-ink-muted group-hover:text-ink">
+                        {t(`domain_${topic}` as StringKey)}
+                      </span>
+                    </span>
+                    <ArrowUpRight
+                      aria-hidden="true"
+                      size={16}
+                      className="self-center text-ink-muted opacity-0 motion-colors group-hover:opacity-100 group-focus-visible:opacity-100"
+                    />
                   </button>
                 </li>
               );
             })}
-          </ul>
+          </ol>
         </section>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="grid gap-x-12 gap-y-8 md:grid-cols-2">
         <Card title={t("continue_title")}>
           <SavedRecent />
           <RecentReads />
           {state.phase === "idle" || state.conversationId ? (
             signedIn ? null : (
-              <EmptyState icon={<MessageSquare size={28} />} title={t("continue_empty_title")}>
+              <EmptyState icon={<MessageSquare size={24} />} title={t("continue_empty_title")}>
                 {t("continue_empty_body")}
               </EmptyState>
             )
           ) : (
-            <Link to="/ask" className="-mx-2 flex items-start gap-3 rounded-md px-2 py-2 text-ink hover:bg-sunken">
+            <Link to="/ask" className="-mx-2 flex items-start gap-3 px-2 py-2 text-ink hover:bg-highlight">
               <MessageSquare aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-ink-muted" />
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 font-semibold">{state.question}</span>
@@ -137,7 +146,7 @@ export function Home() {
           )}
         </Card>
         <Card title={t("today_title")}>
-          <EmptyState icon={<Sun size={28} />} title={t("today_empty_title")}>
+          <EmptyState icon={<Sun size={24} />} title={t("today_empty_title")}>
             {t("today_empty_body")}
           </EmptyState>
         </Card>
@@ -178,7 +187,7 @@ function SavedRecent() {
       <ul className="flex flex-col">
         {items.map(({ id, href, title, icon: Icon, busy }) => (
           <li key={id}>
-            <Link to={href} className="-mx-2 flex items-start gap-3 rounded-md px-2 py-2 text-ink hover:bg-sunken">
+            <Link to={href} className="-mx-2 flex items-start gap-3 px-2 py-2 text-ink hover:bg-highlight">
               <Icon aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-ink-muted" />
               <span className="line-clamp-2 min-w-0 flex-1 font-semibold">{title}</span>
               {busy && <Badge tone="info">{t("answer_in_progress")}</Badge>}
@@ -186,7 +195,10 @@ function SavedRecent() {
           </li>
         ))}
       </ul>
-      <Link to="/library" className="mt-2 font-semibold text-brand underline underline-offset-3">
+      <Link
+        to="/library"
+        className="mt-2 font-semibold text-brand underline underline-offset-3 hover:bg-highlight hover:text-ink"
+      >
         {t("library_open")}
       </Link>
     </div>
@@ -202,13 +214,13 @@ function RecentReads() {
   if (!enabled || reads.status !== "ok" || reads.data.length === 0) return null;
   return (
     <div className="mt-4 border-t border-line-subtle pt-3">
-      <h3 className="mb-1 font-semibold text-ink-muted">{t("continue_reading")}</h3>
+      <h3 className="label-mono mb-1 text-ink-muted">{t("continue_reading")}</h3>
       <ul className="flex flex-col">
         {reads.data.map((read) => (
           <li key={read.chunk_id}>
             <Link
               to={`/laws/act/${read.chunk_id}`}
-              className="-mx-2 flex items-start gap-3 rounded-md px-2 py-2 text-ink hover:bg-sunken"
+              className="-mx-2 flex items-start gap-3 px-2 py-2 text-ink hover:bg-highlight"
             >
               <Scale aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-ink-muted" />
               <span className="line-clamp-2 min-w-0 flex-1">

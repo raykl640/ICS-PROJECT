@@ -129,7 +129,7 @@ Direct dependencies are marked ●.
 | MIT | 139, including react 19.3.0, react-dom 19.3.0, react-router 8.4.0, react-markdown 10.1.0, scheduler, the unified/remark/rehype/mdast/hast utilities and the @radix-ui/* primitives (dialog 1.1.23, dropdown-menu 2.1.24, tabs 1.1.21, tooltip 1.2.16, popover 1.1.23, toast 1.2.23, toggle-group 1.1.19, scroll-area 1.2.18, with their internal packages) |
 | ISC | 2 (lucide-react 1.52.0, @ungap/structured-clone 1.4.0) |
 | 0BSD | 1 (tslib 2.8.1, pulled in by Radix) |
-| OFL-1.1 | 2 font packages, both 5.3.0: @fontsource-variable/source-serif-4 and source-sans-3 |
+| OFL-1.1 | 3 font packages, all 5.3.0: @fontsource-variable/archivo, @fontsource-variable/source-serif-4 and @fontsource/ibm-plex-mono |
 
 The fonts are bundled with the app (offline). OFL-1.1 allows bundling and redistribution with software; it only forbids
 selling the fonts on their own and reusing their reserved names for modified versions. The four fonts of the two directions

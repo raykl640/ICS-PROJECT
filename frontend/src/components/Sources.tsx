@@ -51,7 +51,12 @@ export function Sources({
         <ol className="flex flex-col gap-3">
           {chunks.map((chunk) => (
             <li key={chunk.chunk_id}>
-              <Source chunk={chunk} highlighted={highlight?.chunkId === chunk.chunk_id} bookmarks={bookmarks} />
+              <Source
+                chunk={chunk}
+                highlighted={highlight?.chunkId === chunk.chunk_id}
+                pulse={highlight?.nonce ?? 0}
+                bookmarks={bookmarks}
+              />
             </li>
           ))}
         </ol>
@@ -63,10 +68,12 @@ export function Sources({
 function Source({
   chunk,
   highlighted,
+  pulse,
   bookmarks,
 }: {
   chunk: SourceChunk;
   highlighted: boolean;
+  pulse: number;
   bookmarks?: { saved: ReadonlySet<string>; save: (chunkId: string) => void };
 }) {
   const { t } = useI18n();
@@ -84,6 +91,7 @@ function Source({
       locator={[chunk.part, t("source_page", { page: chunk.page })].filter(Boolean).join(" · ")}
       regionLabel={`${chunk.act} ${chunk.section_num}`}
       highlighted={highlighted}
+      pulse={pulse}
       actions={
         bookmarks && (
           <Button

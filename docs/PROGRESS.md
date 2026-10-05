@@ -533,3 +533,14 @@ Open issues:
 - New Kiswahili strings await the human review (HUMAN_TODO).
 Next: M16 Knowledge of the day, guides, glossary.
 
+## Redesign: "Registry" look (2026-10-05, owner request, not a milestone)
+Done:
+- New tokens, fonts (Archivo, Source Serif 4, IBM Plex Mono), masthead navigation, home with question sheet and Act index,
+  answer sheet with index tabs, margin-marked sources with highlighter sweep, ruled progress, restyled primitives, auth,
+  library, laws and search pages; favicon and theme-color. DEVIATIONS D31.
+- Checks: frontend lint, typecheck, 237 vitest, build; 11 e2e (axe clean in light and dark); backend contract test for the CSP hash.
+Open issues:
+- Not run: backend ./scripts/check.sh (no backend change). Letter workspace, Matter and Account pages were restyled only through
+  shared tokens/components; give them a visual pass. Swahili strings still await review (HUMAN_TODO).
+- nav_collapse / nav_expand strings in ui_strings.json are unused now.
+Not committed: left for the owner to review the screenshots first.

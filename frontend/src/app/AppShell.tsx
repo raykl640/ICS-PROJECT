@@ -12,7 +12,6 @@ import {
   LogOut,
   MessageSquare,
   Moon,
-  Scale,
   Settings as SettingsIcon,
   SlidersHorizontal,
   Sun,
@@ -29,9 +28,10 @@ import { CommandPalette, type CommandItem } from "../design/components/CommandPa
 import { Dialog, DialogContent } from "../design/components/Dialog";
 import { Kbd } from "../design/components/Display";
 import { Popover, PopoverContent, PopoverTrigger, Tooltip } from "../design/components/Overlay";
-import { Sidebar, TopBar } from "../design/components/Shell";
+import { Masthead, RAIL_OFFSET } from "../design/components/Shell";
 import { useToast } from "../design/components/toastContext";
 import { ToggleGroup } from "../design/components/ToggleGroup";
+import { cx } from "../design/cx";
 import { useMediaQuery } from "../design/useMediaQuery";
 import { isBusy, type Phase } from "../hooks/session";
 import { type StringKey, type Translate, useI18n } from "../i18n";
@@ -57,11 +57,35 @@ function RouterLink({ href, ...props }: ComponentProps<"a"> & { href: string }) 
   return <Link to={href} {...props} />;
 }
 
-function Brand() {
+/** The section-sign tile: the mark every statute margin and every clerk's stamp shares. */
+function BrandMark({ inverted }: { inverted?: boolean }) {
   return (
-    <Link to="/" className="flex items-center gap-2 rounded-sm text-ink">
-      <Scale aria-hidden="true" size={22} className="text-accent" />
-      <span className="font-display-style text-xl">HakiAI</span>
+    <span
+      aria-hidden="true"
+      className={cx(
+        "grid size-9 place-items-center font-display-style text-[1.65rem] leading-none",
+        inverted ? "bg-mast-ink text-mast" : "bg-ink text-canvas",
+      )}
+    >
+      §
+    </span>
+  );
+}
+
+function Brand({ rail }: { rail?: boolean }) {
+  return (
+    <Link
+      to="/"
+      aria-label={rail ? "HakiAI" : undefined}
+      className={cx("flex shrink-0 items-center gap-2 rounded-sm", rail ? "text-mast-ink" : "text-ink")}
+    >
+      <BrandMark inverted={rail} />
+      {!rail && (
+        <span className="text-[1.4rem] leading-none">
+          <span className="font-display-style">Haki</span>
+          <span className="font-light tracking-tight">AI</span>
+        </span>
+      )}
     </Link>
   );
 }
@@ -77,8 +101,8 @@ function LanguageSwitch() {
       onValueChange={(language: UiLanguage) => update({ language })}
       iconOnly
       items={[
-        { value: "en", label: t("language_en"), icon: <span className="text-sm">EN</span> },
-        { value: "sw", label: t("language_sw"), icon: <span className="text-sm">SW</span> },
+        { value: "en", label: t("language_en"), icon: <span className="font-mono text-sm">EN</span> },
+        { value: "sw", label: t("language_sw"), icon: <span className="font-mono text-sm">SW</span> },
       ]}
     />
   );
@@ -97,7 +121,7 @@ function QuickSettings() {
       </Tooltip>
       <PopoverContent align="end" aria-label={t("quick_settings")} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <span aria-hidden="true" className="text-sm font-semibold text-ink-muted">
+          <span aria-hidden="true" className="label-mono text-ink-muted">
             {t("theme_label")}
           </span>
           <ToggleGroup
@@ -112,7 +136,7 @@ function QuickSettings() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <span aria-hidden="true" className="text-sm font-semibold text-ink-muted">
+          <span aria-hidden="true" className="label-mono text-ink-muted">
             {t("text_size_label")}
           </span>
           <ToggleGroup
@@ -123,7 +147,7 @@ function QuickSettings() {
             items={TEXT_SIZES.map((size) => ({
               value: size,
               label: t(`text_${size}`),
-              icon: <span className="text-sm">{size.toUpperCase()}</span>,
+              icon: <span className="font-mono text-sm">{size.toUpperCase()}</span>,
             }))}
           />
         </div>
@@ -149,7 +173,7 @@ function AccountControl() {
         <Link
           to="/welcome"
           aria-label={t("sign_in")}
-          className="target inline-flex items-center justify-center rounded-md p-2 text-ink motion-colors hover:bg-sunken"
+          className="target inline-flex items-center justify-center rounded-sm p-2 text-ink motion-colors hover:bg-highlight"
         >
           <LogIn aria-hidden="true" size={20} />
         </Link>
@@ -189,9 +213,12 @@ function GuestBanner({ pathname }: { pathname: string }) {
   const { me } = useAuth();
   if (!me || me.user || AUTH_PATHS.has(pathname)) return null;
   return (
-    <p className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-sunken px-4 py-2 text-sm text-ink">
-      <span className="font-semibold">{t("guest_banner")}</span>
-      <Link to="/welcome" className="font-semibold text-brand underline underline-offset-3">
+    <p className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+      <span>{t("guest_banner")}</span>
+      <Link
+        to="/welcome"
+        className="font-semibold text-brand underline underline-offset-3 hover:bg-highlight hover:text-ink"
+      >
         {t("guest_banner_action")}
       </Link>
     </p>
@@ -280,7 +307,7 @@ function searchCommands(query: string, signedIn: boolean, t: Translate, go: (to:
   return searches;
 }
 
-/** Layout of every page: navigation, top bar, health notice, the routed page and the command palette. */
+/** Layout of every page: masthead with navigation, health notice, the routed page and the command palette. */
 export function AppShell() {
   const { t } = useI18n();
   const { pathname } = useLocation();
@@ -291,7 +318,6 @@ export function AppShell() {
   const signedIn = Boolean(me?.user && !me.locked);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [acts, setActs] = useState<ActInfo[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const firstPath = useRef(pathname);
 
@@ -376,51 +402,46 @@ export function AppShell() {
       onSelect: () => update({ language: settings.language === "en" ? "sw" : "en" }),
     },
   ];
-  const here = NAV.find((item) => item.href === pathname);
+
+  const here = NAV.find((item) => (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)));
 
   if (me?.user && me.locked) return <LockScreen name={me.user.display_name} />;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas md:flex-row">
+    <div className="flex min-h-dvh flex-col bg-canvas">
       <a
         href="#main-content"
-        className="sr-only z-50 rounded-md bg-brand px-4 py-3 font-semibold text-brand-ink focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+        className="sr-only z-50 rounded-sm bg-highlight px-4 py-3 font-semibold text-ink focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
       >
         {t("skip_to_content")}
       </a>
-      <Sidebar
+      <Masthead
         label={t("nav_label")}
         brand={<Brand />}
+        brandMark={<Brand rail />}
+        title={here && t(here.key)}
         items={NAV.map(({ href, key, icon: Icon }) => ({
           id: href,
           label: t(key),
           icon: <Icon size={20} />,
           href,
           current: href === "/" ? pathname === "/" : pathname.startsWith(href),
-          primary: true,
         }))}
-        collapsed={collapsed}
-        onCollapsedChange={setCollapsed}
-        collapseLabel={t("nav_collapse")}
-        expandLabel={t("nav_expand")}
+        search={{ label: t("search_label"), shortcut: t("search_shortcut"), onOpen: () => setPaletteOpen(true) }}
+        end={
+          <>
+            <LanguageSwitch />
+            <QuickSettings />
+            <AccountControl />
+          </>
+        }
         linkComponent={RouterLink}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar
-          start={here && <span className="font-semibold text-ink">{t(here.key)}</span>}
-          search={{ label: t("search_label"), shortcut: t("search_shortcut"), onOpen: () => setPaletteOpen(true) }}
-          end={
-            <>
-              <LanguageSwitch />
-              <QuickSettings />
-              <AccountControl />
-            </>
-          }
-        />
+      <div className={cx("flex min-w-0 flex-1 flex-col", RAIL_OFFSET)}>
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none sm:px-6 lg:py-8"
+          className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-24 outline-none sm:px-6 md:pb-10 lg:pt-8"
         >
           {health && health.status !== "ok" && (
             <div className="mb-6">
@@ -435,7 +456,9 @@ export function AppShell() {
               </p>
             }
           >
-            <Outlet />
+            <div className="page-enter">
+              <Outlet />
+            </div>
           </Suspense>
         </main>
       </div>

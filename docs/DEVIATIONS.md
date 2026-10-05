@@ -22,6 +22,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D22, D29 | encrypted local accounts; M13 mechanics | in force |
 | D23, D24 | follow-up context; background runs (M14) | in force |
 | D30 | laws browser mechanics (M15) | in force |
+| D31 | "Registry" redesign replaces the Mahakama/Jua look | in force (supersedes the visual parts of D27, D28) |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -361,3 +362,24 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 - Impact: existing installs must rerun build_index once (it writes refs.json). The synthetic test corpus gained two
   references (employment s.8 → s.4 and Article 41; tenancy s.41 → s.4 and repealed s.6).
 
+## D31 "Registry" redesign — owner request after M15
+- What: the owner found the M11/M12 look (cream paper, forest green, rounded cards, dashed empty states, sidebar) generic and
+  asked for a complete redesign specific to this system. New direction, drawn from Kenyan statute books and registry paperwork:
+  - (a) Tokens: photocopy-grey paper, near-black ink, ultramarine "stamp pad" brand colour, vermilion accent, a highlighter
+    yellow (dark theme: dim olive) used for the current page, hovers and cited provisions. 2/3/4 px corners; no soft shadows
+    (overlays use a hard 4 px offset). New roles mast, mast-ink, mast-muted for a masthead that is dark in both themes.
+  - (b) Type: Archivo (variable weight and width; headings at 76% width) for the interface, Source Serif 4 for statute and
+    answer text (answers were sans before), IBM Plex Mono for section numbers, labels and counters. Source Sans 3 removed.
+  - (c) Layout: the sidebar and top bar became one masthead (the same "Main" nav landmark is a fixed bottom bar below 768 px).
+    Home is a headline, a "question sheet" with ruled lines and an index of the ten Acts; cards became ruled sections.
+  - (d) Answer view: the question is a "Re:" line; the answer is a bordered sheet with index tabs, sources as margin-marked
+    exhibits. Progress is a row of ruled cells with hazard-stripe on the current step.
+  - (e) Motion: a 180 ms rise for pages and index rows (rows staggered 16 ms each), a key-press on primary buttons, a
+    highlighter sweep on a cited source (270 ms, alternating keyframe names so a second click sweeps again) and sliding
+    stripes on the current step. All are off under reduced motion (stagger delay too). The sweep exceeds the 180 ms
+    ceiling of D27 by 90 ms because it is the one animation that carries meaning (it shows where a citation lands).
+- Why: owner feedback; identity should come from the product's own material rather than a generic app template.
+- Impact: no behaviour or API change. Components keep their roles and accessible names; the Sidebar/TopBar components were
+  replaced by Masthead (nav collapse strings are now unused). e2e axe checks wait for entry animations to settle
+  (e2e/settle.ts). contrast.test.ts also checks the masthead pairs and ink on highlight. The M11 screenshots in docs/design/
+  show the old directions and were not regenerated.

@@ -21,14 +21,14 @@ export function Laws() {
       {result.status === "error" && <p className="font-semibold text-danger">{t("laws_error")}</p>}
       {result.status === "loading" && <Skeleton className="h-40 rounded-md" />}
       {result.status === "ok" && (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="stagger grid gap-x-10 border-t-2 border-ink sm:grid-cols-2">
           {result.data.map((act) => (
             <li key={act.slug}>
               <Link
                 to={`/laws/${act.slug}`}
-                className="target flex h-full flex-col gap-1 rounded-md border border-line-subtle bg-surface p-4 text-ink motion-colors hover:border-line hover:bg-raised"
+                className="target group flex h-full flex-col gap-1 border-b border-line-subtle px-1 py-3 text-ink motion-colors hover:bg-highlight"
               >
-                <span className="flex items-center gap-2 font-semibold">
+                <span className="flex items-center gap-2 text-lg font-bold">
                   <BookOpen aria-hidden="true" size={18} className="shrink-0 text-brand" />
                   {act.name}
                 </span>
