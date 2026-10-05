@@ -1,4 +1,6 @@
 {
   "max_question_chars": 1000,
-  "max_comment_chars": 500
+  "max_comment_chars": 500,
+  "password_min_chars": 10,
+  "username_max_chars": 32
 }

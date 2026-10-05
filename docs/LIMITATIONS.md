@@ -104,7 +104,10 @@ Until then there are no retrieval-precision, accuracy or SUS numbers to report. 
 
 - **Sessions and rate limits:** both are held in memory, so a restart forgets them. Running several server processes would
   give each its own sessions.
-- **No accounts and no history:** the system keeps no record of users or past answers. The only persisted user data is the
-  optional thumbs-up/down feedback (ids, rating, an optional comment).
+- **Accounts are local and only as safe as the computer (M13):** account content is encrypted with a key derived from
+  the password (argon2id), and the key lives only in server memory while unlocked. Anyone who can run code on the computer
+  while an account is unlocked could read it. Usernames, display names and preferences are stored unencrypted. A lost
+  password and a lost recovery code mean the account's data cannot be recovered. Guests keep nothing; the only other
+  persisted user data is the optional thumbs-up/down feedback (ids, rating, an optional comment).
 - **Referral contacts:** the "where to get help" block stays hidden until a human adds verified agencies
   (`config/referral_resources.json`).

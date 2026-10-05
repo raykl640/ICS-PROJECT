@@ -23,6 +23,11 @@ from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from backend.app.accounts.auth import AuthSessions
+from backend.app.accounts.db import Database
+from backend.app.accounts.routes import account as account_routes
+from backend.app.accounts.routes import auth as auth_routes
+from backend.app.accounts.service import AccountError, Accounts
 from backend.app.config import get_settings
 from backend.app.deps import Deps, default_deps, warm_up
 from backend.app.feedback import append_feedback
@@ -46,7 +51,13 @@ from backend.app.retrieval.pipeline import ContextPipeline
 from backend.app.security import RateLimiter, clean_comment, clean_question
 from backend.app.sessions import SessionsFull, SessionStore
 from backend.app.stream import AnswerStream
-from backend.app.web import BodyLimitMiddleware, SecurityHeadersMiddleware, SPAStaticFiles, error_response
+from backend.app.web import (
+    BodyLimitMiddleware,
+    RequestGuardMiddleware,
+    SecurityHeadersMiddleware,
+    SPAStaticFiles,
+    error_response,
+)
 
 log = logging.getLogger("hakiai.api")
 
@@ -85,8 +96,10 @@ class Runtime:
     query_limiter: RateLimiter
     feedback_limiter: RateLimiter
     answers: AnswerStream
+    wall_clock: Callable[[], float] = time.time
     pipeline: ContextPipeline | None = None
     models_warm: bool = False
+    accounts: Accounts | None = None
 
 
 async def _runtime(request: Request) -> Runtime:
@@ -324,6 +337,12 @@ def _warm_up(pipeline: ContextPipeline, language: LanguageService) -> None:
         ) from exc
 
 
+def _open_accounts(rt: Runtime) -> Accounts:
+    """Open (and migrate) the accounts database; sign-ins start empty, so remembered ones come back locked."""
+    s = rt.deps.settings
+    return Accounts(s, Database(s.app_db_path), AuthSessions(rt.wall_clock), rt.wall_clock)
+
+
 async def _check_ollama(deps: Deps) -> None:
     """Warn (not fail) at startup when Ollama or the model is missing; /api/health reports it too."""
     reachable, model_present = await deps.llm.status()
@@ -340,6 +359,8 @@ async def _purge_loop(rt: Runtime) -> None:
         dropped = rt.sessions.purge()
         rt.query_limiter.prune()
         rt.feedback_limiter.prune()
+        if rt.accounts is not None:
+            await run_in_threadpool(rt.accounts.purge)
         if dropped:
             log.info("sessions_purged", extra={"count": dropped, "live": len(rt.sessions)})
 
@@ -351,6 +372,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     deps = rt.deps
     if deps.setup_logging:
         configure_logging(deps.settings)
+    rt.accounts = await run_in_threadpool(_open_accounts, rt)
+    app.state.accounts = rt.accounts
     rt.pipeline = await run_in_threadpool(_load_pipeline, deps)
     await run_in_threadpool(_warm_up, rt.pipeline, deps.language)
     rt.models_warm = True
@@ -372,6 +395,11 @@ def _install_error_handlers(app: FastAPI) -> None:
     async def _api_error(request: Request, exc: ApiError) -> JSONResponse:
         return error_response(exc.status, exc.code, exc.message, exc.headers)
 
+    @app.exception_handler(AccountError)
+    async def _account_error(request: Request, exc: AccountError) -> JSONResponse:
+        headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
+        return error_response(exc.status, exc.code, exc.message, headers)
+
     @app.exception_handler(RequestValidationError)
     async def _invalid(request: Request, exc: RequestValidationError) -> JSONResponse:
         problems = "; ".join(".".join(map(str, e["loc"])) + f": {e['msg']}" for e in exc.errors())
@@ -388,8 +416,13 @@ def _install_error_handlers(app: FastAPI) -> None:
         return error_response(500, "internal", "Internal server error.")
 
 
-def create_app(deps: Deps, clock: Callable[[], float] = time.monotonic) -> FastAPI:
-    """The API with its middleware and, if built, the frontend (mounted after the API routes)."""
+def create_app(
+    deps: Deps, clock: Callable[[], float] = time.monotonic, wall_clock: Callable[[], float] = time.time
+) -> FastAPI:
+    """The API with its middleware and, if built, the frontend (mounted after the API routes).
+
+    clock (monotonic) drives answer sessions and rate limits; wall_clock (epoch seconds) drives accounts: lockouts,
+    auto-lock, token expiry and stored timestamps."""
     s = deps.settings
     app = FastAPI(title="HakiAI API", version="0.1.0", lifespan=_lifespan)
     app.state.runtime = Runtime(
@@ -399,14 +432,23 @@ def create_app(deps: Deps, clock: Callable[[], float] = time.monotonic) -> FastA
         query_limiter=RateLimiter(s.rate_limit_per_min, clock),
         feedback_limiter=RateLimiter(s.rate_limit_per_min, clock),
         answers=AnswerStream(s, deps.llm, deps.language, deps.refs, load_ui_strings(s.ui_strings_path)),
+        wall_clock=wall_clock,
     )
+    app.state.auth_limiter = RateLimiter(s.auth_rate_limit_per_min, clock)
     _install_error_handlers(app)
     app.include_router(api)
+    app.include_router(auth_routes)
+    app.include_router(account_routes)
     if s.dev_mode:
         app.add_middleware(
-            CORSMiddleware, allow_origins=[s.cors_dev_origin], allow_methods=["GET", "POST"], allow_headers=["*"]
+            CORSMiddleware,
+            allow_origins=[s.cors_dev_origin],
+            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_headers=["*"],
+            allow_credentials=True,
         )
     app.add_middleware(BodyLimitMiddleware, max_bytes=s.max_body_bytes)
+    app.add_middleware(RequestGuardMiddleware, allowed_hosts=s.allowed_hosts)
     app.add_middleware(SecurityHeadersMiddleware)
     if (s.frontend_dist / "index.html").is_file():
         app.mount("/", SPAStaticFiles(directory=s.frontend_dist, html=True), name="frontend")

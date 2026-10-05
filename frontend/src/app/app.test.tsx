@@ -72,7 +72,7 @@ test("settings persist across reloads and are applied to <html>", async () => {
 
 test("the interface language switches every label and sets lang", async () => {
   const user = userEvent.setup();
-  renderApp("/settings");
+  renderApp("/settings?tab=language");
   await screen.findByRole("heading", { level: 1, name: "Settings" });
   const main = screen.getByRole("main");
   await user.click(

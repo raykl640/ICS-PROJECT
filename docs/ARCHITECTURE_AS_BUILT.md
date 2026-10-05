@@ -71,6 +71,7 @@ rebuild command (`IndexMismatchError`), and `python -m backend.app.preflight` re
 | 6 Generation | `generation/prompt.py`, `budget.py`, `llm.py`, `parse.py`, `citations.py`, `service.py`, `gate.py` | Ollama (`LLMClient`) | `FakeLLM` |
 | 6b Language | `lang/detect.py`, `segment.py`, `translator.py`, `protect.py`, `glossary.py`, `service.py` | MarianMT (`Translator`) | `FakeTranslator` |
 | 7 Delivery | `main.py`, `stream.py`, `sessions.py`, `letter.py`, `feedback.py`, `security.py`, `web.py`, `deps.py`, `devstack.py` | — | `HAKI_FAKE_BACKENDS=1` |
+| Accounts (v2) | `backend/app/accounts/` (SQLite WAL, argon2id, AES-256-GCM; D22, D29) | — | injected clock, plaintext scan of DB + WAL |
 | 7 Frontend | `frontend/src/` (React 19, Vite, Tailwind 4, react-router, Radix primitives; v2 shell since M12) | — | mock EventSource (vitest), Playwright e2e + axe |
 | Evaluation | `evaluation/` + `eval/*.py` entry points | the real stack via HTTP | fake stack |
 | Operations | `offline.py` (setup), `preflight.py` (run checks), `scripts/run.sh`, `run.ps1`, `Dockerfile` | — | injected tools |

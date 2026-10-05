@@ -7,6 +7,7 @@ import { useHealth } from "../hooks/useHealth";
 import { useQuerySession } from "../hooks/useQuerySession";
 import { I18nContext, makeTranslate, useI18n } from "../i18n";
 import { measure, recordSpeed } from "../lib/eta";
+import { AuthProvider } from "./AuthProvider";
 import { SessionContext, SettingsContext } from "./contexts";
 import { applyAttributes, htmlAttributes, loadSettings, saveSettings, type Settings } from "./settings";
 
@@ -65,12 +66,14 @@ function SessionProvider({ children }: { children: ReactNode }) {
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
-/** Everything the screens rely on: settings + i18n, tooltips, toasts and the session. */
+/** Everything the screens rely on: settings + i18n, tooltips, toasts, sign-in state and the session. */
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <SettingsProvider>
       <ToastsWithLabels>
-        <SessionProvider>{children}</SessionProvider>
+        <AuthProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </AuthProvider>
       </ToastsWithLabels>
     </SettingsProvider>
   );

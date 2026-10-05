@@ -38,3 +38,6 @@ frontend/playwright-report/
 
 # Evaluation participant data (survey answers)
 eval/usability_responses.csv
+
+# Local accounts database (encrypted history; personal data, never committed)
+data/app.db*

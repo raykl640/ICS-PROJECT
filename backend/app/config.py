@@ -153,6 +153,23 @@ class Settings(BaseSettings):
     # Synthetic corpus + fake models instead of indexes, MiniLM, Marian and Ollama (frontend development; devstack.py).
     fake_backends: bool = False
 
+    # Local accounts (M13, DESIGN_V2 "Accounts and encrypted store"). Tests use cheap argon2 parameters.
+    app_db_path: Path = DATA_DIR / "app.db"
+    argon2_time_cost: int = Field(3, gt=0)
+    argon2_memory_kib: int = Field(65_536, ge=8)
+    argon2_parallelism: int = Field(2, gt=0)
+    auth_session_ttl_s: int = Field(43_200, gt=0)
+    auto_lock_s: int = Field(900, gt=0)
+    login_max_attempts: int = Field(5, gt=0)
+    login_lockout_s: int = Field(30, gt=0)
+    login_lockout_max_s: int = Field(3600, gt=0)
+    password_min_chars: int = Field(10, ge=8)
+    username_max_chars: int = Field(32, gt=2)
+    profile_field_max_chars: int = Field(200, gt=0)
+    auth_rate_limit_per_min: int = Field(20, gt=0)
+    # Host header allow-list (DNS-rebinding defence for the localhost server); hostnames, any port.
+    allowed_hosts: list[str] = Field(default_factory=lambda: ["127.0.0.1", "localhost", "[::1]"])
+
     # Evaluation harness (eval/, M9). Input and result files are fixed names under eval_dir (see properties below).
     eval_dir: Path = EVAL_DIR
     eval_bootstrap_resamples: int = Field(10_000, gt=0)
@@ -176,6 +193,10 @@ class Settings(BaseSettings):
             raise ValueError("min_chunk_tokens must be <= chunk_token_budget")
         if not self.embed_window_stride <= self.embed_window_words <= self.embed_split_over_words:
             raise ValueError("need embed_window_stride <= embed_window_words <= embed_split_over_words")
+        if self.login_lockout_s > self.login_lockout_max_s:
+            raise ValueError("login_lockout_s must be <= login_lockout_max_s")
+        if not self.allowed_hosts:
+            raise ValueError("allowed_hosts must not be empty")
         return self
 
     @property

@@ -2,13 +2,9 @@
 path traversal on the static route, hardening headers, and no content in logs on failure paths."""
 
 import asyncio
-import io
 import json
-import logging
 import os
 import random
-from collections.abc import Iterator
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -19,13 +15,14 @@ from fastapi.testclient import TestClient
 
 from backend.app.config import Settings
 from backend.app.generation.llm import OllamaClient
-from backend.app.logging_setup import configure_logging
 from backend.tests.api_support import (
+    APP_HEADERS,
     EN_QUESTION,
     GARBAGE,
     SW_QUESTION,
     FakeClock,
     call,
+    captured_logs,
     make_app,
     runtime,
     sse_events,
@@ -37,20 +34,6 @@ from backend.tests.fakes import ChunkedStream, FakeLLM, ndjson
 _PROMPT_MARKERS = ("[chunk", "<question>", "</question>", "system:", "context:", "user question:", "[inst]", "<s>")
 _HEADERS = ("x-content-type-options", "x-frame-options", "referrer-policy", "content-security-policy")
 _LOAD_SIZE = 50
-
-
-@contextmanager
-def captured_logs() -> Iterator[io.StringIO]:
-    """Route the app's JSON logs (content redaction on, as in production) into a buffer."""
-    buffer = io.StringIO()
-    root = logging.getLogger()
-    saved = (root.handlers[:], root.level)
-    configure_logging(Settings(), buffer)
-    try:
-        yield buffer
-    finally:
-        root.handlers[:], level = saved
-        root.setLevel(level)
 
 
 def _ollama(fail_first: bool) -> tuple[OllamaClient, list[int]]:
@@ -204,7 +187,7 @@ def test_fuzzed_questions_never_break_the_api_or_the_prompt(tmp_path: Path) -> N
     llm = FakeLLM()
     app = make_app(tmp_path, llm, rate_limit_per_min=1000, **sw_translators())
     questions = _fuzz_questions(120)
-    with captured_logs() as logs, TestClient(app, raise_server_exceptions=False) as client:
+    with captured_logs() as logs, TestClient(app, raise_server_exceptions=False, headers=APP_HEADERS) as client:
         for index, question in enumerate(questions):
             language = ("en", "sw", "auto")[index % 3]
             body = json.dumps({"question": question, "language": language})  # ASCII escapes carry lone surrogates
@@ -246,7 +229,7 @@ def test_fuzzed_questions_never_break_the_api_or_the_prompt(tmp_path: Path) -> N
     ],
 )
 def test_hostile_bodies_get_a_4xx_error_body(tmp_path: Path, body: bytes) -> None:
-    with TestClient(make_app(tmp_path, FakeLLM()), raise_server_exceptions=False) as client:
+    with TestClient(make_app(tmp_path, FakeLLM()), raise_server_exceptions=False, headers=APP_HEADERS) as client:
         response = client.post("/api/query", content=body, headers={"content-type": "application/json"})
     assert 400 <= response.status_code < 500, response.text
     _assert_error_body(response)
@@ -291,7 +274,7 @@ def test_static_route_never_serves_files_outside_the_build(tmp_path: Path, path:
 
 def test_hardening_headers_on_every_kind_of_response(tmp_path: Path) -> None:
     app = make_app(tmp_path, FakeLLM(), frontend_dist=_dist_with_secret(tmp_path))
-    with TestClient(app, raise_server_exceptions=False) as client:
+    with TestClient(app, raise_server_exceptions=False, headers=APP_HEADERS) as client:
         sid = client.post("/api/query", json={"question": EN_QUESTION, "language": "en"}).json()["session_id"]
         responses = [
             client.get("/"),

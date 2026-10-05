@@ -51,7 +51,7 @@ def stream_events(client: httpx.Client, session_id: str) -> tuple[float | None, 
 
 def run(base_url: str, question: str) -> None:
     """All smoke steps against base_url; raises SmokeError on the first failure."""
-    with httpx.Client(base_url=base_url, timeout=60) as client:
+    with httpx.Client(base_url=base_url, timeout=60, headers={"X-Haki": "1"}) as client:
         health = client.get("/api/health")
         check(health.status_code == 200, f"health is {health.status_code}: {health.json().get('error')}")
         print("health      ok")

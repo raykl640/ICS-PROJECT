@@ -20,6 +20,7 @@ from backend.app.logging_setup import configure_logging
 from backend.app.main import create_app
 from backend.app.retrieval.meta import IndexMismatchError
 from backend.tests.api_support import (
+    APP_HEADERS,
     EN_QUESTION,
     GARBAGE,
     SW_QUESTION,
@@ -43,7 +44,7 @@ LETTER_SCRIPT = [
 
 
 def _client(app: FastAPI) -> TestClient:
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, raise_server_exceptions=False, headers=APP_HEADERS)
 
 
 def _ask(client: TestClient, question: str = EN_QUESTION, language: str = "en") -> dict[str, Any]:

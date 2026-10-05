@@ -208,3 +208,18 @@
   transition-duration: var(--hk-duration-fast);
   transition-timing-function: var(--ease-standard);
 }
+
+/* Printing the recovery code prints only the code box. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 0 auto 0;
+  }
+}

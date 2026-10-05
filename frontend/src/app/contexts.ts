@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import type { Me } from "../api/accounts";
 import type { RequestedLanguage } from "../api/client";
 import type { Health } from "../api/types";
 import type { SessionState } from "../hooks/session";
@@ -33,5 +34,22 @@ export const SessionContext = createContext<SessionValue | null>(null);
 export function useSession(): SessionValue {
   const value = useContext(SessionContext);
   if (!value) throw new Error("useSession needs a SessionProvider");
+  return value;
+}
+
+export interface AuthValue {
+  /** null until the first /api/auth/me answer. */
+  me: Me | null;
+  /** Adopt a fresh state (after sign-in, unlock, lock, sign-out). */
+  apply: (me: Me) => void;
+  refresh: () => Promise<void>;
+}
+
+export const AuthContext = createContext<AuthValue | null>(null);
+
+/** The signed-in user (or guest) and whether HakiAI is locked. */
+export function useAuth(): AuthValue {
+  const value = useContext(AuthContext);
+  if (!value) throw new Error("useAuth needs an AuthProvider");
   return value;
 }

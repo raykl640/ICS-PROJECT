@@ -19,6 +19,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D19 | operations: offline setup, preflight, run scripts, Docker, portability | in force |
 | D27 | v2 design system mechanics (M11) | (a) superseded by D28; rest in force |
 | D28 | v2 app shell, static theme, pre-paint script, guest Ask (M12) | in force |
+| D22, D29 | encrypted local accounts; M13 mechanics | in force |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -281,3 +282,39 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
   legal descriptions. (f) an honest estimate, never a made-up number.
 - Impact: editing the pre-paint script requires updating the hash in web.py (the tests fail otherwise). A new colour role
   needs tokens.css (all four blocks if it changes with contrast), COLOR_ROLES and PAIRS.
+
+## D22 Persistent, encrypted user data (privacy rule) — feat(M13)
+- What: CLAUDE.md's privacy rule kept all content out of storage. v2 stores account content, but only for signed-in users
+  and only encrypted: every content field is AES-256-GCM under a per-user data key bound to its table, column and row
+  (AAD). The data key is wrapped under argon2id keys from the password and from a 100-bit recovery code, and lives
+  unwrapped only in server memory while unlocked. In M13 the only content is the letter profile; history follows in
+  M14 (with "Save history" off = private mode). Logs are unchanged, and now also redact any field named like
+  username, display name, password, recovery, profile or token.
+- Why: the owner asked for accounts with saved history on shared computers.
+- Impact: tests scan the SQLite file and WAL for a plaintext marker. Account deletion runs VACUUM and empties the WAL
+  (secure_delete is on). Not encrypted, by design: usernames (needed to sign in), display names (shown on the lock screen)
+  and preferences.
+
+## D29 Local accounts mechanics — feat(M13)
+- What:
+  - (a) An extra accounts/service.py holds the account rules between routes.py and repo.py, so they can be tested with
+    an injected clock. create_app takes a second clock, wall_clock (epoch seconds), for lockouts, auto-lock and stored
+    times. The first clock stays monotonic for answer sessions.
+  - (b) Sign-in tokens are kept as sha256 in an auth_tokens table, so after a restart a remembered sign-in comes back
+    locked (lock screen) instead of signed out. The data key is never stored.
+  - (c) GET /api/auth/me also takes active=true (user activity, at most once a minute from the client) and returns
+    lock_in_s. The client re-checks /me when that time is due, so the client and server idle timers agree.
+  - (d) Host allow-list compares host names, not host:port, because a DNS-rebinding attack changes the name. The
+    allowed_hosts default is 127.0.0.1, localhost and [::1]; serving under another name (e.g. to a LAN) must set
+    HAKI_ALLOWED_HOSTS; the shipped docker-compose publishes on 127.0.0.1 and needs nothing.
+  - (e) Lockout: after login_max_attempts failures, a lock of login_lockout_s × 2^(failures − max), capped by the new
+    login_lockout_max_s (3600). Unknown usernames cost one argon2 verification, so they take as long as wrong passwords.
+    Password checks also use a per-IP limit (auth_rate_limit_per_min).
+  - (f) New config: password_min_chars (10), username_max_chars (32), profile_field_max_chars (200),
+    auth_rate_limit_per_min, login_lockout_max_s. limits.json mirrors password_min_chars and username_max_chars (contract
+    test).
+  - (g) There is no automatic first-run redirect to /welcome. The guest banner and the top-bar Sign in link lead there,
+    so v1 behaviour and deep links are unchanged.
+- Why: testable rules; a restart should not silently sign users out; honest messages; keep v1 behaviour for guests.
+- Impact: every mutating API client must send X-Haki: 1 (frontend, scripts/smoke.py and eval run_functional were updated).
+  The e2e server uses a throwaway database in the system temp dir.

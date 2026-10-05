@@ -7,22 +7,32 @@ export type Rating = "up" | "down";
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** Seconds from a Retry-After header (429 and 503), if any. */
+  readonly retryAfter: number | null;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, retryAfter: number | null = null) {
     super(message);
     this.status = status;
     this.code = code;
+    this.retryAfter = retryAfter;
   }
 }
 
-const JSON_HEADERS = { "Content-Type": "application/json" };
+/** Mutating requests carry X-Haki: 1; the backend refuses them otherwise (cross-site request defence). */
+export const JSON_HEADERS = { "Content-Type": "application/json", "X-Haki": "1" };
 
 /** Parse a JSON response, raising ApiError with the backend's error code on non-2xx. */
-async function parse<T>(response: Response): Promise<T> {
+export async function parse<T>(response: Response): Promise<T> {
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const error = (body as { error?: { code?: string; message?: string } } | null)?.error;
-    throw new ApiError(response.status, error?.code ?? "http_error", error?.message ?? response.statusText);
+    const retry = Number(response.headers.get("Retry-After"));
+    throw new ApiError(
+      response.status,
+      error?.code ?? "http_error",
+      error?.message ?? response.statusText,
+      Number.isFinite(retry) && retry > 0 ? retry : null,
+    );
   }
   return body as T;
 }

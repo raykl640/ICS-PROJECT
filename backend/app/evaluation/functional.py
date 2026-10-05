@@ -190,7 +190,7 @@ def main(
     queries = FUNCTIONAL_QUERIES.validate_python(read_json(settings.functional_queries_path))
     if args.only:
         queries = [q for q in queries if q.id in set(args.only)]
-    client = client or httpx.Client(base_url=args.base_url, timeout=60.0)
+    client = client or httpx.Client(base_url=args.base_url, timeout=60.0, headers={"X-Haki": "1"})
     with client:
         health = client.get("/api/health")
         if health.status_code != 200:

@@ -33,12 +33,14 @@ Direct dependencies are marked ●.
 | annotated-doc | 0.0.5 | MIT |
 | annotated-types | 0.8.0 | MIT |
 | anyio | 4.15.1 | MIT |
+| argon2-cffi ● | 25.1.0 | MIT |
+| argon2-cffi-bindings | 26.1.0 | MIT |
 | certifi | 2026.7.22 | MPL-2.0 |
 | cffi | 2.1.1 | MIT-0 |
 | charset-normalizer | 3.5.2 | MIT |
 | click | 8.5.0 | BSD-3-Clause |
 | cloudpickle | 3.1.2 | BSD |
-| cryptography | 50.0.2 | Apache-2.0 OR BSD-3-Clause |
+| cryptography ● | 50.0.2 | Apache-2.0 OR BSD-3-Clause |
 | faiss-cpu ● | 1.15.1 | MIT |
 | fastapi ● | 0.142.2 | MIT |
 | filelock | 4.0.9 | MIT |

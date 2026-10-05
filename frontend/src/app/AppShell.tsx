@@ -1,6 +1,10 @@
 import {
   CircleHelp,
+  CircleUser,
   Home,
+  Lock,
+  LogIn,
+  LogOut,
   MessageSquare,
   Moon,
   Scale,
@@ -10,9 +14,11 @@ import {
 } from "lucide-react";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
+import { lock, logout } from "../api/accounts";
 import type { UiLanguage } from "../api/types";
 import { HealthBanner } from "../components/ErrorState";
 import { IconButton } from "../design/components/Button";
+import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "../design/components/Menu";
 import { CommandPalette, type CommandItem } from "../design/components/CommandPalette";
 import { Popover, PopoverContent, PopoverTrigger, Tooltip } from "../design/components/Overlay";
 import { Sidebar, TopBar } from "../design/components/Shell";
@@ -21,7 +27,8 @@ import { ToggleGroup } from "../design/components/ToggleGroup";
 import { useMediaQuery } from "../design/useMediaQuery";
 import { isBusy, type Phase } from "../hooks/session";
 import { type StringKey, useI18n } from "../i18n";
-import { useSession, useSettings } from "./contexts";
+import { useAuth, useSession, useSettings } from "./contexts";
+import { LockScreen } from "./LockScreen";
 import { requestPageFocus } from "./pageFocus";
 import { TEXT_SIZES, type ThemeChoice } from "./settings";
 
@@ -115,6 +122,69 @@ function QuickSettings() {
   );
 }
 
+const AUTH_PATHS = new Set(["/welcome", "/signin", "/signup", "/recover"]);
+
+/** Signed in: a menu with Lock, Settings and Sign out. Guest: a link to sign in. */
+function AccountControl() {
+  const { t } = useI18n();
+  const { me, apply } = useAuth();
+  const { reset } = useSession();
+  const navigate = useNavigate();
+  if (!me?.user) {
+    return (
+      <Tooltip label={t("sign_in")}>
+        <Link
+          to="/welcome"
+          aria-label={t("sign_in")}
+          className="target inline-flex items-center justify-center rounded-md p-2 text-ink motion-colors hover:bg-sunken"
+        >
+          <LogIn aria-hidden="true" size={20} />
+        </Link>
+      </Tooltip>
+    );
+  }
+  const signOut = async () => {
+    apply(await logout());
+    reset();
+    navigate("/");
+  };
+  return (
+    <Menu>
+      <MenuTrigger asChild>
+        <IconButton label={t("account_menu")} icon={<CircleUser size={22} />} />
+      </MenuTrigger>
+      <MenuContent>
+        <MenuLabel>{t("signed_in_as", { name: me.user.display_name })}</MenuLabel>
+        <MenuItem icon={<Lock size={18} />} onSelect={() => void lock().then(apply)}>
+          {t("lock_now")}
+        </MenuItem>
+        <MenuItem icon={<SettingsIcon size={18} />} onSelect={() => navigate("/settings?tab=profile")}>
+          {t("nav_settings")}
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem icon={<LogOut size={18} />} tone="danger" onSelect={() => void signOut()}>
+          {t("sign_out")}
+        </MenuItem>
+      </MenuContent>
+    </Menu>
+  );
+}
+
+/** Thin notice for guests outside the sign-in pages. */
+function GuestBanner({ pathname }: { pathname: string }) {
+  const { t } = useI18n();
+  const { me } = useAuth();
+  if (!me || me.user || AUTH_PATHS.has(pathname)) return null;
+  return (
+    <p className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-sunken px-4 py-2 text-sm text-ink">
+      <span className="font-semibold">{t("guest_banner")}</span>
+      <Link to="/welcome" className="font-semibold text-brand underline underline-offset-3">
+        {t("guest_banner_action")}
+      </Link>
+    </p>
+  );
+}
+
 /** Toast when an answer finishes while the user is on another page. */
 function useAnswerReadyToast(phase: Phase, pathname: string): void {
   const { t } = useI18n();
@@ -135,6 +205,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const { settings, update } = useSettings();
   const { state, health } = useSession();
+  const { me } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const firstPath = useRef(pathname);
@@ -182,6 +253,8 @@ export function AppShell() {
   ];
   const here = NAV.find((item) => item.href === pathname);
 
+  if (me?.user && me.locked) return <LockScreen name={me.user.display_name} />;
+
   return (
     <div className="flex min-h-dvh flex-col bg-canvas md:flex-row">
       <a
@@ -215,6 +288,7 @@ export function AppShell() {
             <>
               <LanguageSwitch />
               <QuickSettings />
+              <AccountControl />
             </>
           }
         />
@@ -228,6 +302,7 @@ export function AppShell() {
               <HealthBanner health={health} />
             </div>
           )}
+          <GuestBanner pathname={pathname} />
           <Suspense
             fallback={
               <p role="status" className="text-ink-muted">

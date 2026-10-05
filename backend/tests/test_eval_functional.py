@@ -15,7 +15,15 @@ from backend.app.evaluation.functional import (
     run_query,
 )
 from backend.app.generation.llm import OllamaUnavailable
-from backend.tests.api_support import EN_QUESTION, GARBAGE, SW_QUESTION, FakeClock, make_app, sw_translators
+from backend.tests.api_support import (
+    APP_HEADERS,
+    EN_QUESTION,
+    GARBAGE,
+    SW_QUESTION,
+    FakeClock,
+    make_app,
+    sw_translators,
+)
 from backend.tests.fakes import FakeLLM
 
 EN = FunctionalQuery(id="F01", question=EN_QUESTION, lang="en", category="employment")
@@ -47,7 +55,7 @@ def test_shipped_functional_questions_match_the_milestone_mix() -> None:
 
 def test_answer_null_and_kiswahili_records(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     app = make_app(tmp_path, FakeLLM(), rate_limit_per_min=100, **sw_translators())
-    with TestClient(app) as client:
+    with TestClient(app, headers=APP_HEADERS) as client:
         en, null, sw = run_all(client, [EN, NULL, SW])
     assert en.error is None
     assert not en.null_response
@@ -80,7 +88,7 @@ def test_rate_limit_is_waited_out(tmp_path: Path) -> None:
         clock.now += seconds
 
     app = make_app(tmp_path, FakeLLM(), clock=clock, rate_limit_per_min=1)
-    with TestClient(app) as client:
+    with TestClient(app, headers=APP_HEADERS) as client:
         first = run_query(client, NULL, sleep)
         second = run_query(client, NULL, sleep)
     assert first.error is None
@@ -93,7 +101,7 @@ def test_stream_failure_is_recorded_and_main_exits_1(tmp_path: Path) -> None:
     settings.eval_dir.mkdir()
     settings.functional_queries_path.write_text(json.dumps([EN.model_dump(), NULL.model_dump()]), encoding="utf-8")
     app = make_app(tmp_path, FakeLLM(fail_with=OllamaUnavailable("down")), rate_limit_per_min=100)
-    assert main(["--only", "F01"], settings, TestClient(app)) == 1
+    assert main(["--only", "F01"], settings, TestClient(app, headers=APP_HEADERS)) == 1
     records = FUNCTIONAL_RECORDS.validate_json((settings.eval_results_dir / "functional.json").read_bytes())
     assert [r.id for r in records] == ["F01"]
     assert records[0].error == "stream llm_unavailable"
@@ -104,15 +112,15 @@ def test_main_saves_records_and_refuses_an_unhealthy_api(tmp_path: Path, capsys:
     settings.eval_dir.mkdir()
     settings.functional_queries_path.write_text(json.dumps([NULL.model_dump()]), encoding="utf-8")
     out = tmp_path / "f.json"
-    assert main(["--out", str(out)], settings, TestClient(make_app(tmp_path, FakeLLM()))) == 0
+    assert main(["--out", str(out)], settings, TestClient(make_app(tmp_path, FakeLLM()), headers=APP_HEADERS)) == 0
     assert FUNCTIONAL_RECORDS.validate_json(out.read_bytes())[0].null_response
-    assert main([], settings, TestClient(make_app(tmp_path, FakeLLM(healthy=False)))) == 2
+    assert main([], settings, TestClient(make_app(tmp_path, FakeLLM(healthy=False)), headers=APP_HEADERS)) == 2
     assert "not healthy" in capsys.readouterr().err
 
 
 def test_query_validation_error_is_recorded(tmp_path: Path) -> None:
     too_long = FunctionalQuery(id="X", question="x" * 2000, lang="en", category="c")
-    with TestClient(make_app(tmp_path, FakeLLM()), raise_server_exceptions=False) as client:
+    with TestClient(make_app(tmp_path, FakeLLM()), raise_server_exceptions=False, headers=APP_HEADERS) as client:
         record = run_query(client, too_long)
     assert record.error is not None
     assert record.error.startswith("HTTP 422")

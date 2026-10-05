@@ -112,3 +112,20 @@ comment are saved, never your question or the answer.
 more contrast, a larger text size, less motion, and the interface language (English or Kiswahili). They are saved in this
 browser on this computer only. **How it works** explains in plain words how answers are made and what HakiAI cannot do.
 Press **Ctrl K** to search pages and commands.
+
+## Accounts (optional)
+
+You can use HakiAI as a **guest**: nothing is saved after you close the window. To keep your details for letters, choose
+**Sign in** (top right) and then **Create an account**.
+- Pick a username and a password of at least 10 characters. The bar under the password shows how strong it is; a few
+  unrelated words make a strong password.
+- You then see a **recovery code** once. Copy it, print it or save it as a file, and keep it somewhere safe. It is the only
+  way to reset a forgotten password. If you lose both the password and the code, nobody can open your saved data.
+- **Lock** (in the account menu) hides everything until you type your password again. HakiAI also locks by itself after
+  15 minutes without use (change this under **Settings → Privacy**), and after the computer running HakiAI restarts.
+- **Settings → Profile** holds your name, address, phone, email and ID number for letters. **Settings → Privacy** lets
+  you turn saving history off, change your password, download everything stored for you (**Export my data**) or delete
+  your account.
+- Forgot your password? On **Sign in**, choose **Forgot your password?** and use your recovery code. You get a new code.
+- Your data is encrypted with your password and stays on this computer. On a shared computer, always **Sign out** when
+  you finish.

@@ -9,7 +9,7 @@ from typing import TextIO
 from backend.app.config import Settings
 
 REDACTED = "[redacted]"
-_CONTENT_KEY = re.compile(r"question|answer|text", re.IGNORECASE)
+_CONTENT_KEY = re.compile(r"question|answer|text|user_?name|display|password|recovery|profile|token", re.IGNORECASE)
 _STANDARD_ATTRS = frozenset(vars(logging.makeLogRecord({}))) | {"message", "asctime"}
 
 
@@ -19,7 +19,7 @@ def _extras(record: logging.LogRecord) -> dict[str, object]:
 
 
 class RedactContentFilter(logging.Filter):
-    """Replaces the value of any extra field whose name mentions question, answer or text."""
+    """Replaces any extra field whose name mentions content (question, answer, text) or account secrets/identity."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Mask content fields in place; never drops the record."""

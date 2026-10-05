@@ -46,11 +46,33 @@ for (const [name, width, height] of [
       await expect(page.getByRole("heading", { name: "No matching provision found" })).toBeVisible();
       await shoot(page, `${tag}-null`);
 
-      for (const path of ["settings", "how-it-works", "nope"]) {
+      for (const path of ["settings", "how-it-works", "nope", "welcome", "signin", "signup"]) {
         await page.goto(`/${path}`);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         await shoot(page, `${tag}-${path}`);
       }
+
+      // Signed-in screens: recovery code, Profile and Privacy, lock screen.
+      const password = "a long enough password";
+      await page.getByRole("textbox", { name: "Username" }).fill(`shots${tag.replace(/\W/g, "")}${Date.now()}`);
+      await page.getByLabel("Password", { exact: true }).fill(password);
+      await page.getByLabel("Repeat the password").fill(password);
+      await page.getByRole("button", { name: "Create account" }).click();
+      await expect(page.getByRole("heading", { name: "Save your recovery code" })).toBeVisible();
+      await shoot(page, `${tag}-recovery`);
+      await page.getByText("I have saved my recovery code").click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      for (const tab of ["profile", "privacy"]) {
+        await page.goto(`/settings?tab=${tab}`);
+        await expect(
+          page.getByRole("tab", { name: tab === "profile" ? "Profile" : "Privacy", selected: true }),
+        ).toBeVisible();
+        await shoot(page, `${tag}-settings-${tab}`);
+      }
+      await page.getByRole("button", { name: "Account", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Lock" }).click();
+      await expect(page.getByRole("heading", { name: "HakiAI is locked" })).toBeVisible();
+      await shoot(page, `${tag}-locked`);
     });
   }
 }

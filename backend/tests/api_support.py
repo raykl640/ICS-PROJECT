@@ -1,8 +1,11 @@
 """API test wiring: fake stack via devstack, an in-process ASGI driver (no sockets) and an SSE parser."""
 
 import asyncio
+import io
 import json
-from collections.abc import Callable
+import logging
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypedDict
@@ -13,12 +16,15 @@ from starlette.types import Message
 from backend.app.config import Settings
 from backend.app.devstack import fake_deps
 from backend.app.interfaces import LLMClient, Translator
+from backend.app.logging_setup import configure_logging
 from backend.app.main import Runtime, create_app
 from backend.tests.fakes import FakeTranslator
 
 EN_QUESTION = "My employer fired me and did not pay my wages. What are my rights?"
 SW_QUESTION = "Mwajiri wangu alinifukuza kazi na hakunilipa mshahara wangu. Nina haki gani?"
 GARBAGE = "qxzv blorp zzkt wqmmf"
+# Mutating /api requests must carry this header (RequestGuardMiddleware).
+APP_HEADERS = {"X-Haki": "1"}
 SW_WORDS = {"mwajiri": "employer", "alinifukuza": "fired", "mshahara": "wages"}
 
 
@@ -149,7 +155,7 @@ async def call(
         "raw_path": path.encode(),
         "query_string": query.encode(),
         "root_path": "",
-        "headers": [(b"host", b"test"), (b"content-type", b"application/json")],
+        "headers": [(b"host", b"test"), (b"content-type", b"application/json"), (b"x-haki", b"1")],
         "client": ("127.0.0.1", 50000),
         "server": ("test", 80),
     }
@@ -164,3 +170,17 @@ async def wait_until(condition: Callable[[], bool], timeout_s: float = 5.0) -> N
             return
         await asyncio.sleep(0.001)
     raise AssertionError("condition not reached")
+
+
+@contextmanager
+def captured_logs() -> Iterator[io.StringIO]:
+    """Route the app's JSON logs (content redaction on, as in production) into a buffer."""
+    buffer = io.StringIO()
+    root = logging.getLogger()
+    saved = (root.handlers[:], root.level)
+    configure_logging(Settings(), buffer)
+    try:
+        yield buffer
+    finally:
+        root.handlers[:], level = saved
+        root.setLevel(level)

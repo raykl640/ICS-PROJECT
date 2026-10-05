@@ -20,6 +20,8 @@ def test_frontend_limits_mirror_settings() -> None:
     assert limits == {
         "max_question_chars": settings.max_question_chars,
         "max_comment_chars": settings.max_comment_chars,
+        "password_min_chars": settings.password_min_chars,
+        "username_max_chars": settings.username_max_chars,
     }
 
 

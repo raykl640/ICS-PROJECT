@@ -99,3 +99,16 @@ export function Select({ label, hint, error, aside, frameClassName, className, o
     </Frame>
   );
 }
+
+/** Labelled checkbox with a 44 px target. */
+export function Checkbox({ label, className, ...props }: { label: ReactNode } & Omit<ComponentProps<"input">, "type">) {
+  const id = useId();
+  return (
+    <div className={cx("flex items-center gap-3", className)}>
+      <input id={id} type="checkbox" className="size-5 shrink-0 cursor-pointer accent-brand" {...props} />
+      <label htmlFor={id} className="target flex cursor-pointer items-center text-ink">
+        {label}
+      </label>
+    </div>
+  );
+}

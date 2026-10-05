@@ -13,6 +13,14 @@ _OUTPUT_PATHS = {
     "HAKI_PARSE_REPORT_PATH": "processed/parse_report.md",
     "HAKI_FEEDBACK_PATH": "feedback.jsonl",
     "HAKI_MANIFEST_PATH": "corpus_manifest.json",
+    "HAKI_APP_DB_PATH": "app.db",
+}
+# In-process test clients send Host "testserver" (TestClient) or "test" (api_support.call); argon2 kept cheap.
+_TEST_ENV = {
+    "HAKI_ALLOWED_HOSTS": '["127.0.0.1", "localhost", "testserver", "test"]',
+    "HAKI_ARGON2_TIME_COST": "1",
+    "HAKI_ARGON2_MEMORY_KIB": "8",
+    "HAKI_ARGON2_PARALLELISM": "1",
 }
 
 
@@ -27,4 +35,6 @@ def _isolated_data_dir(
     root = tmp_path_factory.mktemp("data")
     for name, relative in _OUTPUT_PATHS.items():
         monkeypatch.setenv(name, str(root / relative))
+    for name, value in _TEST_ENV.items():
+        monkeypatch.setenv(name, value)
     yield root

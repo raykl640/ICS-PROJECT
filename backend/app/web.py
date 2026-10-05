@@ -8,6 +8,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 _BODYLESS = frozenset({"GET", "HEAD", "OPTIONS"})
+_MUTATING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 _HEADERS = (
     (b"x-content-type-options", b"nosniff"),
     (b"x-frame-options", b"DENY"),
@@ -66,6 +67,37 @@ class BodyLimitMiddleware:
             return {"type": "http.request", "body": body, "more_body": False}
 
         await self.app(scope, replay, send)
+
+
+def host_name(host_header: str) -> str:
+    """The host part of a Host header, lower-cased: "LocalHost:8000" → "localhost", "[::1]:8000" → "[::1]"."""
+    host = host_header.strip().lower()
+    if host.startswith("["):
+        return host.split("]", 1)[0] + "]"
+    return host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+
+
+class RequestGuardMiddleware:
+    """Localhost hardening: the Host header must be allow-listed (DNS rebinding), and mutating /api requests must carry
+    X-Haki: 1, which a cross-site form cannot send and a cross-site fetch cannot send without a refused preflight."""
+
+    def __init__(self, app: ASGIApp, allowed_hosts: list[str]) -> None:
+        self.app = app
+        self.allowed = {h.lower() for h in allowed_hosts}
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Reject a bad Host (400) or a mutating API call without the header (403)."""
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        headers = {name.lower(): value for name, value in scope.get("headers", [])}
+        if host_name(headers.get(b"host", b"").decode("latin-1")) not in self.allowed:
+            await error_response(400, "bad_host", "This address is not served by HakiAI.")(scope, receive, send)
+            return
+        if scope["method"] in _MUTATING and scope["path"].startswith("/api/") and headers.get(b"x-haki") != b"1":
+            await error_response(403, "missing_header", "Requests must come from the HakiAI app.")(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
 
 
 class SecurityHeadersMiddleware:

@@ -14,6 +14,7 @@
 - [x] M10 Hardening & docs — 2026-10-05 (v1.0.0 tag waits for the final audit)
 - [x] M11 Design language — 2026-10-05 (gate passed: "Mahakama colours + Jua radius")
 - [x] M12 App shell, routing, Ask v2 — 2026-10-05
+- [x] M13 Local accounts, encrypted store, auth UI — 2026-10-05
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -436,3 +437,58 @@ Open issues:
 - The ETA needs one fully streamed answer in that browser before it shows a time remaining.
 - New Kiswahili strings await the human review (HUMAN_TODO).
 Next: M13 Local accounts.
+
+## M13 Local accounts (2026-10-05)
+Done:
+- backend/app/accounts/:
+  - db.py: SQLite with WAL, foreign keys and secure_delete; numbered migrations checked for gaps, each run in its own
+    transaction, version in user_version; serialized writes; compact() = VACUUM + WAL truncate.
+  - migrations/001_accounts.sql: users, profiles, auth_tokens.
+  - crypto.py: argon2id hash and KDF; AES-256-GCM DEK wrap; field encryption with table:column:row AAD; 100-bit base32
+    recovery codes.
+  - repo.py: typed queries; the profile is encrypted at this layer.
+  - auth.py: in-memory sessions (token hash → user, DEK, last activity), TTL, per-user idle auto-lock.
+  - service.py: register, login with exponential lockout, lock/unlock, recover (new code, other sign-ins end), password
+    change (re-wrap; others end), profile, prefs, export, password-confirmed delete.
+  - routes.py: /api/auth/{register, login, logout, lock, unlock, me, recover, password} and
+    /api/account/{profile, prefs, export, ""(DELETE)}. The haki_auth cookie is HttpOnly, SameSite=Strict, Path=/api,
+    and Secure over https.
+- web.py RequestGuardMiddleware: Host allow-list (400 bad_host) and X-Haki: 1 on mutating /api requests (403).
+- main.py: accounts open in the lifespan (no database is created on import), a wall clock, an AccountError handler,
+  token purge in the purge loop, and dev CORS with credentials.
+- Callers updated for X-Haki: the frontend client, scripts/smoke.py, eval run_functional and the test clients. Log
+  redaction now also covers username, display name, password, recovery, profile and token fields.
+- Config: app_db_path, argon2_*, auth_session_ttl_s, auto_lock_s, login_max_attempts, login_lockout_s/_max_s,
+  password_min_chars, username_max_chars, profile_field_max_chars, auth_rate_limit_per_min, allowed_hosts. Tests use
+  cheap argon2 and their own database via conftest. argon2-cffi==25.1.0 and cryptography==50.0.2 pinned.
+- Frontend:
+  - AuthProvider: /me, activity reported at most once a minute, a re-check when the server's auto-lock is due.
+  - Pages: Welcome, Sign up (length-based strength meter; the recovery-code step with copy, print and save .txt cannot
+    be passed without ticking "I saved it"), Sign in (remembered usernames, opt-in), Recover (new code shown).
+  - Lock screen (replaces the whole app), account menu (Lock, Settings, Sign out), guest banner.
+  - Settings tabs: Appearance, Language, and when signed in Profile and Privacy (history on/off, auto-lock, password
+    change, export, delete dialog).
+  - 85 new strings (EN + SW drafts, 275 keys).
+- Tests:
+  - Backend 727 passed, coverage 97.3%. 9 crypto/db tests (round trips, wrong keys, tampering, AAD swap, migrations,
+    rollback, foreign keys); 13 service tests (lockout timing and cap, auto-lock, restart → locked, recovery, password
+    change, profile, delete, purge); 22 API tests (cookie flags, https Secure, Host and X-Haki guards, generic errors,
+    429 Retry-After, 423 when locked, restart needs unlock, no plaintext in the DB/WAL bytes for a marker string, no
+    username/password/marker in logs, export, delete + VACUUM, rate limit, not ready before startup).
+  - Frontend 192 vitest (11 new account tests); 8 Playwright e2e, including sign up → sign out → sign in → lock →
+    reload still locked → unlock → save profile, with an axe check on sign-up.
+- Bundle: entry 129.7 KB gzipped (was 124.5); account pages are lazy chunks.
+- Screenshots reviewed: Welcome, Sign in, Sign up, recovery code, Profile, Privacy and the lock screen at 375/1280 in
+  light/dark.
+Decisions: DEVIATIONS D22 (encrypted persistence) and D29 (service layer, persisted token hashes so a restart means
+locked, /me?active, host-name allow-list, lockout cap, no forced welcome redirect).
+Fixed during review:
+- On phones the recovery code broke inside a group; groups now wrap whole.
+- The "Save history" toggle stretched across the card.
+- The lucide Lock icon was not imported, and TypeScript silently resolved Lock to the browser's Web Locks class
+  (caught by typecheck).
+Open issues:
+- Serving HakiAI to other machines under another host name needs HAKI_ALLOWED_HOSTS (D29d). The shipped Docker file
+  publishes on 127.0.0.1 and works as is. README not yet updated (M18 docs).
+- New Kiswahili strings await review (HUMAN_TODO).
+Next: M14 Conversations, background answers, library, letters.
