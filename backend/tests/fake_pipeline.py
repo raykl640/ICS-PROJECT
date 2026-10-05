@@ -4,6 +4,8 @@ from pathlib import Path
 
 from backend.app.config import ActSpec, Settings
 from backend.app.interfaces import CrossEncoderLike
+from backend.app.laws.catalog import LawCatalog
+from backend.app.laws.xrefs import build_cross_refs
 from backend.app.retrieval.dense import DenseIndex
 from backend.app.retrieval.hybrid import HybridRetriever
 from backend.app.retrieval.pipeline import ContextPipeline
@@ -60,3 +62,10 @@ def fake_pipeline(sparse_dir: Path, settings: Settings, reranker: CrossEncoderLi
     retriever = fake_retriever(build_parts(sparse_dir), settings)
     scope = ScopeClassifier(EMB, SCOPE, settings.scope_neighbours)
     return ContextPipeline(retriever, reranker or FakeReranker(), scope, settings, STORE)
+
+
+def fake_catalog(sparse_dir: Path, settings: Settings) -> LawCatalog:
+    """Laws catalog over the synthetic corpus; opens the sparse index fake_pipeline wrote, refs built in memory."""
+    sparse = SparseIndex.open(sparse_dir, corpus_hash=STORE.corpus_hash)
+    refs = build_cross_refs(STORE, RefExtractor(ACTS, TABLE.aliases))
+    return LawCatalog(STORE, sparse, refs, ACTS, settings.snippet_chars)

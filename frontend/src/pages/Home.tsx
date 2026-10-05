@@ -1,8 +1,9 @@
-import { BookOpen, FileText, MessageSquare, Sun } from "lucide-react";
-import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { BookOpen, FileText, MessageSquare, Scale, Sun } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
 import type { UiLanguage } from "../api/types";
 import { listConversations, listLetters } from "../api/library";
+import { listReads } from "../api/laws";
 import { useAuth, useSession } from "../app/contexts";
 import { PageTitle } from "../app/PageTitle";
 import { Composer } from "../components/Composer";
@@ -32,8 +33,23 @@ export function Home() {
   const { me } = useAuth();
   const signedIn = Boolean(me?.user && !me.locked);
   const navigate = useNavigate();
-  const [question, setQuestion] = useState("");
+  const location = useLocation();
+  // "Ask about this section" and "Ask instead" arrive with the composer text in the navigation state.
+  const prefill = (location.state as { prefill?: string } | null)?.prefill;
+  const [question, setQuestion] = useState(prefill ?? "");
   const box = useRef<HTMLTextAreaElement>(null);
+  const [seen, setSeen] = useState(location.key);
+  if (prefill && seen !== location.key) {
+    setSeen(location.key);
+    setQuestion(prefill);
+  }
+
+  useEffect(() => {
+    if (!prefill) return;
+    const field = box.current;
+    field?.focus();
+    field?.setSelectionRange(prefill.length, prefill.length);
+  }, [prefill, location.key]);
 
   const ask = (text: string, language: UiLanguage) => {
     void submit(text, language);
@@ -92,6 +108,7 @@ export function Home() {
       <div className="flex flex-col gap-6">
         <Card title={t("continue_title")}>
           <SavedRecent />
+          <RecentReads />
           {state.phase === "idle" || state.conversationId ? (
             signedIn ? null : (
               <EmptyState icon={<MessageSquare size={28} />} title={t("continue_empty_title")}>
@@ -172,6 +189,35 @@ function SavedRecent() {
       <Link to="/library" className="mt-2 font-semibold text-brand underline underline-offset-3">
         {t("library_open")}
       </Link>
+    </div>
+  );
+}
+
+/** Signed in: the sections read most recently ("Continue reading"). */
+function RecentReads() {
+  const { t } = useI18n();
+  const { me } = useAuth();
+  const enabled = Boolean(me?.user && !me.locked);
+  const reads = useLoad(enabled ? "home-reads" : null, () => listReads(3)).result;
+  if (!enabled || reads.status !== "ok" || reads.data.length === 0) return null;
+  return (
+    <div className="mt-4 border-t border-line-subtle pt-3">
+      <h3 className="mb-1 font-semibold text-ink-muted">{t("continue_reading")}</h3>
+      <ul className="flex flex-col">
+        {reads.data.map((read) => (
+          <li key={read.chunk_id}>
+            <Link
+              to={`/laws/act/${read.chunk_id}`}
+              className="-mx-2 flex items-start gap-3 rounded-md px-2 py-2 text-ink hover:bg-sunken"
+            >
+              <Scale aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-ink-muted" />
+              <span className="line-clamp-2 min-w-0 flex-1">
+                <span className="font-semibold">{read.act}</span> — {read.section_num}: {read.section_title}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

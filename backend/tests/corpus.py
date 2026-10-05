@@ -60,7 +60,15 @@ def corpus() -> list[LegalChunk]:
         ),
         make_chunk(e, "6", "Payment of wages", "Wages shall be paid in legal tender at the end of each month."),
         make_chunk(e, "7", "Deleted provision", "[Repealed by Act No. 1 of 2001.]", repealed=True),
-        make_chunk(e, "8", "Summary dismissal", "Gross misconduct by an employee may justify summary dismissal."),
+        make_chunk(
+            e,
+            "8",
+            "Summary dismissal",
+            (
+                "Gross misconduct by an employee may justify summary dismissal, subject to the procedure in "
+                "section 4 and Article 41 of the Sample Constitution."
+            ),
+        ),
         make_chunk(e, "9", "Sick leave", "An employee with a medical certificate is entitled to sick leave with pay."),
         make_chunk(e, "41", "Records of service", LONG_TEXT),
         make_chunk(
@@ -71,7 +79,15 @@ def corpus() -> list[LegalChunk]:
         make_chunk(t, "4", "Deposits", "A deposit paid by a tenant shall be refunded when the tenancy ends."),
         make_chunk(t, "5", "Repairs", "The landlord shall keep the premises in good and habitable repair."),
         make_chunk(t, "6", "Deleted provision", "[Repealed by Act No. 2 of 2002.]", repealed=True),
-        make_chunk(t, "41", "Complaints", "A tenant may lodge a complaint with the tribunal about any landlord."),
+        make_chunk(
+            t,
+            "41",
+            "Complaints",
+            (
+                "A tenant may lodge a complaint with the tribunal about any landlord, including a refusal under "
+                "section 4 or an eviction contrary to section 6."
+            ),
+        ),
         make_chunk(
             c,
             "27",

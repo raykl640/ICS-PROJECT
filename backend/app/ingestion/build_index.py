@@ -1,4 +1,4 @@
-"""Build the FAISS (dense) and Whoosh (BM25) indexes from data/processed/chunks.json, replacing any old ones."""
+"""Build the FAISS (dense) and Whoosh (BM25) indexes and refs.json from data/processed/chunks.json."""
 
 import argparse
 import sys
@@ -10,9 +10,12 @@ from pydantic import ValidationError
 
 from backend.app.config import Settings, get_settings
 from backend.app.interfaces import Embedder
+from backend.app.laws.xrefs import build_cross_refs, save_cross_refs
 from backend.app.retrieval.dense import DenseIndex
 from backend.app.retrieval.embedder import STEmbedder
 from backend.app.retrieval.meta import dir_bytes
+from backend.app.retrieval.refs import RefExtractor
+from backend.app.retrieval.router import Router
 from backend.app.retrieval.sparse import SparseIndex
 from backend.app.retrieval.store import ChunkStore
 from backend.app.retrieval.windows import WindowSpec, make_windows
@@ -33,6 +36,9 @@ class IndexBuild:
     sparse_bytes: int
     dense_s: float
     sparse_s: float
+    refs_resolved: int
+    refs_unresolved: int
+    refs_citing: int
 
 
 def load_indexable(settings: Settings) -> ChunkStore:
@@ -43,8 +49,8 @@ def load_indexable(settings: Settings) -> ChunkStore:
     return store
 
 
-def build_indexes(settings: Settings, embedder: Embedder) -> IndexBuild:
-    """Validate chunks.json, then rebuild both indexes from its non-repealed chunks."""
+def build_indexes(settings: Settings, embedder: Embedder, extractor: RefExtractor | None = None) -> IndexBuild:
+    """Validate chunks.json, then rebuild both indexes and refs.json (refs default: the configured Acts' extractor)."""
     store = load_indexable(settings)
     chunks = store.indexable()
     spec = WindowSpec.from_settings(settings)
@@ -56,6 +62,9 @@ def build_indexes(settings: Settings, embedder: Embedder) -> IndexBuild:
     dense.save(settings.dense_index_dir)
     dense_done = time.perf_counter()
     SparseIndex.build(chunks, settings.sparse_index_dir, corpus_hash=store.corpus_hash)
+    sparse_done = time.perf_counter()
+    refs = build_cross_refs(store, extractor or Router.from_settings(settings).refs)
+    save_cross_refs(refs, settings.refs_path)
     return IndexBuild(
         chunks=len(store),
         indexed=len(chunks),
@@ -65,7 +74,10 @@ def build_indexes(settings: Settings, embedder: Embedder) -> IndexBuild:
         dense_bytes=dir_bytes(settings.dense_index_dir),
         sparse_bytes=dir_bytes(settings.sparse_index_dir),
         dense_s=dense_done - start,
-        sparse_s=time.perf_counter() - dense_done,
+        sparse_s=sparse_done - dense_done,
+        refs_resolved=refs.resolved,
+        refs_unresolved=refs.unresolved,
+        refs_citing=len(refs.out),
     )
 
 
@@ -78,6 +90,8 @@ def render(stats: IndexBuild, settings: Settings) -> str:
             f"{stats.dense_bytes / _MB:.1f} MB, {stats.dense_s:.1f} s -> {settings.dense_index_dir}",
             f"sparse {stats.indexed} docs, {stats.sparse_bytes / _MB:.1f} MB, {stats.sparse_s:.1f} s "
             f"-> {settings.sparse_index_dir}",
+            f"refs   {stats.refs_resolved} linked + {stats.refs_unresolved} unlinked in {stats.refs_citing} sections "
+            f"-> {settings.refs_path}",
         ]
     )
 

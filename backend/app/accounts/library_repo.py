@@ -486,3 +486,36 @@ def update_note(conn: sqlite3.Connection, box: Box, user_id: str, note_id: str, 
 def delete_note(conn: sqlite3.Connection, user_id: str, note_id: str) -> bool:
     """Delete one note."""
     return _delete(conn, "notes", note_id, user_id)
+
+
+# --- recent reads (migration 003) ---------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ReadRow:
+    """A section the user opened."""
+
+    id: str
+    chunk_id: str
+    at: str
+
+
+def reads(conn: sqlite3.Connection, box: Box, user_id: str) -> list[ReadRow]:
+    """The user's recent reads, newest first."""
+    rows = conn.execute("SELECT * FROM reads WHERE user_id = ? ORDER BY at DESC, rowid DESC", (user_id,)).fetchall()
+    return [
+        ReadRow(row["id"], box.open("reads", "chunk_id_ct", row["id"], row["chunk_id_ct"]), row["at"]) for row in rows
+    ]
+
+
+def insert_read(conn: sqlite3.Connection, box: Box, user_id: str, read: ReadRow) -> None:
+    """A new recent read."""
+    conn.execute(
+        "INSERT INTO reads (id, user_id, chunk_id_ct, at) VALUES (?, ?, ?, ?)",
+        (read.id, user_id, box.seal("reads", "chunk_id_ct", read.id, read.chunk_id), read.at),
+    )
+
+
+def delete_read(conn: sqlite3.Connection, user_id: str, read_id: str) -> bool:
+    """Delete one recent read."""
+    return _delete(conn, "reads", read_id, user_id)

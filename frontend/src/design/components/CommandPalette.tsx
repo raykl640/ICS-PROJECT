@@ -20,17 +20,34 @@ interface CommandPaletteProps {
   placeholder: string;
   emptyText: string;
   items: CommandItem[];
+  /** Commands built from the query itself (e.g. "Employment s.41"), listed first and not filtered. */
+  dynamic?: (query: string) => CommandItem[];
+  /** Commands built from the query, listed after the matching ones (e.g. "Search for …"). */
+  fallback?: (query: string) => CommandItem[];
 }
 
 const matches = (item: CommandItem, query: string) =>
   `${item.label} ${item.hint ?? ""}`.toLowerCase().includes(query.trim().toLowerCase());
 
 /** Ctrl/Cmd+K palette: a combobox over grouped commands (Up/Down move, Enter runs, Escape closes). */
-export function CommandPalette({ open, onOpenChange, title, placeholder, emptyText, items }: CommandPaletteProps) {
+export function CommandPalette({
+  open,
+  onOpenChange,
+  title,
+  placeholder,
+  emptyText,
+  items,
+  dynamic,
+  fallback,
+}: CommandPaletteProps) {
   const base = useId();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
-  const shown = items.filter((item) => matches(item, query));
+  const shown = [
+    ...(dynamic?.(query) ?? []),
+    ...items.filter((item) => matches(item, query)),
+    ...(fallback?.(query) ?? []),
+  ];
   const groups = [...new Set(shown.map((item) => item.group))];
   const ordered = groups.flatMap((g) => shown.filter((item) => item.group === g));
   const activeItem = ordered[Math.min(active, ordered.length - 1)];

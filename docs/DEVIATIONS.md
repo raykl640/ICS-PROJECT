@@ -21,6 +21,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D28 | v2 app shell, static theme, pre-paint script, guest Ask (M12) | in force |
 | D22, D29 | encrypted local accounts; M13 mechanics | in force |
 | D23, D24 | follow-up context; background runs (M14) | in force |
+| D30 | laws browser mechanics (M15) | in force |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -339,4 +340,24 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 - Why: on CPU an answer takes minutes; signed-in users should be able to keep browsing and be notified.
 - Impact: a background run holds the LLM gate after the tab closes, until it finishes or is stopped. Events carry ids
   only, never content. The client shows an in-app toast always and an OS notification when permission was granted.
+
+## D30 Laws browser mechanics — feat(M15)
+- What:
+  - (a) refs.json resolves section refs to the citing chunk's own Act unless the text says "of the <corpus Act>";
+    "of the <unknown law>" refs and bare "section N" in the Constitution are dropped. Refs to missing or repealed
+    targets stay as unlinked labels. refs.json carries the corpus hash; startup fails fast when it is stale or missing,
+    like the indexes.
+  - (b) refs_in is a list of {label, chunk_id}, not bare ids, so the reader needs no extra lookups.
+  - (c) Search marks are code-point offsets (the frontend slices with Array.from). Snippets add "…" where the text
+    was cut, and marks account for it.
+  - (d) The reader route is /laws/:act/:chunkId, but the page loads by chunk id; the Act part only makes the address
+    readable.
+  - (e) Recent reads: migration 003 (reads, encrypted chunk ids), POST/GET /api/reads, newest reads_max (50) kept,
+    nothing stored when "Save history" is off; included in the account export.
+  - (f) Keyboard: Ctrl/Cmd+K or "/" opens the palette, "?" opens the shortcut sheet, ← / → move between sections in
+    the reader. None of these fire while typing or while a dialog is open.
+  - (g) New config: snippet_chars (240), search_max_results (50), reads_max (50); refs_path derives from index_dir.
+- Why: no false links to laws outside the corpus; honest labels for gaps; no HTML from the server.
+- Impact: existing installs must rerun build_index once (it writes refs.json). The synthetic test corpus gained two
+  references (employment s.8 → s.4 and Article 41; tenancy s.41 → s.4 and repealed s.6).
 

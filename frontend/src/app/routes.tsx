@@ -14,6 +14,10 @@ const Recover = lazy(() => import("../pages/Recover").then((m) => ({ default: m.
 const Library = lazy(() => import("../pages/Library").then((m) => ({ default: m.Library })));
 const Matter = lazy(() => import("../pages/Matter").then((m) => ({ default: m.Matter })));
 const LetterWorkspace = lazy(() => import("../pages/LetterWorkspace").then((m) => ({ default: m.LetterWorkspace })));
+const Laws = lazy(() => import("../pages/Laws").then((m) => ({ default: m.Laws })));
+const LawAct = lazy(() => import("../pages/LawAct").then((m) => ({ default: m.LawAct })));
+const LawSection = lazy(() => import("../pages/LawSection").then((m) => ({ default: m.LawSection })));
+const Search = lazy(() => import("../pages/Search").then((m) => ({ default: m.Search })));
 const NotFound = lazy(() => import("../pages/NotFound").then((m) => ({ default: m.NotFound })));
 // Dev builds only: the condition is a constant false in production, so the chunk is never emitted.
 const Styleguide = import.meta.env.DEV
@@ -31,6 +35,10 @@ export function AppRoutes() {
         <Route path="library" element={<Library />} />
         <Route path="matters/:id" element={<Matter />} />
         <Route path="letters/:id" element={<LetterWorkspace />} />
+        <Route path="laws" element={<Laws />} />
+        <Route path="laws/:act" element={<LawAct />} />
+        <Route path="laws/:act/:chunkId" element={<LawSection />} />
+        <Route path="search" element={<Search />} />
         <Route path="settings" element={<Settings />} />
         <Route path="how-it-works" element={<HowItWorks />} />
         <Route path="welcome" element={<Welcome />} />

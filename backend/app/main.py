@@ -37,6 +37,8 @@ from backend.app.feedback import append_feedback
 from backend.app.generation.gate import GateFull, LLMGate, Ticket
 from backend.app.generation.prompt import build_prompt
 from backend.app.lang.service import LanguageService, load_ui_strings
+from backend.app.laws.catalog import LawCatalog
+from backend.app.laws.routes import laws as laws_routes
 from backend.app.letter import letter_docx, letter_text
 from backend.app.logging_setup import configure_logging
 from backend.app.models import (
@@ -575,6 +577,16 @@ def _load_pipeline(deps: Deps) -> ContextPipeline:
         ) from exc
 
 
+def _load_laws(deps: Deps) -> LawCatalog:
+    """Load the laws catalog; a missing refs.json is an IndexMismatchError naming the rebuild command."""
+    try:
+        return deps.load_laws()
+    except OSError as exc:
+        raise StartupError(
+            f"could not load the corpus ({type(exc).__name__}: {exc}). Build it with: {REBUILD_COMMAND}"
+        ) from exc
+
+
 def _warm_up(pipeline: ContextPipeline, language: LanguageService) -> None:
     """Warm every lazy model; a model missing from the local cache becomes a StartupError naming the fix."""
     try:
@@ -626,6 +638,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     rt.pipeline = await run_in_threadpool(_load_pipeline, deps)
     rt.library = Library(deps.settings, rt.accounts.db, rt.pipeline.find_chunk, rt.wall_clock)
     app.state.library = rt.library
+    app.state.laws = await run_in_threadpool(_load_laws, deps)
     await run_in_threadpool(_warm_up, rt.pipeline, deps.language)
     rt.models_warm = True
     await _check_ollama(deps)
@@ -699,6 +712,7 @@ def create_app(
     app.include_router(auth_routes)
     app.include_router(account_routes)
     app.include_router(library_routes)
+    app.include_router(laws_routes)
     if s.dev_mode:
         app.add_middleware(
             CORSMiddleware,

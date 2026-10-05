@@ -1,5 +1,5 @@
-"""/api/conversations, /api/letters, /api/matters, /api/bookmarks, /api/notes (DESIGN_V2 "API v2"). Signed in and
-unlocked only (401 / 423); another user's id is a 404. Lists take q, filters, sort, cursor and limit."""
+"""/api/conversations, /api/letters, /api/matters, /api/bookmarks, /api/notes, /api/reads (DESIGN_V2 "API v2").
+Signed in and unlocked only (401 / 423); another user's id is a 404. Lists take q, filters, sort, cursor and limit."""
 
 from collections.abc import Mapping
 from typing import Annotated, Any, Literal
@@ -23,6 +23,7 @@ from backend.app.accounts.library import (
     NoteOut,
     NoteTarget,
     Page,
+    ReadOut,
     SortKey,
     VersionOut,
 )
@@ -88,6 +89,12 @@ class MatterPatch(_Body):
 
     name: str | None = Field(None, max_length=1000)
     status: MatterStatus | None = None
+
+
+class ReadIn(_Body):
+    """A section the user opened in the reader."""
+
+    chunk_id: Id
 
 
 class BookmarkIn(_Body):
@@ -366,3 +373,23 @@ def delete_note(note_id: str, unlocked: Unlocked, lib: Lib) -> dict[str, bool]:
     """Delete a note."""
     lib.delete_note(unlocked[0].user_id, note_id)
     return {"deleted": True}
+
+
+# --- recent reads -------------------------------------------------------------------------------------------------
+
+
+@library.get("/reads")
+def list_reads(unlocked: Unlocked, lib: Lib, limit: Annotated[int, Query(ge=1)] = 10) -> list[ReadOut]:
+    """Recently opened sections, newest first (Home "Continue reading")."""
+    session, dek = unlocked
+    return lib.recent_reads(session.user_id, dek, min(limit, lib.settings.reads_max))
+
+
+@library.post("/reads")
+def add_read(body: ReadIn, request: Request, unlocked: Unlocked, lib: Lib) -> dict[str, bool]:
+    """Record an opened section; nothing is stored when "Save history" is off."""
+    session, dek = unlocked
+    if not request.app.state.accounts.prefs(session).save_history:
+        return {"saved": False}
+    lib.record_read(session.user_id, dek, body.chunk_id)
+    return {"saved": True}

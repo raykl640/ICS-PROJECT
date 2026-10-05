@@ -8,7 +8,8 @@ from backend.app.config import Settings
 from backend.app.ingestion.build_index import build_indexes
 from backend.app.preflight import EXIT_NOT_READY, EXIT_OK, EXIT_OLLAMA_DOWN, check, main
 from backend.app.retrieval.meta import REBUILD_COMMAND
-from backend.tests.fake_pipeline import ACTS, STORE
+from backend.app.retrieval.refs import RefExtractor
+from backend.tests.fake_pipeline import ACTS, STORE, TABLE
 from backend.tests.fakes import FakeEmbedder
 
 
@@ -21,7 +22,7 @@ def _ready(tmp_path: Path) -> Settings:
         frontend_dist=tmp_path / "dist",
     )
     STORE.save(settings.chunks_path)
-    build_indexes(settings, FakeEmbedder())
+    build_indexes(settings, FakeEmbedder(), RefExtractor(ACTS, TABLE.aliases))
     settings.frontend_dist.mkdir()
     (settings.frontend_dist / "index.html").write_text("<html></html>", encoding="utf-8")
     return settings

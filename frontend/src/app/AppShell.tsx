@@ -1,5 +1,9 @@
 import {
+  BookOpen,
   CircleHelp,
+  FileSearch,
+  Keyboard,
+  Plus,
   CircleUser,
   Home,
   Library as LibraryIcon,
@@ -16,18 +20,23 @@ import {
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { lock, logout } from "../api/accounts";
+import { listActs, sectionHref, type ActInfo } from "../api/laws";
 import type { UiLanguage } from "../api/types";
 import { HealthBanner } from "../components/ErrorState";
 import { IconButton } from "../design/components/Button";
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "../design/components/Menu";
 import { CommandPalette, type CommandItem } from "../design/components/CommandPalette";
+import { Dialog, DialogContent } from "../design/components/Dialog";
+import { Kbd } from "../design/components/Display";
 import { Popover, PopoverContent, PopoverTrigger, Tooltip } from "../design/components/Overlay";
 import { Sidebar, TopBar } from "../design/components/Shell";
 import { useToast } from "../design/components/toastContext";
 import { ToggleGroup } from "../design/components/ToggleGroup";
 import { useMediaQuery } from "../design/useMediaQuery";
 import { isBusy, type Phase } from "../hooks/session";
-import { type StringKey, useI18n } from "../i18n";
+import { type StringKey, type Translate, useI18n } from "../i18n";
+import { parseLawQuery } from "../lib/lawRef";
+import { isTyping } from "../lib/keys";
 import { useAuth, useSession, useSettings } from "./contexts";
 import { EventsBridge } from "./EventsBridge";
 import { LockScreen } from "./LockScreen";
@@ -37,6 +46,7 @@ import { TEXT_SIZES, type ThemeChoice } from "./settings";
 const NAV: { href: string; key: StringKey; icon: typeof Home }[] = [
   { href: "/", key: "nav_home", icon: Home },
   { href: "/ask", key: "nav_ask", icon: MessageSquare },
+  { href: "/laws", key: "nav_laws", icon: BookOpen },
   { href: "/library", key: "nav_library", icon: LibraryIcon },
   { href: "/how-it-works", key: "nav_how", icon: CircleHelp },
   { href: "/settings", key: "nav_settings", icon: SettingsIcon },
@@ -201,14 +211,86 @@ function useAnswerReadyToast(phase: Phase, pathname: string, background: boolean
   }, [phase, pathname, background, t, toast]);
 }
 
+const SHORTCUTS: { keys: string[]; key: StringKey }[] = [
+  { keys: ["Ctrl", "K"], key: "shortcut_palette" },
+  { keys: ["/"], key: "shortcut_palette" },
+  { keys: ["?"], key: "shortcut_sheet" },
+  { keys: ["←", "→"], key: "shortcut_prev_next" },
+  { keys: ["Ctrl", "Enter"], key: "shortcut_ask" },
+];
+
+/** The keyboard shortcut sheet ("?"). */
+function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useI18n();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent title={t("shortcuts_title")} closeLabel={t("close")}>
+        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3">
+          {SHORTCUTS.map(({ keys, key }) => (
+            <div key={keys.join("+")} className="contents">
+              <dt className="flex gap-1">
+                {keys.map((k) => (
+                  <Kbd key={k}>{k}</Kbd>
+                ))}
+              </dt>
+              <dd className="text-ink">{t(key)}</dd>
+            </div>
+          ))}
+        </dl>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Palette commands that jump to an Act or section named in the typed text ("Employment s.41", "art 27"). */
+function lawJumps(query: string, acts: ActInfo[], t: Translate, go: (to: string) => void): CommandItem[] {
+  return parseLawQuery(query.trim(), acts)
+    .slice(0, 5)
+    .map((target) => ({
+      id: `law-${target.chunkId ?? target.slug}`,
+      label: target.label,
+      group: t("palette_group_laws"),
+      icon: <BookOpen size={18} />,
+      onSelect: () => go(target.chunkId ? sectionHref(target.chunkId, target.slug) : `/laws/${target.slug}`),
+    }));
+}
+
+/** Palette commands that search the laws (and, signed in, the library) for the typed text. */
+function searchCommands(query: string, signedIn: boolean, t: Translate, go: (to: string) => void): CommandItem[] {
+  const q = query.trim();
+  if (!q) return [];
+  const searches: CommandItem[] = [
+    {
+      id: "search-laws",
+      label: t("palette_search_laws", { q }),
+      group: t("palette_group_search"),
+      icon: <FileSearch size={18} />,
+      onSelect: () => go(`/search?${new URLSearchParams({ q })}`),
+    },
+  ];
+  if (signedIn) {
+    searches.push({
+      id: "search-library",
+      label: t("palette_search_library", { q }),
+      group: t("palette_group_search"),
+      icon: <LibraryIcon size={18} />,
+      onSelect: () => go(`/library?${new URLSearchParams({ q })}`),
+    });
+  }
+  return searches;
+}
+
 /** Layout of every page: navigation, top bar, health notice, the routed page and the command palette. */
 export function AppShell() {
   const { t } = useI18n();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { settings, update } = useSettings();
-  const { state, health } = useSession();
-  const { me } = useAuth();
+  const { state, health, reset } = useSession();
+  const { me, apply } = useAuth();
+  const signedIn = Boolean(me?.user && !me.locked);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [acts, setActs] = useState<ActInfo[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const firstPath = useRef(pathname);
@@ -222,11 +304,23 @@ export function AppShell() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setPaletteOpen(true);
+      } else if (!event.ctrlKey && !event.metaKey && !event.altKey && !isTyping(event.target)) {
+        if (event.key === "/") {
+          event.preventDefault();
+          setPaletteOpen(true);
+        } else if (event.key === "?") {
+          event.preventDefault();
+          setShortcutsOpen(true);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (paletteOpen) listActs().then(setActs, () => undefined);
+  }, [paletteOpen]);
 
   useAnswerReadyToast(state.phase, pathname, state.background);
 
@@ -240,6 +334,34 @@ export function AppShell() {
       icon: <Icon size={18} />,
       onSelect: () => navigate(href),
     })),
+    {
+      id: "new-question",
+      label: t("palette_new_question"),
+      group: t("palette_group_actions"),
+      icon: <Plus size={18} />,
+      onSelect: () => {
+        if (!isBusy(state.phase)) reset();
+        navigate("/");
+      },
+    },
+    ...(signedIn
+      ? [
+          {
+            id: "lock",
+            label: t("lock_now"),
+            group: t("palette_group_actions"),
+            icon: <Lock size={18} />,
+            onSelect: () => void lock().then(apply),
+          },
+        ]
+      : []),
+    {
+      id: "shortcuts",
+      label: t("shortcuts_title"),
+      group: t("palette_group_actions"),
+      icon: <Keyboard size={18} />,
+      onSelect: () => setShortcutsOpen(true),
+    },
     {
       id: "theme",
       label: t(dark ? "palette_theme_light" : "palette_theme_dark"),
@@ -325,7 +447,10 @@ export function AppShell() {
         placeholder={t("palette_placeholder")}
         emptyText={t("palette_empty")}
         items={commands}
+        dynamic={(query) => lawJumps(query, acts, t, navigate)}
+        fallback={(query) => searchCommands(query, signedIn, t, navigate)}
       />
+      <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </div>
   );
 }

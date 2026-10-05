@@ -16,6 +16,7 @@
 - [x] M12 App shell, routing, Ask v2 — 2026-10-05
 - [x] M13 Local accounts, encrypted store, auth UI — 2026-10-05
 - [x] M14 Conversations, background answers, library, letters — 2026-10-05
+- [x] M15 Laws browser, reader, search, command palette — 2026-10-05
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -511,4 +512,24 @@ Fixed during review: the library e2e matched both the toast and its live-region 
 Open issues:
 - New Kiswahili strings await the human review (HUMAN_TODO).
 Next: M15 Laws browser, reader, search, command palette.
+
+## M15 Laws browser, reader, search, command palette (2026-10-05)
+Done:
+- Backend: laws/xrefs.py (build_cross_refs, refs.json with corpus hash), laws/catalog.py (Act list, TOC by Chapter/Part,
+  verbatim section with prev/next and refs both ways, BM25 search with code-point snippet marks), laws/routes.py
+  (/api/laws, /api/laws/{slug}, /api/laws/sections/{id}, /api/search). build_index writes refs.json and reports counts.
+  Recent reads: migration 003, /api/reads, export. Deps.load_laws (real: from disk; fake: synthetic corpus).
+- Frontend: Laws, LawAct, LawSection (copy citation, bookmark, note, Ask about this, read aloud, ← / →, records reads),
+  Search (Act chips, <mark> from offsets, Ask instead); palette law jumps ("Employment s.41", "art 27"), search laws or
+  library, New question, Lock; "/" and "?" shortcuts with a shortcut sheet; Home prefill and Continue reading.
+  41 new strings (SW drafts under review).
+- Tests: check.sh 772 passed, coverage 97.1%; vitest 237; e2e 11 (incl. browse → ref → bookmark → Library and
+  search → hit → Ask about this, both with axe); lint, typecheck and build OK.
+- Real index rebuilt: 1519 chunks, 1386 indexed, 2274 windows; refs 656 linked + 4 unlinked in 397 sections.
+Decisions: DEVIATIONS D30.
+Fixed during review: search fallbacks first in the palette made Ctrl+K "settings" Enter search instead of navigating;
+they now come after the matching commands.
+Open issues:
+- New Kiswahili strings await the human review (HUMAN_TODO).
+Next: M16 Knowledge of the day, guides, glossary.
 

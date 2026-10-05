@@ -182,6 +182,11 @@ class Settings(BaseSettings):
     # Undelivered turn_done/turn_failed events kept per sign-in until GET /api/events connects.
     events_backlog: int = Field(20, gt=0)
 
+    # Laws browser and search (M15).
+    snippet_chars: int = Field(240, ge=40)
+    search_max_results: int = Field(50, gt=0)
+    reads_max: int = Field(50, gt=0)
+
     # Evaluation harness (eval/, M9). Input and result files are fixed names under eval_dir (see properties below).
     eval_dir: Path = EVAL_DIR
     eval_bootstrap_resamples: int = Field(10_000, gt=0)
@@ -220,6 +225,11 @@ class Settings(BaseSettings):
     def sparse_index_dir(self) -> Path:
         """Whoosh BM25 index and meta.json."""
         return self.index_dir / "sparse"
+
+    @property
+    def refs_path(self) -> Path:
+        """Cross-references between sections (refs.json), written by build_index."""
+        return self.index_dir / "refs.json"
 
     @property
     def prompt_budget(self) -> int:

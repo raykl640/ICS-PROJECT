@@ -9,6 +9,7 @@ from backend.app.config import Settings
 from backend.app.generation.llm import OllamaClient
 from backend.app.interfaces import CrossEncoderLike, Embedder, LLMClient, Translator
 from backend.app.lang.service import LanguageService, load_language_service
+from backend.app.laws.catalog import LawCatalog, load_catalog
 from backend.app.models import ParsedResponse
 from backend.app.retrieval.pipeline import ContextPipeline, load_pipeline
 from backend.app.retrieval.refs import RefExtractor
@@ -30,6 +31,7 @@ class Deps:
     language: LanguageService
     refs: RefExtractor
     load_pipeline: Callable[[], ContextPipeline]
+    load_laws: Callable[[], LawCatalog]
     setup_logging: bool = False
 
 
@@ -56,6 +58,7 @@ def real_deps(
         language=load_language_service(settings, sw_en, en_sw),
         refs=Router.from_settings(settings).refs,
         load_pipeline=load,
+        load_laws=lambda: load_catalog(settings),
     )
 
 

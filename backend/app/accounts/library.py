@@ -149,6 +149,17 @@ class BookmarkOut(BaseModel):
     created_at: str
 
 
+class ReadOut(BaseModel):
+    """A recently opened section (only ones still in the corpus are listed)."""
+
+    chunk_id: str
+    act: str
+    unit_type: str
+    section_num: str
+    section_title: str
+    at: str
+
+
 class NoteOut(BaseModel):
     """A note."""
 
@@ -858,4 +869,39 @@ class Library:
                 b.model_dump() for b in drain(lambda c: self.list_bookmarks(user_id, dek, ListQuery(cursor=c)))
             ],
             "notes": [n.model_dump() for n in drain(lambda c: self.list_notes(user_id, dek, ListQuery(cursor=c)))],
+            "reads": [r.model_dump() for r in self.recent_reads(user_id, dek, self.settings.reads_max)],
         }
+
+    # --- recent reads -------------------------------------------------------------------------------------------
+
+    def record_read(self, user_id: str, dek: bytes, chunk_id: str) -> None:
+        """Move a section to the top of the user's recent reads, keeping the newest reads_max."""
+        if self.lookup(chunk_id) is None:
+            raise not_found("section")
+        box = repo.Box(dek)
+        with self.db.write() as conn:
+            rows = repo.reads(conn, box, user_id)
+            others = [r for r in rows if r.chunk_id != chunk_id]
+            for row in [r for r in rows if r.chunk_id == chunk_id] + others[self.settings.reads_max - 1 :]:
+                repo.delete_read(conn, user_id, row.id)
+            repo.insert_read(conn, box, user_id, repo.ReadRow(str(uuid.uuid4()), chunk_id, self._now()))
+
+    def recent_reads(self, user_id: str, dek: bytes, limit: int) -> list[ReadOut]:
+        """The user's recent reads, newest first, skipping sections a rebuilt corpus no longer has."""
+        with self.db.read() as conn:
+            rows = repo.reads(conn, repo.Box(dek), user_id)
+        out = []
+        for row in rows:
+            chunk = self.lookup(row.chunk_id)
+            if chunk is not None:
+                out.append(
+                    ReadOut(
+                        chunk_id=chunk.chunk_id,
+                        act=chunk.act,
+                        unit_type=chunk.unit_type,
+                        section_num=chunk.section_num,
+                        section_title=chunk.section_title,
+                        at=row.at,
+                    )
+                )
+        return out[:limit]

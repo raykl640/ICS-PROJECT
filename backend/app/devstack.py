@@ -40,7 +40,7 @@ def fake_deps(
     en_sw: Translator | None = None,
 ) -> Deps:
     """Deps over the synthetic corpus (sparse index written under workdir, a temp dir by default)."""
-    from backend.tests.fake_pipeline import ACTS, TABLE, fake_pipeline
+    from backend.tests.fake_pipeline import ACTS, TABLE, fake_catalog, fake_pipeline
     from backend.tests.fakes import FakeLLM, FakeTranslator
 
     fake_settings = settings.model_copy(update={"acts": ACTS, "relevance_threshold": FAKE_THRESHOLD})
@@ -51,4 +51,5 @@ def fake_deps(
         language=load_language_service(fake_settings, sw_en or FakeTranslator("en"), en_sw or FakeTranslator("sw")),
         refs=RefExtractor(ACTS, TABLE.aliases),
         load_pipeline=lambda: fake_pipeline(sparse_dir, fake_settings),
+        load_laws=lambda: fake_catalog(sparse_dir, fake_settings),
     )
