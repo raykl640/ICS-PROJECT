@@ -288,7 +288,7 @@ describe("own components", () => {
           { id: "h", label: "Home", icon: null, href: "#h", current: true },
           { id: "l", label: "Laws", icon: null, href: "#l" },
         ]}
-        search={{ label: "Search", shortcut: "Ctrl K", onOpen }}
+        search={{ label: "Search pages", short: "Search", shortcut: "Ctrl K", onOpen }}
         end={<button type="button">Account</button>}
       />,
     );

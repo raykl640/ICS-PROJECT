@@ -47,11 +47,23 @@ for (const [name, width, height] of [
       await expect(page.getByRole("heading", { name: "No matching provision found" })).toBeVisible();
       await shoot(page, `${tag}-null`);
 
-      for (const path of ["settings", "how-it-works", "nope", "welcome", "signin", "signup"]) {
+      for (const path of ["laws", "settings", "how-it-works", "nope", "welcome", "signin", "signup"]) {
         await page.goto(`/${path}`);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         await shoot(page, `${tag}-${path}`);
       }
+
+      await page.goto("/laws");
+      await page.getByRole("link", { name: /Sample Employment Act/ }).click();
+      await expect(page.getByRole("heading", { level: 1, name: "Sample Employment Act" })).toBeVisible();
+      await shoot(page, `${tag}-law-act`);
+      await page
+        .getByRole("link", { name: /Unfair termination/ })
+        .first()
+        .click();
+      await expect(page.getByRole("heading", { level: 1, name: /Unfair termination/ })).toBeVisible();
+      await shoot(page, `${tag}-law-section`);
+      await page.goto("/signup");
 
       // Signed-in screens: recovery code, Profile and Privacy, lock screen.
       const password = "a long enough password";
@@ -63,6 +75,9 @@ for (const [name, width, height] of [
       await shoot(page, `${tag}-recovery`);
       await page.getByText("I have saved my recovery code").click();
       await page.getByRole("button", { name: "Continue" }).click();
+      await page.goto("/library");
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await shoot(page, `${tag}-library`);
       for (const tab of ["profile", "privacy"]) {
         await page.goto(`/settings?tab=${tab}`);
         await expect(

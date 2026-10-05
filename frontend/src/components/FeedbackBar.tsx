@@ -19,7 +19,7 @@ export function FeedbackBar({ sessionId }: { sessionId: string }) {
 
   if (state === "sent") {
     return (
-      <p role="status" className="border-t border-line pt-4 font-semibold text-ink">
+      <p role="status" className="text-sm font-semibold text-ink-muted">
         {t("feedback_thanks")}
       </p>
     );
@@ -37,9 +37,9 @@ export function FeedbackBar({ sessionId }: { sessionId: string }) {
   };
 
   return (
-    <section aria-labelledby="feedback-title" className="border-t border-line pt-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 id="feedback-title" className="w-full font-semibold text-ink sm:w-auto">
+    <section aria-labelledby="feedback-title">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 id="feedback-title" className="mr-1 text-sm text-ink-muted">
           {t("feedback_prompt")}
         </h2>
         {(["up", "down"] as const).map((value) => {
@@ -48,8 +48,9 @@ export function FeedbackBar({ sessionId }: { sessionId: string }) {
             <Button
               key={value}
               aria-pressed={rating === value}
-              variant={rating === value ? "primary" : "secondary"}
-              icon={<Icon size={18} />}
+              variant={rating === value ? "secondary" : "ghost"}
+              icon={<Icon size={16} />}
+              className="text-sm text-ink-muted aria-pressed:text-ink"
               onClick={() => setRating(value)}
             >
               {t(value === "up" ? "feedback_up" : "feedback_down")}
@@ -58,7 +59,7 @@ export function FeedbackBar({ sessionId }: { sessionId: string }) {
         })}
       </div>
       {rating && (
-        <div className="mt-4 flex flex-col items-start gap-3">
+        <div className="mt-3 flex max-w-xl flex-col items-start gap-3">
           <TextArea
             label={t("feedback_comment_label")}
             value={comment}
@@ -74,9 +75,9 @@ export function FeedbackBar({ sessionId }: { sessionId: string }) {
             </Button>
             {state === "failed" && <span className="font-semibold text-danger">{t("error_generic")}</span>}
           </div>
+          <p className="text-sm text-ink-muted">{t("feedback_privacy")}</p>
         </div>
       )}
-      <p className="mt-3 text-sm text-ink-muted">{t("feedback_privacy")}</p>
     </section>
   );
 }

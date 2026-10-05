@@ -54,7 +54,7 @@ export function ProfileTab() {
   };
 
   return (
-    <Card title={t("settings_profile")}>
+    <Card>
       <p className="mb-4 text-ink-muted">{t("profile_intro")}</p>
       {profile && (
         <form
@@ -110,7 +110,7 @@ export function PrivacyTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title={t("settings_privacy")}>
+      <Card>
         {prefs && (
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">

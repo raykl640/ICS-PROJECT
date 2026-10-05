@@ -28,7 +28,7 @@ export function RecoveryCode({ code, username, onDone }: { code: string; usernam
 
   return (
     <section aria-labelledby="recovery-title" className="flex flex-col gap-4">
-      <h2 id="recovery-title" className="font-display-style text-2xl text-ink">
+      <h2 id="recovery-title" className="font-display-style text-xl text-ink">
         {t("recovery_title")}
       </h2>
       <p className="text-ink">{t("recovery_body")}</p>

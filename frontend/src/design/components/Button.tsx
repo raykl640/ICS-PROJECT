@@ -3,20 +3,18 @@ import { cx } from "../cx";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "mast";
 
-// Primary sits on a ledge that it presses into, like a key; secondary and ghost fill with highlighter on hover.
+// Primary is the one filled action on a screen; the others stay quiet until hovered.
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    "border-brand bg-brand text-brand-ink shadow-[0_3px_0_var(--hk-ink)] hover:border-ink hover:bg-ink hover:text-canvas " +
-    "active:translate-y-[3px] active:shadow-none disabled:shadow-none",
-  secondary: "border-ink bg-transparent text-ink hover:bg-highlight active:translate-y-px",
-  ghost: "border-transparent bg-transparent text-ink hover:bg-highlight active:translate-y-px",
-  danger: "border-danger bg-transparent text-danger hover:bg-danger hover:text-canvas active:translate-y-px",
-  mast: "border-transparent bg-transparent text-mast-muted hover:bg-mast-ink hover:text-mast active:translate-y-px",
+  primary: "border-brand bg-brand text-brand-ink hover:brightness-110 active:brightness-95",
+  secondary: "border-line bg-raised text-ink hover:border-ink hover:bg-sunken",
+  ghost: "border-transparent bg-transparent text-ink hover:bg-sunken",
+  danger: "border-danger bg-transparent text-danger hover:bg-danger hover:text-canvas",
+  mast: "border-transparent bg-transparent text-mast-muted hover:bg-sunken hover:text-mast-ink",
 };
 
 const BASE =
-  "target inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-sm border-2 font-semibold " +
-  "motion-colors disabled:cursor-not-allowed disabled:opacity-50";
+  "target inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md border font-semibold " +
+  "motion-colors disabled:cursor-not-allowed disabled:opacity-45";
 
 type ButtonProps = ComponentProps<"button"> & { variant?: ButtonVariant; icon?: ReactNode };
 

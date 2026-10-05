@@ -46,7 +46,10 @@ export function HowItWorks() {
         <ol className="flex flex-col gap-3">
           {STEPS.map((key, index) => (
             <li key={key} className="flex gap-3 text-ink">
-              <span aria-hidden="true" className="font-display-style text-2xl leading-none text-brand">
+              <span
+                aria-hidden="true"
+                className="grid size-7 shrink-0 place-items-center rounded-full bg-sunken text-sm font-semibold text-ink"
+              >
                 {index + 1}
               </span>
               <span>{t(key)}</span>

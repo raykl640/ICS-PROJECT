@@ -27,8 +27,8 @@ export function PageTitle({
         hidden
           ? "sr-only"
           : large
-            ? "font-display-style text-5xl text-ink sm:text-6xl lg:text-7xl"
-            : "font-display-style text-4xl text-ink sm:text-5xl",
+            ? "font-display-style text-4xl text-ink sm:text-5xl"
+            : "font-display-style text-3xl text-ink sm:text-4xl",
         "outline-none",
         className,
       )}

@@ -36,7 +36,7 @@ test("browse Act -> section -> follow ref -> bookmark -> find it in Library", as
 
   await page.goto("/library?tab=saved");
   await expect(page.getByText("Sample Employment Act — s. 4: Unfair termination")).toBeVisible();
-  await page.goto("/");
+  await page.goto("/laws");
   await expect(page.getByRole("link", { name: /Sample Employment Act — 4: Unfair termination/ })).toBeVisible();
 });
 

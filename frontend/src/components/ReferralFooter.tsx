@@ -17,8 +17,8 @@ export function ReferralFooter({ entries = FILE_ENTRIES }: { entries?: Referral[
   const verified = entries.filter((entry) => entry.verified === true);
   if (!verified.length) return null;
   return (
-    <section aria-labelledby="referral-title" className="border-t-[3px] border-ink pt-4">
-      <h2 id="referral-title" className="font-display-style text-2xl text-ink">
+    <section aria-labelledby="referral-title" className="border-t border-line-subtle pt-4">
+      <h2 id="referral-title" className="font-semibold text-ink">
         {t("referral_title")}
       </h2>
       <ul className="mt-3 flex flex-col gap-3">

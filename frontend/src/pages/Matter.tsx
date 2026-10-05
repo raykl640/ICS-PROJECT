@@ -18,7 +18,7 @@ function Section({ title, count, children }: { title: string; count: number; chi
   const id = `matter-${title.toLowerCase().replace(/\W+/g, "-")}`;
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <h2 id={id} className="font-display-style text-2xl text-ink">
+      <h2 id={id} className="font-display-style text-xl text-ink">
         {title} <span className="text-base text-ink-muted">({count})</span>
       </h2>
       {children}

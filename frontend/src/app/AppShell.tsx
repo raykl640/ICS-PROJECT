@@ -3,9 +3,9 @@ import {
   CircleHelp,
   FileSearch,
   Keyboard,
+  Languages,
   Plus,
   CircleUser,
-  Home,
   Library as LibraryIcon,
   Lock,
   LogIn,
@@ -13,7 +13,6 @@ import {
   MessageSquare,
   Moon,
   Settings as SettingsIcon,
-  SlidersHorizontal,
   Sun,
 } from "lucide-react";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
@@ -22,15 +21,13 @@ import { lock, logout } from "../api/accounts";
 import { listActs, sectionHref, type ActInfo } from "../api/laws";
 import type { UiLanguage } from "../api/types";
 import { HealthBanner } from "../components/ErrorState";
-import { IconButton } from "../design/components/Button";
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "../design/components/Menu";
 import { CommandPalette, type CommandItem } from "../design/components/CommandPalette";
 import { Dialog, DialogContent } from "../design/components/Dialog";
 import { Kbd } from "../design/components/Display";
-import { Popover, PopoverContent, PopoverTrigger, Tooltip } from "../design/components/Overlay";
+import { Tooltip } from "../design/components/Overlay";
 import { Masthead, RAIL_OFFSET } from "../design/components/Shell";
 import { useToast } from "../design/components/toastContext";
-import { ToggleGroup } from "../design/components/ToggleGroup";
 import { cx } from "../design/cx";
 import { useMediaQuery } from "../design/useMediaQuery";
 import { isBusy, type Phase } from "../hooks/session";
@@ -41,143 +38,89 @@ import { useAuth, useSession, useSettings } from "./contexts";
 import { EventsBridge } from "./EventsBridge";
 import { LockScreen } from "./LockScreen";
 import { requestPageFocus } from "./pageFocus";
-import { TEXT_SIZES, type ThemeChoice } from "./settings";
 
-const NAV: { href: string; key: StringKey; icon: typeof Home }[] = [
-  { href: "/", key: "nav_home", icon: Home },
-  { href: "/ask", key: "nav_ask", icon: MessageSquare },
-  { href: "/laws", key: "nav_laws", icon: BookOpen },
-  { href: "/library", key: "nav_library", icon: LibraryIcon },
-  { href: "/how-it-works", key: "nav_how", icon: CircleHelp },
-  { href: "/settings", key: "nav_settings", icon: SettingsIcon },
+// "/" is where a question starts; its answer lives under /ask, so both belong to the Ask item.
+const NAV: { href: string; key: StringKey; icon: typeof BookOpen; match: string[]; secondary?: boolean }[] = [
+  { href: "/", key: "nav_ask", icon: MessageSquare, match: ["/ask"] },
+  { href: "/laws", key: "nav_laws", icon: BookOpen, match: ["/laws", "/search"] },
+  { href: "/library", key: "nav_library", icon: LibraryIcon, match: ["/library", "/matters", "/letters"] },
+  { href: "/how-it-works", key: "nav_how", icon: CircleHelp, match: [], secondary: true },
+  { href: "/settings", key: "nav_settings", icon: SettingsIcon, match: [] },
 ];
+
+const isCurrent = (item: (typeof NAV)[number], pathname: string) =>
+  item.href === "/"
+    ? pathname === "/" || item.match.some((m) => pathname.startsWith(m))
+    : pathname.startsWith(item.href) || item.match.some((m) => pathname.startsWith(m));
 
 /** Client-side link with the anchor-style props the design components pass. */
 function RouterLink({ href, ...props }: ComponentProps<"a"> & { href: string }) {
   return <Link to={href} {...props} />;
 }
 
-/** The section-sign tile: the mark every statute margin and every clerk's stamp shares. */
-function BrandMark({ inverted }: { inverted?: boolean }) {
+/** The section-sign mark and the name. */
+function Brand() {
   return (
-    <span
-      aria-hidden="true"
-      className={cx(
-        "grid size-9 place-items-center font-display-style text-[1.65rem] leading-none",
-        inverted ? "bg-mast-ink text-mast" : "bg-ink text-canvas",
-      )}
-    >
-      §
-    </span>
-  );
-}
-
-function Brand({ rail }: { rail?: boolean }) {
-  return (
-    <Link
-      to="/"
-      aria-label={rail ? "HakiAI" : undefined}
-      className={cx("flex shrink-0 items-center gap-2 rounded-sm", rail ? "text-mast-ink" : "text-ink")}
-    >
-      <BrandMark inverted={rail} />
-      {!rail && (
-        <span className="text-[1.4rem] leading-none">
-          <span className="font-display-style">Haki</span>
-          <span className="font-light tracking-tight">AI</span>
-        </span>
-      )}
+    <Link to="/" className="flex shrink-0 items-center gap-2 rounded-md text-ink">
+      <span
+        aria-hidden="true"
+        className="grid size-8 place-items-center rounded-md bg-brand font-display-style text-xl leading-none text-brand-ink"
+      >
+        §
+      </span>
+      <span className="text-lg leading-none font-bold tracking-tight">HakiAI</span>
     </Link>
   );
 }
 
-/** EN / SW interface language. */
+/** One button that switches the interface language (the full choice is in Settings). */
 function LanguageSwitch() {
   const { t } = useI18n();
   const { settings, update } = useSettings();
+  const next: UiLanguage = settings.language === "en" ? "sw" : "en";
   return (
-    <ToggleGroup
-      label={t("ui_language")}
-      value={settings.language}
-      onValueChange={(language: UiLanguage) => update({ language })}
-      iconOnly
-      items={[
-        { value: "en", label: t("language_en"), icon: <span className="font-mono text-sm">EN</span> },
-        { value: "sw", label: t("language_sw"), icon: <span className="font-mono text-sm">SW</span> },
-      ]}
-    />
-  );
-}
-
-/** Theme and text size without leaving the page. */
-function QuickSettings() {
-  const { t } = useI18n();
-  const { settings, update } = useSettings();
-  return (
-    <Popover>
-      <Tooltip label={t("quick_settings")}>
-        <PopoverTrigger asChild>
-          <IconButton label={t("quick_settings")} icon={<SlidersHorizontal size={20} />} />
-        </PopoverTrigger>
-      </Tooltip>
-      <PopoverContent align="end" aria-label={t("quick_settings")} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <span aria-hidden="true" className="label-mono text-ink-muted">
-            {t("theme_label")}
-          </span>
-          <ToggleGroup
-            label={t("theme_label")}
-            value={settings.theme}
-            onValueChange={(theme: ThemeChoice) => update({ theme })}
-            items={[
-              { value: "system", label: t("theme_system") },
-              { value: "light", label: t("theme_light") },
-              { value: "dark", label: t("theme_dark") },
-            ]}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <span aria-hidden="true" className="label-mono text-ink-muted">
-            {t("text_size_label")}
-          </span>
-          <ToggleGroup
-            label={t("text_size_label")}
-            value={settings.text}
-            onValueChange={(text) => update({ text })}
-            iconOnly
-            items={TEXT_SIZES.map((size) => ({
-              value: size,
-              label: t(`text_${size}`),
-              icon: <span className="font-mono text-sm">{size.toUpperCase()}</span>,
-            }))}
-          />
-        </div>
-        <Link to="/settings" className="font-semibold text-brand underline underline-offset-3">
-          {t("nav_settings")}
-        </Link>
-      </PopoverContent>
-    </Popover>
+    <button
+      type="button"
+      lang={next}
+      onClick={() => update({ language: next })}
+      className="target inline-flex cursor-pointer items-center justify-center gap-2 rounded-md px-2 text-sm font-semibold text-ink-muted motion-colors hover:bg-sunken hover:text-ink lg:justify-start lg:px-3"
+    >
+      <Languages aria-hidden="true" size={18} />
+      <span className="lg:hidden" aria-hidden="true">
+        {next.toUpperCase()}
+      </span>
+      <span className="sr-only lg:not-sr-only">{t("palette_language")}</span>
+    </button>
   );
 }
 
 const AUTH_PATHS = new Set(["/welcome", "/signin", "/signup", "/recover"]);
 
 /** Signed in: a menu with Lock, Settings and Sign out. Guest: a link to sign in. */
-function AccountControl() {
+function AccountControl({ pathname }: { pathname: string }) {
   const { t } = useI18n();
   const { me, apply } = useAuth();
   const { reset } = useSession();
   const navigate = useNavigate();
   if (!me?.user) {
     return (
-      <Tooltip label={t("sign_in")}>
-        <Link
-          to="/welcome"
-          aria-label={t("sign_in")}
-          className="target inline-flex items-center justify-center rounded-sm p-2 text-ink motion-colors hover:bg-highlight"
-        >
-          <LogIn aria-hidden="true" size={20} />
-        </Link>
-      </Tooltip>
+      <div className="flex items-center gap-3 lg:flex-col lg:items-stretch lg:gap-2">
+        {me && !AUTH_PATHS.has(pathname) && (
+          <p className="hidden text-sm text-ink-muted lg:block">{t("guest_banner")}</p>
+        )}
+        <Tooltip label={t("sign_in")}>
+          <Link
+            to="/welcome"
+            aria-label={t("sign_in")}
+            className="target inline-flex items-center justify-center gap-2 rounded-md p-2 font-semibold text-ink motion-colors hover:bg-sunken lg:justify-start lg:border lg:border-line lg:bg-raised lg:px-3"
+          >
+            <LogIn aria-hidden="true" size={18} />
+            <span aria-hidden="true" className="hidden lg:inline">
+              {t("sign_in")}
+            </span>
+          </Link>
+        </Tooltip>
+      </div>
     );
   }
   const signOut = async () => {
@@ -188,7 +131,16 @@ function AccountControl() {
   return (
     <Menu>
       <MenuTrigger asChild>
-        <IconButton label={t("account_menu")} icon={<CircleUser size={22} />} />
+        <button
+          type="button"
+          aria-label={t("account_menu")}
+          className="target inline-flex cursor-pointer items-center gap-2 rounded-md p-2 text-ink motion-colors hover:bg-sunken lg:px-2"
+        >
+          <CircleUser aria-hidden="true" size={22} />
+          <span aria-hidden="true" className="hidden truncate font-semibold lg:inline">
+            {me.user.display_name}
+          </span>
+        </button>
       </MenuTrigger>
       <MenuContent>
         <MenuLabel>{t("signed_in_as", { name: me.user.display_name })}</MenuLabel>
@@ -204,24 +156,6 @@ function AccountControl() {
         </MenuItem>
       </MenuContent>
     </Menu>
-  );
-}
-
-/** Thin notice for guests outside the sign-in pages. */
-function GuestBanner({ pathname }: { pathname: string }) {
-  const { t } = useI18n();
-  const { me } = useAuth();
-  if (!me || me.user || AUTH_PATHS.has(pathname)) return null;
-  return (
-    <p className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
-      <span>{t("guest_banner")}</span>
-      <Link
-        to="/welcome"
-        className="font-semibold text-brand underline underline-offset-3 hover:bg-highlight hover:text-ink"
-      >
-        {t("guest_banner_action")}
-      </Link>
-    </p>
   );
 }
 
@@ -403,8 +337,6 @@ export function AppShell() {
     },
   ];
 
-  const here = NAV.find((item) => (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)));
-
   if (me?.user && me.locked) return <LockScreen name={me.user.display_name} />;
 
   return (
@@ -418,21 +350,24 @@ export function AppShell() {
       <Masthead
         label={t("nav_label")}
         brand={<Brand />}
-        brandMark={<Brand rail />}
-        title={here && t(here.key)}
-        items={NAV.map(({ href, key, icon: Icon }) => ({
-          id: href,
-          label: t(key),
-          icon: <Icon size={20} />,
-          href,
-          current: href === "/" ? pathname === "/" : pathname.startsWith(href),
+        items={NAV.map((item) => ({
+          id: item.href,
+          label: t(item.key),
+          icon: <item.icon size={20} />,
+          href: item.href,
+          current: isCurrent(item, pathname),
+          secondary: item.secondary,
         }))}
-        search={{ label: t("search_label"), shortcut: t("search_shortcut"), onOpen: () => setPaletteOpen(true) }}
+        search={{
+          label: t("search_label"),
+          short: t("search_short"),
+          shortcut: t("search_shortcut"),
+          onOpen: () => setPaletteOpen(true),
+        }}
         end={
           <>
             <LanguageSwitch />
-            <QuickSettings />
-            <AccountControl />
+            <AccountControl pathname={pathname} />
           </>
         }
         linkComponent={RouterLink}
@@ -441,14 +376,13 @@ export function AppShell() {
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-24 outline-none sm:px-6 md:pb-10 lg:pt-8"
+          className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 outline-none sm:px-8 lg:pt-12 lg:pb-16"
         >
           {health && health.status !== "ok" && (
             <div className="mb-6">
               <HealthBanner health={health} />
             </div>
           )}
-          <GuestBanner pathname={pathname} />
           <Suspense
             fallback={
               <p role="status" className="text-ink-muted">

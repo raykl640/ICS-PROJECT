@@ -64,7 +64,7 @@ export function Answer({ state, sections, sources, onCite, onShowSources, onStop
     <AnswerCard
       title={t("answer_title")}
       meta={
-        <p role="status" className={cx("font-mono text-xs text-ink-muted", busy && !state.reconnecting && "sr-only")}>
+        <p role="status" className={cx("pb-3 text-sm text-ink-muted", busy && !state.reconnecting && "sr-only")}>
           {statusText(state, t)}
         </p>
       }
@@ -85,7 +85,9 @@ export function Answer({ state, sections, sources, onCite, onShowSources, onStop
           <>
             {t(TAB_LABELS[section])}
             {busy && state.latest === section && (
-              <span className="label-mono bg-highlight px-1.5 py-0.5 font-semibold text-ink">{t("tab_writing")}</span>
+              <span className="rounded-full bg-highlight px-2 py-0.5 text-xs font-semibold text-ink">
+                {t("tab_writing")}
+              </span>
             )}
           </>
         ),
@@ -123,7 +125,7 @@ export function Answer({ state, sections, sources, onCite, onShowSources, onStop
         (onShowSources || (busy && onStop)) && (
           <>
             {onShowSources && (
-              <Button icon={<ListTree size={18} />} onClick={onShowSources}>
+              <Button variant="secondary" icon={<ListTree size={18} />} onClick={onShowSources}>
                 {t("sources_open", { count: sources.length })}
               </Button>
             )}

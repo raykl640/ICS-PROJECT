@@ -37,14 +37,14 @@ export function AnswerCard({
   className,
 }: AnswerCardProps) {
   return (
-    <article className={cx("border-2 border-ink bg-surface", className)}>
-      <header className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-4 sm:px-6">
-        <h2 className="label-mono min-w-0 text-ink">{title}</h2>
+    <article className={cx("flex flex-col", className)}>
+      <header className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="sr-only">{title}</h2>
         {meta}
       </header>
-      {status && <div className="px-4 pt-4 sm:px-6">{status}</div>}
-      <Tabs value={value} onValueChange={onValueChange} className="px-4 pb-6 sm:px-6">
-        <TabsList fit className="mt-3">
+      {status && <div className="pb-4">{status}</div>}
+      <Tabs value={value} onValueChange={onValueChange}>
+        <TabsList fit>
           {tabs.map((t) => (
             <TabsTrigger key={t.id} value={t.id}>
               {t.label}
@@ -56,15 +56,15 @@ export function AnswerCard({
             key={t.id}
             value={t.id}
             aria-busy={busy}
-            className="pt-6 text-[1.1875rem] leading-[1.7] text-ink"
+            className="pt-6 text-[1.125rem] leading-[1.75] text-ink"
           >
             {t.content}
           </TabsContent>
         ))}
       </Tabs>
-      {notes && <div className="flex flex-col gap-3 border-t border-line px-4 py-4 sm:px-6">{notes}</div>}
-      {actions && <div className="flex flex-wrap gap-2 border-t border-line px-4 py-3 sm:px-6">{actions}</div>}
-      <footer className="border-t-2 border-ink bg-sunken px-4 py-3 text-[0.8125rem] leading-snug text-ink-muted sm:px-6">
+      {notes && <div className="mt-6 flex flex-col gap-3">{notes}</div>}
+      {actions && <div className="mt-6 flex flex-wrap gap-2">{actions}</div>}
+      <footer className="mt-6 border-t border-line-subtle pt-4 text-[0.8125rem] leading-snug text-ink-muted">
         {footer}
       </footer>
     </article>
@@ -115,31 +115,28 @@ export function SourceCard({
       aria-label={`${act}, ${heading}`}
       data-highlighted={highlighted ? "true" : "false"}
       className={cx(
-        "scroll-mt-4 border bg-raised motion-colors",
-        highlighted ? "border-ink outline-[3px] outline-offset-2 outline-brand" : "border-line",
+        "scroll-mt-4 rounded-lg border bg-raised motion-colors",
+        highlighted ? "border-brand shadow-raised" : "border-line-subtle",
       )}
     >
-      <header className="flex gap-3 border-b border-line-subtle px-4 py-3">
-        <span
-          aria-hidden="true"
-          className="w-16 shrink-0 pt-0.5 font-mono text-base leading-tight font-semibold text-brand"
-        >
-          {mark}
-        </span>
-        <div className="min-w-0">
-          <p className="label-mono text-ink-muted">{act}</p>
-          <h3 className="mt-0.5 font-display-style text-xl leading-tight text-ink">{heading}</h3>
-          <p className="mt-1 font-mono text-xs text-ink-muted">{locator}</p>
-          {badge && <div className="mt-2">{badge}</div>}
-          {actions && <div className="mt-2 flex flex-wrap gap-2">{actions}</div>}
-        </div>
+      <header className="px-4 pt-3.5 pb-2">
+        <p className="text-sm text-ink-muted">
+          <span aria-hidden="true" className="mr-2 font-mono font-semibold text-brand">
+            {mark}
+          </span>
+          {act}
+        </p>
+        <h3 className="mt-1 leading-snug font-semibold text-ink">{heading}</h3>
+        <p className="mt-0.5 text-xs text-ink-muted">{locator}</p>
+        {badge && <div className="mt-2">{badge}</div>}
+        {actions && <div className="mt-2 -ml-3 flex flex-wrap gap-2">{actions}</div>}
       </header>
       <div
         role="region"
         tabIndex={0}
         aria-label={regionLabel}
         data-sweep={highlighted ? String(pulse % 2) : undefined}
-        className={cx("max-h-96 overflow-y-auto border-l-[6px] border-ink px-4 py-3", highlighted && "sweep")}
+        className={cx("max-h-80 overflow-y-auto rounded-b-lg px-4 pt-1 pb-4", highlighted && "sweep")}
       >
         <LawText size="sm" className="whitespace-pre-wrap">
           {children}
@@ -176,10 +173,7 @@ export function LawText({
 export function LawRef({ className, ...props }: ComponentProps<"a">) {
   return (
     <a
-      className={cx(
-        "font-semibold text-brand underline decoration-2 underline-offset-3 hover:bg-highlight hover:text-ink",
-        className,
-      )}
+      className={cx("font-semibold text-brand underline decoration-2 underline-offset-3 hover:text-ink", className)}
       {...props}
     />
   );

@@ -1,6 +1,6 @@
 import { FilePen, MessageSquareX } from "lucide-react";
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { addBookmark, createLetter, getConversation, listBookmarks, type Turn } from "../api/library";
 import type { SourceChunk, UiLanguage } from "../api/types";
 import { useAuth, useLibrary, useSession } from "../app/contexts";
@@ -22,7 +22,7 @@ import { useI18n } from "../i18n";
 import { withoutDisclaimer } from "../lib/text";
 import { turnState } from "../lib/turnState";
 
-const wideScreen = () => typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1024px)").matches;
+const wideScreen = () => typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1280px)").matches;
 const LIVE = "live";
 
 /** Which answer's sources the side panel shows, and the cited provision to highlight. */
@@ -76,14 +76,9 @@ function useBookmarks(enabled: boolean) {
 function QuestionBubble({ text }: { text: string }) {
   const { t } = useI18n();
   return (
-    <p className="flex gap-4 border-l-[6px] border-brand py-1 pl-4 text-xl leading-snug font-bold whitespace-pre-wrap text-ink">
-      <span aria-hidden="true" className="label-mono shrink-0 pt-1.5 font-semibold text-ink-muted">
-        Re:
-      </span>
-      <span>
-        <span className="sr-only">{t("you_asked")} </span>
-        {text}
-      </span>
+    <p className="font-display-style text-2xl leading-snug whitespace-pre-wrap text-ink sm:text-[1.75rem]">
+      <span className="sr-only">{t("you_asked")} </span>
+      {text}
     </p>
   );
 }
@@ -93,12 +88,10 @@ function LiveAnswer({
   state,
   onCite,
   onShowSources,
-  composer,
 }: {
   state: SessionState;
   onCite: (chunkId: string) => void;
   onShowSources: (() => void) | null;
-  composer: RefObject<HTMLTextAreaElement | null>;
 }) {
   const { t } = useI18n();
   const { retry, stopAnswer, health } = useSession();
@@ -121,9 +114,7 @@ function LiveAnswer({
           onStop={stopAnswer}
         />
       )}
-      {state.phase === "null" && state.nullInfo && (
-        <NullScreen info={state.nullInfo} onAskAgain={() => composer.current?.focus()} />
-      )}
+      {state.phase === "null" && state.nullInfo && <NullScreen info={state.nullInfo} />}
       {state.phase === "error" && state.error && <ErrorState error={state.error} health={health} onRetry={retry} />}
       {finished && state.sessionId && <FeedbackBar key={`feedback-${state.sessionId}`} sessionId={state.sessionId} />}
       {state.phase === "done" && <ReferralFooter />}
@@ -168,14 +159,8 @@ function NewQuestion() {
     />
   );
 
-  if (idle) {
-    return (
-      <section className="max-w-3xl">
-        <PageTitle className="mb-6">{t("ask_title")}</PageTitle>
-        {composer}
-      </section>
-    );
-  }
+  // Nothing asked yet: questions start on Home.
+  if (idle) return <Navigate to="/" replace />;
 
   const sources = state.sources ?? [];
   const answering = state.sessionId !== null && state.phase !== "null" && state.phase !== "error";
@@ -183,18 +168,15 @@ function NewQuestion() {
   return (
     <SplitView
       main={
-        <div className="flex flex-col gap-5">
+        <div className="flex max-w-3xl flex-col gap-6">
           <PageTitle hidden>{t("answer_page_title")}</PageTitle>
           <LiveAnswer
             state={state}
             onCite={(chunkId) => panel.cite(LIVE, chunkId)}
             onShowSources={showSources ? () => panel.show(LIVE) : null}
-            composer={box}
           />
           {!busy && (
-            <section className="sticky bottom-[4.5rem] z-10 -mx-1 bg-canvas px-1 pt-3 pb-2 md:bottom-0">
-              {composer}
-            </section>
+            <section className="sticky bottom-[4.25rem] z-10 bg-canvas pt-2 pb-3 lg:bottom-0">{composer}</section>
           )}
         </div>
       }
@@ -276,13 +258,12 @@ function Thread({ id }: { id: string }) {
   return (
     <SplitView
       main={
-        <div className="flex flex-col gap-5">
+        <div className="flex max-w-3xl flex-col gap-10">
           <PageTitle hidden>{data.title}</PageTitle>
           {thread.map((turn) => (
             <SavedTurn
               key={turn.id}
               turn={turn}
-              composer={box}
               onCite={(chunkId) => panel.cite(turn.id, chunkId)}
               onShowSources={turn.sources.length ? () => panel.show(turn.id) : null}
             />
@@ -292,11 +273,10 @@ function Thread({ id }: { id: string }) {
               state={state}
               onCite={(chunkId) => panel.cite(LIVE, chunkId)}
               onShowSources={() => panel.show(LIVE)}
-              composer={box}
             />
           )}
           {!busy && (
-            <section className="sticky bottom-[4.5rem] z-10 -mx-1 bg-canvas px-1 pt-3 pb-2 md:bottom-0">
+            <section className="sticky bottom-[4.25rem] z-10 bg-canvas pt-2 pb-3 lg:bottom-0">
               <p className="mb-2 text-sm text-ink-muted">{t("followup_hint")}</p>
               <Composer
                 label={t("followup_label")}
@@ -323,12 +303,10 @@ function Thread({ id }: { id: string }) {
 /** A saved question and its answer (or the fallback), with "Edit this letter" instead of downloads. */
 function SavedTurn({
   turn,
-  composer,
   onCite,
   onShowSources,
 }: {
   turn: Turn;
-  composer: RefObject<HTMLTextAreaElement | null>;
   onCite: (chunkId: string) => void;
   onShowSources: (() => void) | null;
 }) {
@@ -336,13 +314,10 @@ function SavedTurn({
   const state = useMemo(() => turnState(turn, t("disclaimer")), [turn, t]);
   const sections = useMemo(() => withoutDisclaimer(turn.sections), [turn.sections]);
   return (
-    <article className="flex flex-col gap-5" aria-label={turn.question}>
+    <article className="flex flex-col gap-6" aria-label={turn.question}>
       <QuestionBubble text={turn.question} />
       {turn.null_response ? (
-        <NullScreen
-          info={{ message: t("fallback"), disclaimer: t("disclaimer") }}
-          onAskAgain={() => composer.current?.focus()}
-        />
+        <NullScreen info={{ message: t("fallback"), disclaimer: t("disclaimer") }} />
       ) : (
         <Answer
           state={state}

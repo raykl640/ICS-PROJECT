@@ -1,4 +1,5 @@
-/* HakiAI theme: "Registry". Photocopy-grey paper, court-registry ink, an ultramarine stamp pad and a highlighter.
+/* HakiAI theme: "Quiet registry". Warm paper, near-black ink, one ultramarine brand colour and a soft highlighter for
+   cited provisions. Hairline borders and whitespace separate things; heavy rules and boxes are avoided.
    The only place raw colour values live. index.html's pre-paint script sets data-theme (light|dark) and
    data-contrast (standard|more) on <html>.
    Cascade: :root < [data-theme=dark] < [data-contrast=more] < dark + more, so the last block must override every key the
@@ -6,70 +7,71 @@
 
 :root {
   color-scheme: light;
-  --hk-canvas: #f2f1ec;
-  --hk-surface: #faf9f5;
+  --hk-canvas: #f7f6f2;
+  --hk-surface: #fcfbf8;
   --hk-raised: #ffffff;
-  --hk-sunken: #e5e3da;
-  --hk-ink: #0e1120;
-  --hk-ink-muted: #474b5c;
-  --hk-line: #6d7185;
-  --hk-line-subtle: #cfcdc2;
-  --hk-brand: #2231b0;
+  --hk-sunken: #eceae3;
+  --hk-ink: #15171f;
+  --hk-ink-muted: #545866;
+  --hk-line: #7c7f8c;
+  --hk-line-subtle: #e2dfd6;
+  --hk-brand: #2a3ab5;
   --hk-brand-ink: #ffffff;
-  --hk-accent: #b23a10;
+  --hk-accent: #a63a12;
   --hk-success: #1b6535;
-  --hk-warn: #7d4a00;
+  --hk-warn: #7a4800;
   --hk-danger: #a3142e;
   --hk-info: #1c5189;
-  --hk-focus: #2231b0;
-  --hk-highlight: #ffe45e;
-  /* The masthead is always dark, in both themes. */
-  --hk-mast: #0e1120;
-  --hk-mast-ink: #f2f1ec;
-  --hk-mast-muted: #b4b7c8;
+  --hk-focus: #2a3ab5;
+  --hk-highlight: #fff0a3;
+  /* The navigation rail: a quiet column beside the page, light in the light theme. */
+  --hk-mast: #efede6;
+  --hk-mast-ink: #15171f;
+  --hk-mast-muted: #545866;
 
-  --hk-shadow-raised: none;
-  --hk-shadow-overlay: 0 0 0 1px var(--hk-ink), 4px 4px 0 rgb(14 17 32 / 0.85);
-  --hk-scrim: rgb(14 17 32 / 0.55);
+  --hk-shadow-raised: 0 1px 2px rgb(21 23 31 / 0.05), 0 2px 8px rgb(21 23 31 / 0.04);
+  --hk-shadow-overlay: 0 0 0 1px rgb(21 23 31 / 0.08), 0 16px 40px rgb(21 23 31 / 0.16);
+  --hk-scrim: rgb(21 23 31 / 0.45);
 
   --hk-font-ui: "Archivo Variable", "Segoe UI", system-ui, sans-serif;
   --hk-font-display: "Archivo Variable", "Segoe UI", system-ui, sans-serif;
   --hk-font-reading: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
   --hk-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --hk-display-weight: 800;
-  --hk-display-stretch: 76%;
-  --hk-display-tracking: -0.012em;
+  --hk-display-weight: 700;
+  --hk-display-stretch: 92%;
+  --hk-display-tracking: -0.015em;
 
-  --hk-radius-sm: 2px;
-  --hk-radius-md: 3px;
-  --hk-radius-lg: 4px;
+  --hk-radius-sm: 6px;
+  --hk-radius-md: 10px;
+  --hk-radius-lg: 16px;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --hk-canvas: #0c0e19;
-  --hk-surface: #131626;
-  --hk-raised: #1a1e33;
-  --hk-sunken: #07080f;
-  --hk-ink: #ecebe3;
-  --hk-ink-muted: #a8abbb;
-  --hk-line: #6a6f8f;
-  --hk-line-subtle: #272b46;
-  --hk-brand: #96a2ff;
-  --hk-brand-ink: #0c0e19;
+  --hk-canvas: #101219;
+  --hk-surface: #151822;
+  --hk-raised: #1b1f2b;
+  --hk-sunken: #0b0d13;
+  --hk-ink: #ebeae4;
+  --hk-ink-muted: #a6a9b6;
+  --hk-line: #6b7086;
+  --hk-line-subtle: #262a37;
+  --hk-brand: #9ba7ff;
+  --hk-brand-ink: #101219;
   --hk-accent: #ff9266;
   --hk-success: #84d69e;
   --hk-warn: #f2bb6b;
   --hk-danger: #ff93a6;
   --hk-info: #8cc3f7;
-  --hk-focus: #96a2ff;
-  --hk-highlight: #3d360d;
-  --hk-mast: #05060d;
-  --hk-mast-ink: #ecebe3;
-  --hk-mast-muted: #a8abbb;
+  --hk-focus: #9ba7ff;
+  --hk-highlight: #3b3514;
+  --hk-mast: #0c0e14;
+  --hk-mast-ink: #ebeae4;
+  --hk-mast-muted: #a6a9b6;
 
-  --hk-shadow-overlay: 0 0 0 1px var(--hk-line), 4px 4px 0 rgb(0 0 0 / 0.7);
-  --hk-scrim: rgb(0 0 0 / 0.65);
+  --hk-shadow-raised: 0 1px 2px rgb(0 0 0 / 0.3);
+  --hk-shadow-overlay: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5);
+  --hk-scrim: rgb(0 0 0 / 0.6);
 }
 
 :root[data-contrast="more"] {
@@ -83,6 +85,8 @@
   --hk-danger: #7c0c20;
   --hk-info: #123b69;
   --hk-focus: #141f8a;
+  --hk-mast-ink: #05070f;
+  --hk-mast-muted: #2c3040;
 }
 
 :root[data-theme="dark"][data-contrast="more"] {
@@ -96,4 +100,6 @@
   --hk-danger: #ffbfca;
   --hk-info: #b5dbfb;
   --hk-focus: #b9c2ff;
+  --hk-mast-ink: #fbfaf4;
+  --hk-mast-muted: #d3d6e2;
 }

@@ -43,7 +43,7 @@ export function Settings() {
   const requested = params.get("tab");
   const tab = tabs.find((x) => x.id === requested)?.id ?? "appearance";
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex max-w-2xl flex-col gap-6">
       <div>
         <PageTitle>{t("settings_title")}</PageTitle>
         <p className="mt-2 text-ink-muted">{t("settings_intro")}</p>
@@ -81,7 +81,7 @@ function AppearanceTab() {
   const { t } = useI18n();
   const { settings, update } = useSettings();
   return (
-    <Card title={t("settings_appearance")}>
+    <Card>
       <Setting label={t("theme_label")}>
         <ToggleGroup
           label={t("theme_label")}
@@ -134,7 +134,7 @@ function LanguageTab() {
   const { t } = useI18n();
   const { settings, update } = useSettings();
   return (
-    <Card title={t("settings_language")}>
+    <Card>
       <Setting label={t("ui_language")} hint={t("settings_language_hint")}>
         <ToggleGroup
           label={t("ui_language")}

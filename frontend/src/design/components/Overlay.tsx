@@ -23,7 +23,7 @@ export function Tooltip({
         <RTip.Content
           side={side}
           sideOffset={6}
-          className="label-mono z-50 rounded-sm bg-ink px-2 py-1 font-medium text-canvas"
+          className="z-50 rounded-md bg-ink px-2 py-1 text-xs font-medium text-canvas"
         >
           {label}
         </RTip.Content>
@@ -43,7 +43,7 @@ export function PopoverContent({ className, sideOffset = 6, ...props }: Componen
       <RP.Content
         sideOffset={sideOffset}
         className={cx(
-          "z-50 w-[min(20rem,calc(100vw-2rem))] rounded-sm bg-raised p-4 text-ink shadow-overlay",
+          "z-50 w-[min(20rem,calc(100vw-2rem))] rounded-lg bg-raised p-4 text-ink shadow-overlay",
           className,
         )}
         {...props}

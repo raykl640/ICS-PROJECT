@@ -38,7 +38,7 @@ export function ToastProvider({ closeLabel, regionLabel, children }: ToastProvid
               duration={duration}
               onOpenChange={(open) => !open && drop(id)}
               className={cx(
-                "flex items-start gap-3 rounded-sm border-l-[6px] bg-raised p-3 text-ink shadow-overlay",
+                "flex items-start gap-3 rounded-lg border-l-4 bg-raised p-3 text-ink shadow-overlay",
                 EDGES[tone],
               )}
             >

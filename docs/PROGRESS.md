@@ -562,3 +562,17 @@ Open issues:
 - Human spot-check of the new Acts' chunks (HUMAN_TODO); new Kiswahili strings and routing hints await review.
 - relevance_threshold / scope_margin were set on the 10-Act corpus; retune with eval/ once ground truth exists.
 Not committed: left for the owner to review.
+
+## Declutter: "Quiet registry" (2026-10-05, owner request, not a milestone)
+Done:
+- Home and Ask merged: questions start only on /, /ask holds answers (redirects to / when idle); nav Ask/Laws/Library +
+  How it works/Settings. Home lost the 25-Act index and empty placeholders; Laws groups Acts by area with descriptions
+  and now shows "Continue reading".
+- Sidebar frame from 1024 px (no top bar, no per-page guest banner, one-button language switch); calmer tokens and
+  primitives across every page (see DEVIATIONS D33). Settings tabs no longer repeat their own name as a heading.
+- Checks: frontend lint, typecheck, 237 vitest, build (118 KB gzipped JS); 11 e2e incl. axe light/dark; screenshots
+  reviewed at 375/1280 in light and dark (new: Laws, Act, section, Library). Backend check.sh 787 passed, 97.1%.
+Open issues:
+- New Kiswahili strings (area names, Home lines) await review (HUMAN_TODO). README hero screenshot shows the old Home.
+- Letter workspace and Matter pages were restyled only through shared components; not screenshot-reviewed.
+Not committed: left for the owner to review.

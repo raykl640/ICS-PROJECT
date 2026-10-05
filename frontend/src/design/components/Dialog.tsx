@@ -41,7 +41,7 @@ export function DialogContent({
       <RD.Overlay className="fixed inset-0 z-40 bg-scrim" />
       <RD.Content
         className={cx(
-          "fixed z-50 flex flex-col overflow-hidden bg-raised text-ink shadow-overlay",
+          "fixed z-50 flex flex-col overflow-hidden rounded-lg bg-raised text-ink shadow-overlay",
           SIDES[side],
           className,
         )}
@@ -49,7 +49,7 @@ export function DialogContent({
       >
         <div
           className={cx(
-            "flex items-center justify-between gap-3 border-b-[3px] border-ink px-5 py-2",
+            "flex items-center justify-between gap-3 border-b border-line-subtle px-5 py-2",
             hideTitle && "absolute top-0 right-0 border-b-0",
           )}
         >

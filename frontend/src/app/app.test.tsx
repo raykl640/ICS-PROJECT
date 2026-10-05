@@ -22,7 +22,6 @@ test("an unknown path shows the 404 page inside the shell, with a way home", asy
 
 test.each([
   ["/", "Know where you stand under Kenyan law."],
-  ["/ask", "Ask a question"],
   ["/settings", "Settings"],
   ["/how-it-works", "How HakiAI works"],
 ])("a direct load of %s renders its page and marks it current", async (path, heading) => {
@@ -31,6 +30,14 @@ test.each([
   expect(document.title).toBe(`${heading} — HakiAI`);
   const current = within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { current: "page" });
   expect(current).toHaveAttribute("href", path);
+});
+
+test("/ask with no question in progress goes to Home, where questions start; Ask stays current", async () => {
+  renderApp("/ask");
+  expect(await screen.findByRole("heading", { level: 1, name: /Know where you stand/ })).toBeInTheDocument();
+  const nav = screen.getByRole("navigation", { name: "Main" });
+  expect(within(nav).getByRole("link", { current: "page" })).toHaveAccessibleName("Ask");
+  expect(within(nav).queryByRole("link", { name: "Home" })).not.toBeInTheDocument();
 });
 
 test("the style guide is a route in dev builds", async () => {
@@ -81,7 +88,7 @@ test("the interface language switches every label and sets lang", async () => {
   expect(await screen.findByRole("heading", { level: 1, name: "Mipangilio" })).toBeInTheDocument();
   expect(document.documentElement.lang).toBe("sw");
   expect(
-    within(screen.getByRole("navigation", { name: "Kuu" })).getByRole("link", { name: "Mwanzo" }),
+    within(screen.getByRole("navigation", { name: "Kuu" })).getByRole("link", { name: "Uliza" }),
   ).toBeInTheDocument();
 });
 
@@ -95,13 +102,12 @@ test("Ctrl+K opens the command palette, which navigates", async () => {
   expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
 });
 
-test("a topic tile starts the question with the Act's name", async () => {
-  const user = userEvent.setup();
+test("Home has one question box and points to the laws instead of listing them", async () => {
   renderApp("/");
-  await user.click(await screen.findByRole("button", { name: /Employment Act/ }));
-  const box = screen.getByRole("textbox", { name: "Your question" });
-  expect(box).toHaveValue("Employment Act: ");
-  expect(box).toHaveFocus();
+  await screen.findByRole("heading", { level: 1, name: /Know where you stand/ });
+  expect(screen.getAllByRole("textbox")).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: /Employment Act/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Browse the laws" })).toHaveAttribute("href", "/laws");
 });
 
 test("the error boundary replaces a crashed tree with a reload screen", () => {

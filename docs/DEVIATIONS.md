@@ -22,8 +22,9 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D22, D29 | encrypted local accounts; M13 mechanics | in force |
 | D23, D24 | follow-up context; background runs (M14) | in force |
 | D30 | laws browser mechanics (M15) | in force |
-| D31 | "Registry" redesign replaces the Mahakama/Jua look | in force (supersedes the visual parts of D27, D28) |
+| D31 | "Registry" redesign replaces the Mahakama/Jua look | visual parts superseded by D33 |
 | D32 | corpus of 25 Acts (15 added after M15) | in force |
+| D33 | "Quiet registry": Home/Ask merged, sidebar frame, calmer look | in force (supersedes the visual parts of D31) |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -403,3 +404,25 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 - Impact: 3157 chunks (1519 unchanged + 1638 new), 2946 indexed, 4507 dense windows (191 over 256 word-pieces), 1085 linked
   cross-references. Dense index 6.8 MB; build_corpus ~4 min, build_index ~80 s. The M1 human spot-check gate covered only
   the first 10 Acts (HUMAN_TODO). relevance_threshold and scope_margin were tuned on the 10-Act corpus and stay unchanged.
+
+## D33 "Quiet registry" decluttering — owner request after the 25-Act corpus
+- What: the owner found pages cluttered and Home redundant with Ask. Structure and look were simplified; no API change.
+  - (a) Information architecture: Home is the only place a question starts (heading, one question box, three example
+    chips, a scope line linking to Laws; signed in, a short Recent list). /ask shows answers only and redirects to / when
+    nothing is in progress. The nav has one "Ask" item (current on / and /ask) instead of Home + Ask. The 25-Act index and
+    the empty "Knowledge of the day" and "Continue" placeholders left Home; "Continue reading" moved to Laws.
+  - (b) Frame: from 1024 px a light sidebar holds brand, search, pages, a one-button language switch and the account
+    (with the guest note); there is no top bar and no per-page guest banner. Below 1024 px a slim top bar and bottom tabs.
+    The quick-settings popover is gone (Settings and the palette cover it). The sources column appears from 1280 px.
+  - (c) Laws page: Acts grouped by everyday area (rights, work, home and land, family, crime and police, courts, buying,
+    health) with each Act's plain-language scope; the slug → group map lives in pages/Laws.tsx.
+  - (d) Look: softer tokens (warm paper, light rail, hairline greys, 6/10/16 px radii, soft shadows); Archivo headings at
+    700/92%; mono only for section marks. Removed: black label strips, 2–3 px rules, hatching, ruled lines, highlighter
+    hovers, hazard stripes, the key-press button ledge, numbered example rows. Tabs are underlined; toggles are soft
+    segmented controls; the answer is no longer boxed; source cards have one hairline; feedback is one quiet row with the
+    comment and privacy note after a rating; the no-match screen links to the laws instead of repeating the question box.
+  - (e) Strings: added home_scope, home_browse, recent_title, current_question, search_short, law_group_* (EN + SW drafts);
+    removed 17 keys left unused.
+- Why: owner feedback ("too much going on", Home duplicating Ask).
+- Impact: supersedes the visual parts of D31 and D28's guest banner. Tests updated for the merged Home/Ask, the nav label
+  and the dark canvas colour; screenshots now include Laws, an Act, a section and the Library. axe is clean in light and dark.

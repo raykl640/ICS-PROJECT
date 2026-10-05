@@ -95,7 +95,8 @@ test("deep links load and reload; unknown paths get the 404 page", async ({ page
   for (const [path, heading] of [
     ["/settings", "Settings"],
     ["/how-it-works", "How HakiAI works"],
-    ["/ask", "Ask a question"],
+    // Nothing asked yet: /ask sends the reader to Home, where questions start.
+    ["/ask", "Know where you stand under Kenyan law."],
   ]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
@@ -117,7 +118,7 @@ test("saved settings are applied by the pre-paint script, before and without the
   const attrs = await page.evaluate(() => ({ ...document.documentElement.dataset }));
   expect(attrs).toMatchObject({ theme: "dark", text: "xl" });
   const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(background).toBe("rgb(12, 14, 25)");
+  expect(background).toBe("rgb(16, 18, 25)"); // --hk-canvas in the dark theme
 });
 
 for (const scheme of ["light", "dark"] as const) {

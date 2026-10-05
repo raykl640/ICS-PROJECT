@@ -69,12 +69,12 @@ export function LawSection() {
       <div>
         <Link
           to={`/laws/${chunk.act_slug}`}
-          className="inline-flex items-center gap-1 font-semibold text-brand underline underline-offset-3 hover:bg-highlight hover:text-ink"
+          className="inline-flex items-center gap-1 font-semibold text-brand underline-offset-3 hover:underline"
         >
           <ChevronLeft aria-hidden="true" size={18} />
           {chunk.act}
         </Link>
-        {heading && <p className="label-mono mt-2 text-accent">{heading}</p>}
+        {heading && <p className="mt-2 text-sm font-semibold text-ink-muted">{heading}</p>}
         <PageTitle className="mt-1">{`${unitName(t, chunk.unit_type, chunk.section_num)} — ${chunk.section_title}`}</PageTitle>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
           <span>{t("laws_page", { page: chunk.page })}</span>
@@ -84,7 +84,7 @@ export function LawSection() {
 
       <Actions chunk={chunk} signedIn={signedIn} />
 
-      <div className="border-l-[6px] border-ink bg-raised py-4 pr-4 pl-5 sm:pl-7">
+      <div className="rounded-lg border border-line-subtle bg-raised shadow-raised px-5 py-5 sm:px-8 sm:py-7">
         <LawText className="whitespace-pre-line">{chunk.text}</LawText>
       </div>
 

@@ -4,21 +4,21 @@ import { cx } from "../cx";
 type Tone = "neutral" | "brand" | "accent" | "success" | "warn" | "danger" | "info";
 
 const TONES: Record<Tone, string> = {
-  neutral: "border-line text-ink-muted",
-  brand: "border-brand text-brand",
-  accent: "border-accent text-accent",
-  success: "border-success text-success",
-  warn: "border-warn text-warn",
-  danger: "border-danger text-danger",
-  info: "border-info text-info",
+  neutral: "text-ink-muted",
+  brand: "text-brand",
+  accent: "text-accent",
+  success: "text-success",
+  warn: "text-warn",
+  danger: "text-danger",
+  info: "text-info",
 };
 
-/** Small stamped status label (mono capitals); colour is never the only signal, so the text must say it. */
+/** Small status pill; colour is never the only signal, so the text must say it. */
 export function Badge({ tone = "neutral", icon, children }: { tone?: Tone; icon?: ReactNode; children: ReactNode }) {
   return (
     <span
       className={cx(
-        "label-mono inline-flex items-center gap-1 rounded-sm border-[1.5px] px-1.5 py-0.5 font-semibold whitespace-nowrap",
+        "inline-flex items-center gap-1 rounded-full bg-sunken px-2 py-0.5 text-xs font-semibold whitespace-nowrap",
         TONES[tone],
       )}
     >
@@ -35,7 +35,7 @@ export function Badge({ tone = "neutral", icon, children }: { tone?: Tone; icon?
 /** Keyboard key. */
 export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="rounded-sm border border-current px-1.5 py-0.5 font-mono text-xs font-medium whitespace-nowrap opacity-80">
+    <kbd className="rounded-sm border border-current px-1.5 py-0.5 font-mono text-xs font-medium whitespace-nowrap">
       {children}
     </kbd>
   );
@@ -67,19 +67,20 @@ export function Card({
   ...props
 }: CardProps) {
   const Heading = level === 2 ? "h2" : "h3";
-  // A sheet has a heavy rule on top and no box; "raised" is a boxed slip, "sunken" a shaded one.
+  // "surface" is an open section (no box; a hairline above it when it follows another); "raised" a white panel;
+  // "sunken" a shaded one.
   const toneClass = {
-    surface: "border-t-[3px] border-ink pt-3",
-    raised: "border border-ink bg-raised p-4 sm:p-5",
-    sunken: "border-t-[3px] border-ink bg-sunken p-4 sm:p-5",
+    surface: "[section+&]:mt-2 [section+&]:border-t [section+&]:border-line-subtle [section+&]:pt-8",
+    raised: "rounded-lg border border-line-subtle bg-raised p-5 shadow-raised sm:p-6",
+    sunken: "rounded-lg bg-sunken p-5 sm:p-6",
   }[tone];
   return (
     <section className={cx(toneClass, className)} {...props}>
       {(eyebrow || title || actions) && (
         <header className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            {eyebrow && <p className="label-mono mb-1 text-accent">{eyebrow}</p>}
-            {title && <Heading className="font-display-style text-2xl text-ink">{title}</Heading>}
+            {eyebrow && <p className="mb-1 text-sm font-semibold text-ink-muted">{eyebrow}</p>}
+            {title && <Heading className="font-display-style text-xl text-ink">{title}</Heading>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
         </header>
@@ -89,7 +90,7 @@ export function Card({
   );
 }
 
-/** "Nothing here yet" block, hatched like unused space on a form, with an optional action. */
+/** "Nothing here yet" block: a muted icon, a line or two and an optional action. */
 export function EmptyState({
   icon,
   title,
@@ -102,12 +103,12 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="hatch flex flex-col items-start gap-2 border-y border-line-subtle px-4 py-6">
+    <div className="flex flex-col items-start gap-2 py-6">
       <span aria-hidden="true" className="inline-flex text-ink-muted">
         {icon}
       </span>
-      <h3 className="font-display-style text-xl text-ink">{title}</h3>
-      {children && <p className="max-w-prose bg-canvas/80 text-ink-muted">{children}</p>}
+      <h3 className="font-semibold text-ink">{title}</h3>
+      {children && <p className="max-w-prose text-ink-muted">{children}</p>}
       {action}
     </div>
   );
@@ -115,7 +116,7 @@ export function EmptyState({
 
 const NOTICE_TONES = { info: "border-l-info", warn: "border-l-warn", danger: "border-l-danger" } as const;
 
-/** A notice slip; the tone is a thick coloured edge, the words carry the meaning. */
+/** A short notice; the tone is a coloured edge, the words carry the meaning. */
 export function Notice({
   tone,
   title,
@@ -126,12 +127,7 @@ export function Notice({
   children?: ReactNode;
 }) {
   return (
-    <div
-      className={cx(
-        "rounded-sm border border-l-[6px] border-line-subtle bg-surface px-4 py-3 text-ink",
-        NOTICE_TONES[tone],
-      )}
-    >
+    <div className={cx("rounded-md border-l-4 bg-sunken/60 px-4 py-3 text-ink", NOTICE_TONES[tone])}>
       {title && <p className="font-semibold">{title}</p>}
       {children}
     </div>

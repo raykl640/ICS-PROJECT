@@ -32,7 +32,7 @@ export function ToggleGroup<T extends string>({
       aria-label={label}
       value={value}
       onValueChange={(next) => next && onValueChange(next as T)}
-      className={cx("inline-flex rounded-sm border-2", mast ? "border-mast-muted" : "border-ink", className)}
+      className={cx("inline-flex gap-0.5 rounded-md p-0.5", mast ? "bg-mast-ink/10" : "bg-sunken", className)}
     >
       {items.map((item) => (
         <RTG.Item
@@ -40,11 +40,11 @@ export function ToggleGroup<T extends string>({
           value={item.value}
           aria-label={iconOnly ? item.label : undefined}
           className={cx(
-            "target inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 font-semibold",
-            "motion-colors not-first:border-l-2",
+            "target inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[7px] px-3 font-semibold",
+            "motion-colors data-[state=on]:shadow-raised",
             mast
-              ? "border-mast-muted text-mast-muted hover:text-mast-ink data-[state=on]:bg-highlight data-[state=on]:text-ink"
-              : "border-ink text-ink hover:bg-highlight data-[state=on]:bg-ink data-[state=on]:text-canvas",
+              ? "text-mast-muted hover:text-mast-ink data-[state=on]:bg-raised data-[state=on]:text-ink"
+              : "text-ink-muted hover:text-ink data-[state=on]:bg-raised data-[state=on]:text-ink",
           )}
         >
           {item.icon && (

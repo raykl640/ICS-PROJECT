@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { useId, useState, type KeyboardEvent, type Ref } from "react";
 import type { UiLanguage } from "../api/types";
 import { Button } from "../design/components/Button";
@@ -23,7 +23,7 @@ interface ComposerProps {
   textareaRef?: Ref<HTMLTextAreaElement>;
 }
 
-/** Question box: character counter, answer language, Ctrl/Cmd+Enter, examples and the disclaimer. */
+/** Question box: answer language, Ctrl/Cmd+Enter, a counter near the limit, examples and the disclaimer. */
 export function Composer({ label, value, onChange, onSubmit, busy, examples, compact, textareaRef }: ComposerProps) {
   const { language: uiLanguage, t } = useI18n();
   const [language, setLanguage] = useState<UiLanguage>(uiLanguage);
@@ -41,65 +41,62 @@ export function Composer({ label, value, onChange, onSubmit, busy, examples, com
     }
   };
 
-  const nearLimit = value.length >= MAX * 0.9;
+  const nearLimit = value.length >= MAX * 0.8;
 
   return (
     <form
       aria-label={label}
-      className={cx("flex flex-col", compact ? "gap-2" : "gap-4")}
+      className={cx("flex flex-col", compact ? "gap-2" : "gap-5")}
       onSubmit={(event) => {
         event.preventDefault();
         submit();
       }}
     >
-      {/* The question sheet: a label strip, ruled writing lines, and a strip with the language and the Ask key. */}
-      <div className="border-2 border-ink bg-raised">
-        <div className="flex items-baseline justify-between gap-3 bg-ink px-4 py-2 text-canvas">
-          <label htmlFor={fieldId} className="label-mono font-semibold">
-            {label}
-          </label>
-          <span className={cx("font-mono text-xs", nearLimit && "font-semibold text-highlight")}>
-            {t("char_count", { count: value.length, max: MAX })}
-          </span>
-        </div>
+      <div className="rounded-lg border border-line bg-raised shadow-raised motion-colors focus-within:border-brand">
+        <label htmlFor={fieldId} className="sr-only">
+          {label}
+        </label>
         <textarea
           ref={textareaRef}
           id={fieldId}
           aria-describedby={hintId}
           value={value}
           maxLength={MAX}
-          rows={compact ? 2 : 4}
-          placeholder={t("question_placeholder")}
+          rows={compact ? 1 : 3}
+          placeholder={compact ? label : t("question_placeholder")}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={onKeyDown}
-          className="ruled block w-full resize-y bg-transparent px-4 pt-1 pb-1 font-reading text-xl text-ink placeholder:text-ink-muted"
+          className={cx(
+            "block w-full resize-none rounded-t-lg bg-transparent px-4 pt-3.5 text-ink outline-none placeholder:text-ink-muted",
+            compact ? "text-base" : "font-reading text-lg leading-relaxed",
+          )}
         />
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink px-3 py-2.5">
-          <div className="flex items-center gap-3">
-            <span aria-hidden="true" className="label-mono text-ink-muted">
+        <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
+          <div className="flex min-w-0 items-center gap-2 sm:pl-2">
+            <span aria-hidden="true" className="hidden text-sm text-ink-muted sm:inline">
               {t("answer_language")}
             </span>
             <ToggleGroup
               label={t("answer_language")}
               value={language}
               onValueChange={setLanguage}
+              className="text-sm"
               items={[
                 { value: "en", label: t("language_en") },
                 { value: "sw", label: t("language_sw") },
               ]}
             />
           </div>
-          <div className="flex w-full items-center gap-3 sm:w-auto">
-            <span id={hintId} className="hidden font-mono text-xs text-ink-muted sm:inline">
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            {nearLimit && (
+              <span className="text-xs font-semibold text-warn">
+                {t("char_count", { count: value.length, max: MAX })}
+              </span>
+            )}
+            <span id={hintId} className="sr-only">
               {t("submit_hint")}
             </span>
-            <Button
-              variant="primary"
-              type="submit"
-              disabled={!canSubmit}
-              icon={<ArrowRight size={18} />}
-              className="min-w-28 flex-1 text-lg sm:flex-none"
-            >
+            <Button variant="primary" type="submit" disabled={!canSubmit} icon={<ArrowUp size={18} />}>
               {t("submit")}
             </Button>
           </div>
@@ -107,25 +104,17 @@ export function Composer({ label, value, onChange, onSubmit, busy, examples, com
       </div>
 
       {examples && (
-        <div>
-          <p className="label-mono text-ink-muted">{t("examples_label")}</p>
-          <ul className="mt-2 flex flex-col border-t border-line-subtle">
-            {EXAMPLES.map((key, index) => (
-              <li key={key} className="border-b border-line-subtle">
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-ink-muted">{t("examples_label")}</p>
+          <ul className="flex flex-wrap gap-2">
+            {EXAMPLES.map((key) => (
+              <li key={key}>
                 <button
                   type="button"
                   onClick={() => onChange(t(key))}
-                  className="group target flex w-full cursor-pointer items-baseline gap-3 px-1 py-2.5 text-left motion-colors hover:bg-highlight"
+                  className="target cursor-pointer rounded-full border border-line-subtle bg-raised px-3.5 py-2 text-left text-sm text-ink motion-colors hover:border-line hover:bg-sunken"
                 >
-                  <span aria-hidden="true" className="font-mono text-xs text-ink-muted">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="flex-1 font-reading text-lg">{t(key)}</span>
-                  <ArrowUpRight
-                    aria-hidden="true"
-                    size={18}
-                    className="shrink-0 self-center text-ink-muted motion-colors group-hover:text-ink"
-                  />
+                  {t(key)}
                 </button>
               </li>
             ))}
@@ -133,7 +122,7 @@ export function Composer({ label, value, onChange, onSubmit, busy, examples, com
         </div>
       )}
 
-      {!compact && <p className="max-w-prose text-sm text-ink-muted">{t("disclaimer")}</p>}
+      {!compact && <p className="max-w-prose text-xs text-ink-muted">{t("disclaimer")}</p>}
     </form>
   );
 }
