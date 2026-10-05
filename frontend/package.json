@@ -11,9 +11,25 @@
     "test": "vitest run",
     "e2e": "vite build && playwright test --grep-invert @screens",
     "screenshots": "vite build && playwright test --grep @screens",
-    "format": "prettier --check ."
+    "format": "prettier --check .",
+    "design:screens": "playwright test -c playwright.design.config.ts"
   },
   "dependencies": {
+    "@fontsource-variable/ibm-plex-sans": "5.3.0",
+    "@fontsource-variable/literata": "5.3.0",
+    "@fontsource-variable/lora": "5.3.0",
+    "@fontsource-variable/nunito": "5.3.0",
+    "@fontsource-variable/source-sans-3": "5.3.0",
+    "@fontsource-variable/source-serif-4": "5.3.0",
+    "@radix-ui/react-dialog": "1.1.23",
+    "@radix-ui/react-dropdown-menu": "2.1.24",
+    "@radix-ui/react-popover": "1.1.23",
+    "@radix-ui/react-scroll-area": "1.2.18",
+    "@radix-ui/react-tabs": "1.1.21",
+    "@radix-ui/react-toast": "1.2.23",
+    "@radix-ui/react-toggle-group": "1.1.19",
+    "@radix-ui/react-tooltip": "1.2.16",
+    "lucide-react": "1.52.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-markdown": "10.1.0"

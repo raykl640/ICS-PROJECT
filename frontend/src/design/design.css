@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* v2 design system. Token values come from src/design/themes/*.ts and are written onto :root as --hk-* by
+   useApplyTheme; this file only maps them into Tailwind and sets type size, focus and motion rules. */
+
+@theme inline {
+  --color-*: initial;
+  --color-canvas: var(--hk-canvas);
+  --color-surface: var(--hk-surface);
+  --color-raised: var(--hk-raised);
+  --color-sunken: var(--hk-sunken);
+  --color-ink: var(--hk-ink);
+  --color-ink-muted: var(--hk-ink-muted);
+  --color-line: var(--hk-line);
+  --color-line-subtle: var(--hk-line-subtle);
+  --color-brand: var(--hk-brand);
+  --color-brand-ink: var(--hk-brand-ink);
+  --color-accent: var(--hk-accent);
+  --color-success: var(--hk-success);
+  --color-warn: var(--hk-warn);
+  --color-danger: var(--hk-danger);
+  --color-info: var(--hk-info);
+  --color-focus: var(--hk-focus);
+  --color-highlight: var(--hk-highlight);
+  --color-scrim: var(--hk-scrim);
+
+  --font-ui: var(--hk-font-ui);
+  --font-display: var(--hk-font-display);
+  --font-reading: var(--hk-font-reading);
+
+  --radius-sm: var(--hk-radius-sm);
+  --radius-md: var(--hk-radius-md);
+  --radius-lg: var(--hk-radius-lg);
+
+  --shadow-raised: var(--hk-shadow-raised);
+  --shadow-overlay: var(--hk-shadow-overlay);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: var(--hk-duration-fast);
+  --duration-base: var(--hk-duration-base);
+}
+
+:root {
+  --hk-duration-fast: 120ms;
+  --hk-duration-base: 180ms;
+}
+
+/* Text size setting: everything is in rem, so the root size scales the whole UI. */
+:root[data-text="sm"] {
+  font-size: 93.75%;
+}
+:root[data-text="lg"] {
+  font-size: 112.5%;
+}
+:root[data-text="xl"] {
+  font-size: 125%;
+}
+
+/* Motion: at most 180 ms, and none when the OS or the in-app setting asks. */
+:root[data-motion="reduce"] {
+  --hk-duration-fast: 0ms;
+  --hk-duration-base: 0ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --hk-duration-fast: 0ms;
+    --hk-duration-base: 0ms;
+  }
+}
+
+@layer base {
+  body {
+    margin: 0;
+    background: var(--hk-canvas);
+    color: var(--hk-ink);
+    font-family: var(--hk-font-ui);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--hk-focus);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--hk-highlight);
+    color: var(--hk-ink);
+  }
+}
+
+/* Statute layout: paragraphs spaced, lettered sub-paragraphs marked "(a)" with a hanging indent. */
+@layer components {
+  .law-text > * + * {
+    margin-top: 0.75rem;
+  }
+  .law-text ol {
+    list-style: none;
+    counter-reset: law;
+    padding-left: 2.25rem;
+  }
+  .law-text ol > li {
+    position: relative;
+    counter-increment: law;
+  }
+  .law-text ol > li + li {
+    margin-top: 0.375rem;
+  }
+  .law-text ol > li::before {
+    content: "(" counter(law, lower-alpha) ")";
+    position: absolute;
+    right: calc(100% + 0.5rem);
+  }
+}
+
+/* Minimum pointer target (WCAG 2.5.5): fixed in px so small text size never shrinks it. */
+@utility target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@utility font-display-style {
+  font-family: var(--hk-font-display);
+  font-weight: var(--hk-display-weight);
+  letter-spacing: var(--hk-display-tracking);
+}
+
+@utility motion-colors {
+  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-duration: var(--hk-duration-fast);
+  transition-timing-function: var(--ease-standard);
+}

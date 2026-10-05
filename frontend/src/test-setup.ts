@@ -14,3 +14,15 @@ afterEach(() => {
   vi.mocked(console.error).mockRestore();
   expect(errors.map((args) => args.map(String).join(" "))).toEqual([]);
 });
+
+// jsdom gaps that Radix primitives (popper sizing, pointer capture, scrolling) rely on.
+if (!("ResizeObserver" in globalThis)) {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.releasePointerCapture ??= () => {};
+Element.prototype.scrollIntoView ??= () => {};

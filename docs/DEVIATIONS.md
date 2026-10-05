@@ -17,6 +17,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D17 | frontend shape | in force |
 | D18 | evaluation harness | in force; results pending human input |
 | D19 | operations: offline setup, preflight, run scripts, Docker, portability | in force |
+| D27 | v2 design system mechanics (M11) | in force |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -235,3 +236,20 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 - Impact: far fewer fallbacks; some foreign or out-of-corpus legal questions now reach the model, which answers only from
   Kenyan text with Kenyan citations. scope.yaml holds paraphrase anchors only, no statute text. eval/tune_threshold.py
   still sweeps relevance_threshold alone; with the scope check in front, its recommendation applies to the reranker path only.
+
+## D27 Design system mechanics (DESIGN_V2 "Design language") — feat(M11)
+- What: (a) Token values are TypeScript objects (frontend/src/design/themes/*.ts). `useApplyTheme` writes the resolved
+  set onto :root as --hk-* custom properties through the CSSOM, together with data-direction/theme/contrast/text/motion
+  attributes; there are no per-mode `[data-theme=…]` CSS blocks. Type size and motion are plain CSS keyed on those
+  attributes. (b) The /styleguide page is a second Vite HTML entry (frontend/styleguide.html) that `vite` serves in dev.
+  It is not a build input, so it never ships. It is not a react-router route: the router arrives in M12. (c) Extra token
+  roles: line-subtle (decorative dividers only, exempt from the 3:1 border rule and never used as a control boundary) and
+  a per-mode scrim for dialog backdrops. (d) More-contrast mode is tested to stricter minimums (reading 10:1, text 7:1,
+  borders/focus 4.5:1) than the standard mode (7 / 4.5 / 3). (e) The design components take every visible string as a
+  prop, so M11 adds nothing to ui_strings.json; the dev-only style guide has hard-coded English placeholder copy.
+- Why: (a) one source of truth that the contrast test reads directly, with no generated CSS to drift; CSSOM writes are
+  allowed under the app's CSP. (b) M11 has no router and must not touch the v1 app. (c)/(d) borders at 3:1 everywhere
+  would make every card divider heavy; a high-contrast setting should be measurably higher.
+- Impact: in M12, main.tsx must apply the theme before the first render (else a 120 ms colour fade can show at load), and
+  the style guide becomes a dev-only route. A new colour role needs an entry in COLOR_ROLES, in all three theme files and
+  in the PAIRS list in contrast.ts.

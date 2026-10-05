@@ -4,7 +4,8 @@ Collected on 2026-10-05. Python licences were read from installed package metada
 classifiers), npm licences from each package's `package.json`, and model licences from the Hugging Face model cards or
 `ollama show`. The project's own terms are in [LICENSE](../LICENSE): an academic project, all rights reserved by the author.
 
-**Summary:** every dependency and model is under a permissive licence (MIT, BSD, Apache-2.0, ISC, PSF, MIT-CMU). The only
+**Summary:** every dependency and model is under a permissive licence (MIT, BSD, 0BSD, Apache-2.0, ISC, PSF, MIT-CMU);
+the bundled fonts are under the SIL Open Font License 1.1. The only
 weak-copyleft licence is MPL-2.0, used by certifi and tqdm. It is file-level and applies only if those files are modified,
 which this project does not do. No GPL or AGPL code is bundled.
 
@@ -119,12 +120,18 @@ Direct dependencies are marked ●.
 | types-requests | 2.33.0.20260906 | Apache-2.0 |
 | pip-audit (audit only, not pinned) | 2.10.1 | Apache-2.0 |
 
-## Frontend (production bundle: react, react-dom, react-markdown and their 84 transitive packages)
+## Frontend (production dependencies: 145 packages, updated in M11)
 
 | Licence | Packages |
 |---|---|
-| MIT | 86, including react 19.3.0, react-dom 19.3.0, react-markdown 10.1.0, scheduler, and the unified/remark/rehype/mdast/hast utilities |
-| ISC | 1 (@ungap/structured-clone 1.4.0) |
+| MIT | 135, including react 19.3.0, react-dom 19.3.0, react-markdown 10.1.0, scheduler, the unified/remark/rehype/mdast/hast utilities and the @radix-ui/* primitives (dialog 1.1.23, dropdown-menu 2.1.24, tabs 1.1.21, tooltip 1.2.16, popover 1.1.23, toast 1.2.23, toggle-group 1.1.19, scroll-area 1.2.18, with their internal packages) |
+| ISC | 2 (lucide-react 1.52.0, @ungap/structured-clone 1.4.0) |
+| 0BSD | 1 (tslib 2.8.1, pulled in by Radix) |
+| OFL-1.1 | 6 font packages, all 5.3.0: @fontsource-variable/source-serif-4, source-sans-3, nunito, lora, literata, ibm-plex-sans |
+
+The fonts are bundled with the app (offline). OFL-1.1 allows bundling and redistribution with software; it only forbids
+selling the fonts on their own and reusing their reserved names for modified versions. After the M11 design gate only the
+chosen direction's two families stay in the app bundle; the others are referenced by the dev-only style guide.
 
 The development dependencies (Vite, Tailwind, ESLint, Vitest, Playwright, TypeScript) are build and test tools only and
 are not part of the bundle. Regenerate this table with `npm ls --omit=dev --all --json` and each package's `license` field.
@@ -136,6 +143,7 @@ are not part of the bundle. Regenerate this table with `npm ls --omit=dev --all 
 | `pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt` | pinned requirements, resolved | No known vulnerabilities. torch 2.14.1+cpu was not audited: the `+cpu` local version is not on PyPI. |
 | `pip-audit` (installed .venv) | 122 installed packages | No known vulnerabilities. torch (+cpu) and the local hakiai-backend package were not audited. |
 | `npm audit` (frontend) | 376 packages (89 prod, 288 dev) | 0 vulnerabilities. |
+| `npm audit --omit=dev` (frontend, M11, after adding Radix, lucide and fonts) | 145 prod packages | 0 vulnerabilities. |
 
 Nothing was upgraded. Rerun both audits before each release, and upgrade a pin only when a finding applies to how this
 project uses the package.

@@ -12,6 +12,7 @@
 - [x] M8 Frontend — 2026-10-05
 - [x] M9 Evaluation — 2026-10-05 (harness only; human ground truth, ratings, survey and laptop runs pending)
 - [x] M10 Hardening & docs — 2026-10-05 (v1.0.0 tag waits for the final audit)
+- [x] M11 Design language — 2026-10-05 (awaiting human design gate)
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -332,5 +333,56 @@ history with a recovery code; highlights = curated sections + local-LLM blurbs, 
 Decisions (builder): Radix primitives + lucide icons + bundled @fontsource fonts; SQLite via stdlib; argon2id + AES-GCM; signed-in
 answers keep generating in the background with a notification; follow-up questions; planned deviations D22–D26.
 Open issues:
-- The D21 scope fix (scope.py, pipeline changes) is still uncommitted; commit it before M11.
+- The D21 scope fix (scope.py, pipeline changes) is still uncommitted; commit it before M11. (Done: committed before M11.)
 Next: M11 Design language (run interactively).
+
+## M11 Design language (2026-10-05)
+Done:
+- Before M11, the D21 scope fix and the v2 plan docs were committed on their own (backend check.sh: 681 passed, 97.2%).
+- frontend/src/design/: themes/ (Mahakama, Jua, Kitabu; light + dark, each with a more-contrast variant; 17 colour roles,
+  fonts, radius, shadows, scrim), contrast.ts (WCAG maths + declared fg/bg pairs), useTheme.ts (useApplyTheme,
+  useMediaQuery), design.css (Tailwind 4 @theme mapping with the default palette removed, text size sm–xl, reduced
+  motion, statute list layout, `target` 44 px utility), fonts.ts.
+- Components: Button, IconButton, Field, TextArea, Select, Card, Badge, Kbd, Skeleton, EmptyState, ProgressSteps,
+  AnswerCard, SourceCard, LawText, LawRef, CommandPalette, Sidebar, TopBar, SplitView. Radix wrappers: Dialog (modal and
+  sheet), Menu, Tabs, Tooltip, Popover, Toast (+ useToast), ToggleGroup, ScrollArea.
+- Dev-only style guide (frontend/styleguide.html → /styleguide on `npm run dev`): switcher for direction, theme,
+  contrast, text size and view; every component; mock Home, Conversation and Law reader screens with lorem placeholder
+  data.
+- `npm run design:screens` (playwright.design.config.ts) writes 39 PNGs to docs/design/<direction>/: the 36 required
+  shots plus a phone sources-sheet shot per direction. docs/design/README.md has the three directions with contrast
+  ratios and a recommendation.
+- Tests: 101 vitest (52 existing unchanged + 49 new):
+  - contrast for 3 directions × 2 modes × 2 contrast levels;
+  - no raw colours in components or mock screens, with a positive control;
+  - keyboard and ARIA behaviour for dialog (focus trap, Escape, focus return), menu (arrows wrap, Escape), tabs (arrows,
+    Home/End), toggle group, command palette (filter, arrows, Enter), tooltip, popover, toast, Field, Sidebar,
+    ProgressSteps and applyTheme.
+- lint, typecheck, test and build all pass. The app bundle is unchanged at 117.6 KB gzipped JS, and dist/ has no
+  style-guide code. A style-guide build (React + Radix + lucide + every component) is 127.9 KB gzipped JS and 8.9 KB CSS.
+  The six font families add 1.0 MB of woff2 (38 files).
+- New pinned dependencies: 8 @radix-ui/* packages, lucide-react 1.52.0, 6 @fontsource-variable/* 5.3.0. LICENSES.md is
+  updated (MIT, ISC, 0BSD, OFL-1.1); npm audit --omit=dev finds 0 vulnerabilities.
+Decisions:
+- See DEVIATIONS D27: tokens in TS applied at runtime through the CSSOM; the style guide is a second dev-only Vite entry
+  rather than a route; the line-subtle and scrim tokens; stricter more-contrast minimums; component strings passed as
+  props.
+- Skeletons are static, with no shimmer (cheap on low-end CPUs and compatible with the ≤ 200 ms motion rule).
+- Menus wrap with the arrow keys. A single-choice toggle group is a radiogroup (Radix). The focus ring has a 2 px offset,
+  so it is tested against backgrounds, not against filled controls.
+- Recommendation for the gate: Mahakama, possibly with Jua's radius (docs/design/README.md).
+Fixed during screenshot review:
+- The sidebar background stopped at the viewport height.
+- Statute sub-paragraphs rendered as "a." with no spacing; they now show "(a)" with a hanging indent.
+- Tab labels ran into each other at 375 px.
+- The answer actions wrapped awkwardly on phones.
+- The phone bottom bar was `fixed`, so it covered content; it is now sticky and last in the page flow.
+- Screenshots used to catch the 120 ms colour transition; they now run with reduced motion and a page-height viewport.
+Open issues:
+- On phones the third answer tab ("Draft letter") is reachable only by sideways scroll or the arrow keys; M12 may shorten
+  the labels or use a menu.
+- No axe run yet. DESIGN_V2 puts axe checks on every route in M12+ (@axe-core/playwright is not installed).
+- The Kiswahili strings for the new components arrive with M12's ui_strings.json keys.
+Blocked: human design gate. Read docs/design/README.md and the screenshots, then write the chosen direction (or a mix)
+into .gates/M11-design.ok.
+Next: M12, only after .gates/M11-design.ok exists.
