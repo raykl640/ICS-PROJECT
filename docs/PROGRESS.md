@@ -300,3 +300,11 @@ Open issues:
 - All M9 human tasks remain (HUMAN_TODO); relevance_threshold is still the provisional 0.0.
 Next: final audit (prompts/FINAL_AUDIT.md), then tag v1.0.0 if no CRITICAL issue remains.
 
+
+## Fix: typed questions always returned the fallback (2026-10-05)
+Done:
+- relevance_threshold 0.0 → -8.0 (DEVIATIONS D20). With 0.0, most free-typed questions went null even though the right sections
+  were retrieved; only the example chips passed. Out-of-corpus 2nd-best rerank scores are ≤ -8.4; casual in-corpus ones -7.5 to +1.
+Open issues:
+- Still provisional: rerun `eval/tune_threshold.py` once eval/ground_truth.json exists (HUMAN_TODO).
+- Recall gaps below any sane threshold: pregnancy dismissal (s.46 not in top 3) and phone-refund wording (top -7.8).

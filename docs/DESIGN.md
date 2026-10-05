@@ -104,7 +104,7 @@ evaluation/ (M9; eval/*.py are thin entry points, data + results under settings.
 - Refs: "section N"/"s. N"/"sec N" bind to the nearest named Section-unit Act; bare ones resolve within the routed Acts. Each
   resolved, indexed chunk whose unit_type matches is put at sparse rank 1 (guarantees exact-reference hits reach the reranker).
 - Widening: each leg (dense, sparse) with < min_filtered_hits (5) filtered hits is rerun unfiltered; widened = any leg widened.
-- Reranker: cross-encoder outputs unbounded logits (not probabilities). relevance_threshold default 0.0, tuned in M9 on in-corpus vs
+- Reranker: cross-encoder outputs unbounded logits (not probabilities). relevance_threshold default -8.0 (D20; was 0.0), tuned in M9 on in-corpus vs
   out-of-corpus queries (eval/), result recorded in PROGRESS.md.
 
 ## Generation

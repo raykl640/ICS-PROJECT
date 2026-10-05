@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     min_filtered_hits: int = Field(5, gt=0)
     top_n: int = Field(20, gt=0)
     rerank_top: int = Field(5, gt=0)
-    relevance_threshold: float = 0.0
+    relevance_threshold: float = -8.0
     min_confident_chunks: int = Field(2, gt=0)
     embed_split_over_words: int = Field(200, gt=0)
     embed_window_words: int = Field(180, gt=0)

@@ -81,7 +81,7 @@ def test_cli_on_the_fake_stack_prints_recommendation_without_touching_config(
     assert saved["n_out"] == 1
     assert saved["recommended"]["f1"] == 1.0
     assert saved["out_of_corpus"][0]["kth_score"] == 0.0  # no word overlap with the fake reranker
-    assert settings.relevance_threshold == 0.0
+    assert settings.relevance_threshold == Settings().relevance_threshold
 
 
 def test_cli_exit_codes_for_bad_inputs(tmp_path: Path) -> None:

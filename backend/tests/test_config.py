@@ -12,7 +12,7 @@ def test_defaults_match_spec() -> None:
     assert s.min_filtered_hits == 5
     assert s.domains_path.is_file()
     assert s.min_confident_chunks == 2
-    assert s.relevance_threshold == 0.0
+    assert s.relevance_threshold == -8.0
     assert (s.temperature, s.num_ctx, s.num_predict) == (0.1, 8192, 1500)
     assert s.embedding_dim == 384
     assert (s.session_ttl_s, s.max_sessions) == (3600, 200)

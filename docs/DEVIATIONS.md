@@ -12,7 +12,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D7, D8, D16 | SSE, endpoints, sessions | in force |
 | D9 | citation verification | in force |
 | D10 | parameter values | in force |
-| D13 | inclusive threshold, value 0.0 | in force; the value is provisional until tuned (HUMAN_TODO) |
+| D13, D20 | inclusive threshold; value -8.0 (was 0.0) | in force; the value is provisional until tuned (HUMAN_TODO) |
 | D14 | generation prompt rules and budget | in force |
 | D17 | frontend shape | in force |
 | D18 | evaluation harness | in force; results pending human input |
@@ -199,3 +199,16 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
   rebuilt from the unchanged chunks.json, with the same counts as M2.
 - Impact: no change to the pipeline or the API contract. `pytest -m real` needs `HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1`,
   since default sockets are off and the hub would otherwise try the network (README "Tests").
+
+## D20 Null-response threshold lowered to -8.0 (§7.5) — fix after M10
+- What: relevance_threshold default 0.0 → -8.0 (min_confident_chunks stays 2; the rule is unchanged, see D13).
+- Why: with 0.0 nearly every typed question got the fixed fallback; only the formally worded example questions passed.
+  The cross-encoder gives lay phrasing low logits even when the right sections are retrieved. Measured on the real indexes
+  (2nd-best rerank score, the one that decides): 15 out-of-corpus questions plus 2 out-of-corpus functional questions all
+  ≤ -8.4 (most about -11); casual in-corpus questions ("my boss hasnt paid my salary for 2 months" -4.8, "Am I entitled to
+  severance pay?" -3.0, "Can the government take my land?" -1.8, faulty-phone refund -7.5) were refused. -8.0 sits
+  between the two groups.
+- Impact: those questions now reach the LLM. The margin to out-of-corpus questions is small (0.4) and the sample is
+  27 hand-written questions, not the M9 ground truth; still provisional until `eval/tune_threshold.py` runs on the human
+  set. Still refused at -8.0: "can i be fired for being pregnant" (-9.5) and "I bought a phone that stopped working after
+  a week, can I get a refund?" (-8.9): a retrieval-recall problem, not a threshold one.
