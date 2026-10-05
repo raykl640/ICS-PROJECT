@@ -11,6 +11,9 @@ const Welcome = lazy(() => import("../pages/Welcome").then((m) => ({ default: m.
 const SignIn = lazy(() => import("../pages/SignIn").then((m) => ({ default: m.SignIn })));
 const SignUp = lazy(() => import("../pages/SignUp").then((m) => ({ default: m.SignUp })));
 const Recover = lazy(() => import("../pages/Recover").then((m) => ({ default: m.Recover })));
+const Library = lazy(() => import("../pages/Library").then((m) => ({ default: m.Library })));
+const Matter = lazy(() => import("../pages/Matter").then((m) => ({ default: m.Matter })));
+const LetterWorkspace = lazy(() => import("../pages/LetterWorkspace").then((m) => ({ default: m.LetterWorkspace })));
 const NotFound = lazy(() => import("../pages/NotFound").then((m) => ({ default: m.NotFound })));
 // Dev builds only: the condition is a constant false in production, so the chunk is never emitted.
 const Styleguide = import.meta.env.DEV
@@ -24,6 +27,10 @@ export function AppRoutes() {
       <Route element={<AppShell />}>
         <Route index element={<Home />} />
         <Route path="ask" element={<Conversation />} />
+        <Route path="ask/:conversationId" element={<Conversation />} />
+        <Route path="library" element={<Library />} />
+        <Route path="matters/:id" element={<Matter />} />
+        <Route path="letters/:id" element={<LetterWorkspace />} />
         <Route path="settings" element={<Settings />} />
         <Route path="how-it-works" element={<HowItWorks />} />
         <Route path="welcome" element={<Welcome />} />

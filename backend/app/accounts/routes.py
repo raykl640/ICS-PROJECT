@@ -273,9 +273,13 @@ def put_prefs(body: PrefsIn, unlocked: Unlocked, accounts: AccountsDep) -> dict[
 
 
 @account.get("/export")
-def export(unlocked: Unlocked, accounts: AccountsDep) -> Response:
-    """Everything stored for the user, decrypted, as a JSON download."""
-    body = json.dumps(accounts.export(*unlocked), ensure_ascii=False, indent=2)
+def export(request: Request, unlocked: Unlocked, accounts: AccountsDep) -> Response:
+    """Everything stored for the user (account, profile and library), decrypted, as a JSON download."""
+    data = accounts.export(*unlocked)
+    library = getattr(request.app.state, "library", None)
+    if library is not None:
+        data["library"] = library.export(unlocked[0].user_id, unlocked[1])
+    body = json.dumps(data, ensure_ascii=False, indent=2)
     headers = {"Content-Disposition": 'attachment; filename="hakiai-export.json"'}
     return Response(body, media_type="application/json", headers=headers)
 

@@ -20,6 +20,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D27 | v2 design system mechanics (M11) | (a) superseded by D28; rest in force |
 | D28 | v2 app shell, static theme, pre-paint script, guest Ask (M12) | in force |
 | D22, D29 | encrypted local accounts; M13 mechanics | in force |
+| D23, D24 | follow-up context; background runs (M14) | in force |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -318,3 +319,24 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 - Why: testable rules; a restart should not silently sign users out; honest messages; keep v1 behaviour for guests.
 - Impact: every mutating API client must send X-Haki: 1 (frontend, scripts/smoke.py and eval run_functional were updated).
   The e2e server uses a throwaway database in the system temp dir.
+
+## D23 Follow-up context in retrieval and USER QUESTION (prompt §7.1) — feat(M14)
+- What: a question asked inside a saved conversation is retrieved with the previous question prepended (last
+  followup_context_turns = 1 turn, questions only, never earlier answers). The §7.1 prompt is unchanged except the USER
+  QUESTION, which becomes "Earlier question: …\nQuestion: …" (golden fixture prompt_followup_golden.txt). The null
+  fallback rule and the scope check (D21) run on the same combined retrieval query.
+- Why: lay follow-ups ("and if they don't pay?") carry no legal terms on their own and retrieve nothing useful.
+- Impact: §7.1 differs for follow-ups only; first questions produce the exact v1 prompt. Earlier answers never enter the
+  prompt, so the model still answers only from the retrieved text.
+
+## D24 Background runs survive disconnect for signed-in users (D16) — feat(M14)
+- What: for an unlocked signed-in user (background=true, the default when signed in; config background_runs), the
+  answer keeps generating when the SSE client disconnects. Events go to a per-run buffer (runs.py RunBuffer) so a
+  reconnect replays them; on completion the turn is saved encrypted (D22) if history is on, and turn_done / turn_failed
+  {conversation_id, turn_id} is published on GET /api/events for that sign-in only (EventHub, events_backlog = 20 kept
+  until a listener connects). DELETE /api/sessions/{id} stops a run: the Ollama stream is closed and the gate released.
+  Guests keep D16 (disconnect = abort).
+- Why: on CPU an answer takes minutes; signed-in users should be able to keep browsing and be notified.
+- Impact: a background run holds the LLM gate after the tab closes, until it finishes or is stopped. Events carry ids
+  only, never content. The client shows an in-app toast always and an OS notification when permission was granted.
+

@@ -209,7 +209,10 @@
   transition-timing-function: var(--ease-standard);
 }
 
-/* Printing the recovery code prints only the code box. */
+/* Printing the recovery code or a letter prints only that box; print-only parts (the disclaimer) appear on paper. */
+.print-only {
+  display: none;
+}
 @media print {
   body * {
     visibility: hidden;
@@ -221,5 +224,14 @@
   .print-area {
     position: absolute;
     inset: 0 0 auto 0;
+    border: 0;
+    box-shadow: none;
+  }
+  .print-area mark {
+    background: transparent;
+    color: inherit;
+  }
+  .print-only {
+    display: block;
   }
 }

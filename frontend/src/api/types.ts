@@ -9,6 +9,10 @@ export interface QueryResponse {
   null_response: boolean;
   acts: string[];
   language: UiLanguage;
+  /** Where the turn is saved (signed in with history on); null for guests and private mode. */
+  conversation_id?: string | null;
+  /** The answer keeps generating if this page goes away (signed in). */
+  background?: boolean;
 }
 
 export interface SourceChunk {

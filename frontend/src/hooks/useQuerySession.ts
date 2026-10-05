@@ -1,6 +1,6 @@
 // POST /api/query, then the SSE answer stream; tokens go through the SectionSplitter port.
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { ApiError, getSources, postQuery, type RequestedLanguage, streamUrl } from "../api/client";
+import { ApiError, getSources, postQuery, type RequestedLanguage, stopSession, streamUrl } from "../api/client";
 import type {
   DonePayload,
   ErrorPayload,
@@ -9,6 +9,7 @@ import type {
   TokenPayload,
   TranslatedPayload,
 } from "../api/types";
+import { askPermissionOnce } from "../lib/notify";
 import { SectionSplitter } from "../lib/sectionSplitter";
 import { initialSession, type SessionAction, type SessionError, sessionReducer, type SessionState } from "./session";
 
@@ -74,13 +75,20 @@ function connect(run: Run, sessionId: string, attempt: number, dispatch: Dispatc
   });
 }
 
-/** One question at a time: submit, retry (same question, new session) and reset; cleans up on unmount. */
-export function useQuerySession(): {
+export interface QuerySession {
   state: SessionState;
-  submit: (question: string, language: RequestedLanguage) => Promise<void>;
+  /** Ask; conversationId makes it a follow-up in that saved conversation. */
+  submit: (question: string, language: RequestedLanguage, conversationId?: string) => Promise<void>;
+  /** Follow an answer the server is already writing (after a reload or from another page). */
+  attach: (sessionId: string, question: string, conversationId: string) => void;
+  /** Stop the answer: a background run is stopped on the server, a guest's stream is closed. */
+  stopAnswer: () => void;
   retry: () => void;
   reset: () => void;
-} {
+}
+
+/** One question at a time: submit, attach, stop, retry (same question, new session) and reset; cleans up on unmount. */
+export function useQuerySession(): QuerySession {
   const [state, dispatch] = useReducer(sessionReducer, initialSession);
   const current = useRef<Run | null>(null);
 
@@ -96,39 +104,65 @@ export function useQuerySession(): {
 
   useEffect(() => stop, [stop]);
 
+  const start = useCallback((): { run: Run; guarded: Dispatch } => {
+    stop();
+    const run: Run = { stopped: false, source: null, timer: undefined, abort: new AbortController() };
+    current.current = run;
+    const guarded: Dispatch = (action) => {
+      if (!run.stopped) dispatch(action);
+    };
+    return { run, guarded };
+  }, [stop]);
+
+  const follow = useCallback((run: Run, sessionId: string, guarded: Dispatch) => {
+    getSources(sessionId, run.abort.signal).then(
+      (chunks) => guarded({ type: "sources", chunks }),
+      () => guarded({ type: "sourcesFailed" }),
+    );
+    connect(run, sessionId, 0, guarded);
+  }, []);
+
   const submit = useCallback(
-    async (question: string, language: RequestedLanguage) => {
-      stop();
-      const run: Run = { stopped: false, source: null, timer: undefined, abort: new AbortController() };
-      current.current = run;
-      const guarded: Dispatch = (action) => {
-        if (!run.stopped) dispatch(action);
-      };
-      guarded({ type: "submit", question, requested: language });
+    async (question: string, language: RequestedLanguage, conversationId?: string) => {
+      const { run, guarded } = start();
+      guarded({ type: "submit", question, requested: language, conversationId: conversationId ?? null });
       try {
-        const response = await postQuery(question, language, run.abort.signal);
+        const response = await postQuery(question, language, run.abort.signal, conversationId);
         guarded({ type: "queried", response });
+        if (response.background) void askPermissionOnce();
         if (run.stopped) return;
-        if (!response.null_response) {
-          getSources(response.session_id, run.abort.signal).then(
-            (chunks) => guarded({ type: "sources", chunks }),
-            () => guarded({ type: "sourcesFailed" }),
-          );
-        }
-        connect(run, response.session_id, 0, guarded);
+        if (response.null_response) connect(run, response.session_id, 0, guarded);
+        else follow(run, response.session_id, guarded);
       } catch (error) {
         guarded({ type: "failed", error: toSessionError(error) });
       }
     },
-    [stop],
+    [start, follow],
   );
 
-  const { question, requested } = state;
-  const retry = useCallback(() => void submit(question, requested), [submit, question, requested]);
+  const attach = useCallback(
+    (sessionId: string, question: string, conversationId: string) => {
+      const { run, guarded } = start();
+      guarded({ type: "attach", sessionId, question, conversationId });
+      follow(run, sessionId, guarded);
+    },
+    [start, follow],
+  );
+
+  const { question, requested, sessionId, background, followUpOf } = state;
+  const stopAnswer = useCallback(() => {
+    stop();
+    dispatch({ type: "stopped" });
+    if (background && sessionId) stopSession(sessionId).catch(() => {});
+  }, [stop, background, sessionId]);
+  const retry = useCallback(
+    () => void submit(question, requested, followUpOf ?? undefined),
+    [submit, question, requested, followUpOf],
+  );
   const reset = useCallback(() => {
     stop();
     dispatch({ type: "reset" });
   }, [stop]);
 
-  return { state, submit, retry, reset };
+  return { state, submit, attach, stopAnswer, retry, reset };
 }

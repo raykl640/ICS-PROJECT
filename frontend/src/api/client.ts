@@ -37,15 +37,27 @@ export async function parse<T>(response: Response): Promise<T> {
   return body as T;
 }
 
-/** POST /api/query: retrieve context and open a session. */
+/** POST /api/query: retrieve context and open a session; conversationId makes it a follow-up (signed in). */
 export async function postQuery(
   question: string,
   language: RequestedLanguage,
   signal?: AbortSignal,
+  conversationId?: string,
 ): Promise<QueryResponse> {
-  const init = { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ question, language }), signal };
+  const payload = conversationId ? { question, language, conversation_id: conversationId } : { question, language };
+  const init = { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(payload), signal };
   return parse<QueryResponse>(await fetch("/api/query", init));
 }
+
+/** DELETE /api/sessions/{id}: stop a signed-in background answer (true if it was still running). */
+export async function stopSession(sessionId: string): Promise<boolean> {
+  const init = { method: "DELETE", headers: JSON_HEADERS };
+  return (await parse<{ stopped: boolean }>(await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, init)))
+    .stopped;
+}
+
+/** SSE notifications for this sign-in: turn_done / turn_failed. */
+export const EVENTS_URL = "/api/events";
 
 /** GET /api/sources/{id}: the retrieved chunks, verbatim, in rank order. */
 export async function getSources(sessionId: string, signal?: AbortSignal): Promise<SourceChunk[]> {

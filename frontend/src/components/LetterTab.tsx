@@ -1,13 +1,21 @@
 import { Copy, Download } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { letterUrl } from "../api/client";
 import { Button, ButtonLink } from "../design/components/Button";
 import { useI18n } from "../i18n";
 
 type CopyState = "idle" | "copied" | "failed";
 
+interface LetterTabProps {
+  text: string;
+  sessionId: string;
+  finished: boolean;
+  /** Replaces the .txt/.docx downloads (e.g. "Edit this letter" for a saved answer). */
+  actions?: ReactNode;
+}
+
 /** The draft letter as plain text (line breaks kept), with copy and .txt/.docx download once the answer is done. */
-export function LetterTab({ text, sessionId, finished }: { text: string; sessionId: string; finished: boolean }) {
+export function LetterTab({ text, sessionId, finished, actions }: LetterTabProps) {
   const { t } = useI18n();
   const [copy, setCopy] = useState<CopyState>("idle");
 
@@ -31,12 +39,16 @@ export function LetterTab({ text, sessionId, finished }: { text: string; session
           <Button icon={<Copy size={18} />} onClick={copyLetter}>
             {t("copy_letter")}
           </Button>
-          <ButtonLink href={letterUrl(sessionId, "txt")} download icon={<Download size={18} />}>
-            {t("download_letter_txt")}
-          </ButtonLink>
-          <ButtonLink href={letterUrl(sessionId, "docx")} download icon={<Download size={18} />}>
-            {t("download_letter_docx")}
-          </ButtonLink>
+          {actions ?? (
+            <>
+              <ButtonLink href={letterUrl(sessionId, "txt")} download icon={<Download size={18} />}>
+                {t("download_letter_txt")}
+              </ButtonLink>
+              <ButtonLink href={letterUrl(sessionId, "docx")} download icon={<Download size={18} />}>
+                {t("download_letter_docx")}
+              </ButtonLink>
+            </>
+          )}
           <span role="status" className="text-sm font-semibold text-ink-muted">
             {copy === "copied" && t("copied")}
             {copy === "failed" && t("copy_failed")}

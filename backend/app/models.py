@@ -79,6 +79,16 @@ class SessionData(BaseModel):
     citation_check: CitationCheck | None = None
     untranslated: list[str] = Field(default_factory=list)
     feedback_given: bool = False
+    error_code: str | None = None
+    # Signed-in asker (M14): only they can read or stop the session; the turn is saved into conversation_id with
+    # save_key (their data key, held only until the turn is saved; None = not saved: guest, locked or history off).
+    owner_id: str | None = None
+    auth_key: str | None = None
+    conversation_id: str | None = None
+    new_conversation: bool = False
+    earlier_en: list[str] = Field(default_factory=list)
+    background: bool = False
+    save_key: bytes | None = Field(default=None, exclude=True, repr=False)
 
 
 class QueryRequest(BaseModel):
@@ -86,6 +96,10 @@ class QueryRequest(BaseModel):
 
     question: str = Field(min_length=1, pattern=r"\S")
     language: Language = "auto"
+    # A follow-up in one of the signed-in user's saved conversations (D23).
+    conversation_id: str | None = Field(None, max_length=64)
+    # Keep generating after the client disconnects (D24); default: true when signed in, always false for guests.
+    background: bool | None = None
 
     @field_validator("question")
     @classmethod
@@ -98,12 +112,15 @@ class QueryRequest(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    """Response of POST /api/query: acts are the routed Act slugs ([] = whole corpus), language the resolved one."""
+    """Response of POST /api/query: acts are the routed Act slugs ([] = whole corpus), language the resolved one;
+    conversation_id is where the turn is saved (signed in, history on); background: survives a disconnect."""
 
     session_id: str
     null_response: bool
     acts: list[str]
     language: UserLanguage
+    conversation_id: str | None = None
+    background: bool = False
 
 
 class SourceChunk(BaseModel):

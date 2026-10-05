@@ -8,7 +8,7 @@ import { useQuerySession } from "../hooks/useQuerySession";
 import { I18nContext, makeTranslate, useI18n } from "../i18n";
 import { measure, recordSpeed } from "../lib/eta";
 import { AuthProvider } from "./AuthProvider";
-import { SessionContext, SettingsContext } from "./contexts";
+import { LibraryContext, SessionContext, SettingsContext } from "./contexts";
 import { applyAttributes, htmlAttributes, loadSettings, saveSettings, type Settings } from "./settings";
 
 /** Settings state: persisted on change and mirrored onto <html> (following OS changes for "system" choices). */
@@ -43,7 +43,7 @@ function SettingsProvider({ children }: { children: ReactNode }) {
 
 /** The question session lives above the routes, so an answer keeps streaming while the user moves around. */
 function SessionProvider({ children }: { children: ReactNode }) {
-  const { state, submit, retry, reset } = useQuerySession();
+  const { state, submit, attach, stopAnswer, retry, reset } = useQuerySession();
   const { health, refresh } = useHealth();
 
   useEffect(() => {
@@ -60,10 +60,18 @@ function SessionProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const value = useMemo(
-    () => ({ state, submit, retry, reset, health, refreshHealth: refresh }),
-    [state, submit, retry, reset, health, refresh],
+    () => ({ state, submit, attach, stopAnswer, retry, reset, health, refreshHealth: refresh }),
+    [state, submit, attach, stopAnswer, retry, reset, health, refresh],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+/** A counter the library views reload on (bumped by saved-answer events and by edits). */
+function LibraryProvider({ children }: { children: ReactNode }) {
+  const [version, setVersion] = useState(0);
+  const bump = useCallback(() => setVersion((v) => v + 1), []);
+  const value = useMemo(() => ({ version, bump }), [version, bump]);
+  return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
 }
 
 /** Everything the screens rely on: settings + i18n, tooltips, toasts, sign-in state and the session. */
@@ -72,7 +80,9 @@ export function Providers({ children }: { children: ReactNode }) {
     <SettingsProvider>
       <ToastsWithLabels>
         <AuthProvider>
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <LibraryProvider>{children}</LibraryProvider>
+          </SessionProvider>
         </AuthProvider>
       </ToastsWithLabels>
     </SettingsProvider>

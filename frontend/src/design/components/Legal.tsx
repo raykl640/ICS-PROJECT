@@ -81,6 +81,8 @@ interface SourceCardProps {
   badge?: ReactNode;
   /** Highlighted after a citation jump. */
   highlighted?: boolean;
+  /** Buttons for this provision (e.g. Save section), under the locator. */
+  actions?: ReactNode;
   /** The verbatim provision text (line breaks kept). */
   children: string;
 }
@@ -95,6 +97,7 @@ export function SourceCard({
   regionLabel,
   badge,
   highlighted,
+  actions,
   children,
 }: SourceCardProps) {
   return (
@@ -117,6 +120,7 @@ export function SourceCard({
           <h3 className="font-display-style text-lg leading-snug text-ink">{heading}</h3>
           <p className="text-sm text-ink-muted">{locator}</p>
           {badge && <div className="mt-2">{badge}</div>}
+          {actions && <div className="mt-2 flex flex-wrap gap-2">{actions}</div>}
         </div>
       </header>
       <div

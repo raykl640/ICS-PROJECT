@@ -77,7 +77,8 @@ class AnswerStream:
         yield sse("status", {"stage": "generating"})
         start = time.perf_counter()
         try:
-            prompt = build_prompt(session.question_en, [c.chunk for c in session.chunks], self.settings)
+            chunks = [c.chunk for c in session.chunks]
+            prompt = build_prompt(session.question_en, chunks, self.settings, session.earlier_en)
             async with aclosing(generate_stream(prompt, self.llm, self.refs)) as items:
                 async for item in items:
                     if isinstance(item, GenerationResult):
@@ -94,6 +95,7 @@ class AnswerStream:
         except Exception as exc:
             code, message = error_info(exc)
             session.status = "error"
+            session.error_code = code
             log.warning("generation_failed", extra={"session_id": session_id, "code": code})
             yield sse("error", {"code": code, "message": message})
             return
@@ -138,8 +140,8 @@ class AnswerStream:
         """The Kiswahili sections that replace the English draft."""
         return sse("translated", {"sections": _sections(parsed_user)})
 
-    def _done(self, session: SessionData, parsed: ParsedResponse) -> ServerSentEvent:
-        """Final event: localized warnings, citation check, format flag, truncated chunk ids, untranslated text."""
+    def warnings(self, session: SessionData) -> list[str]:
+        """Notes shown under a finished answer, in the user's language."""
         ui = self.ui[session.lang]
         check = session.citation_check or CitationCheck()
         warnings = [ui["translation_note"]] if session.lang == "sw" else []
@@ -147,10 +149,16 @@ class AnswerStream:
             warnings.append(ui["citation_warning"])
         if session.untranslated:
             warnings.append(ui["untranslated_note"])
+        return warnings
+
+    def _done(self, session: SessionData, parsed: ParsedResponse) -> ServerSentEvent:
+        """Final event: localized warnings, citation check, format flag, truncated chunk ids, untranslated text."""
+        ui = self.ui[session.lang]
+        check = session.citation_check or CitationCheck()
         return sse(
             "done",
             {
-                "warnings": warnings,
+                "warnings": self.warnings(session),
                 "citation_check": check.model_dump(),
                 "format_ok": parsed.format_ok,
                 "truncated_chunks": [c.chunk.chunk_id for c in session.chunks if c.truncated],

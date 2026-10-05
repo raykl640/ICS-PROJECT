@@ -15,6 +15,7 @@
 - [x] M11 Design language — 2026-10-05 (gate passed: "Mahakama colours + Jua radius")
 - [x] M12 App shell, routing, Ask v2 — 2026-10-05
 - [x] M13 Local accounts, encrypted store, auth UI — 2026-10-05
+- [x] M14 Conversations, background answers, library, letters — 2026-10-05
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -492,3 +493,22 @@ Open issues:
   publishes on 127.0.0.1 and works as is. README not yet updated (M18 docs).
 - New Kiswahili strings await review (HUMAN_TODO).
 Next: M14 Conversations, background answers, library, letters.
+
+## M14 Conversations, background answers, library, letters (2026-10-05)
+Done:
+- Backend: migrations/002_library.sql; accounts/library_repo.py, library.py, library_routes.py (conversations, turns,
+  letters with versions, matters, bookmarks, notes; search/filter/sort in memory after decrypt, cursor pagination);
+  runs.py (RunBuffer, EventHub); POST /api/query conversation_id + background; GET /api/events; DELETE /api/sessions/{id};
+  follow-up retrieval query + prompt (golden fixture). config: background_runs, followup_context_turns, letter_versions_max,
+  library_page_size, title/matter/letter/note limits, events_backlog.
+- Frontend: conversation thread with follow-up composer and Stop; EventsBridge (toast + Notification API with fallback);
+  Library (Chats/Letters/Saved/Notes, pin, rename, move to matter, undo delete), Matter page, Letter workspace (placeholders,
+  versions, export, print); Home "Continue".
+- check.sh: 757 passed, coverage 97.1%. Frontend lint, typecheck, 212 vitest, build; e2e 9 passed (incl. ask → navigate
+  away → notified → library → follow-up → edit letter → export, with axe).
+Decisions: DEVIATIONS D23 (follow-up context), D24 (background runs).
+Fixed during review: the library e2e matched both the toast and its live-region copy; now an exact-text match.
+Open issues:
+- New Kiswahili strings await the human review (HUMAN_TODO).
+Next: M15 Laws browser, reader, search, command palette.
+

@@ -170,6 +170,18 @@ class Settings(BaseSettings):
     # Host header allow-list (DNS-rebinding defence for the localhost server); hostnames, any port.
     allowed_hosts: list[str] = Field(default_factory=lambda: ["127.0.0.1", "localhost", "[::1]"])
 
+    # Library (M14): saved conversations, background answers, follow-ups, letters, matters, bookmarks, notes.
+    background_runs: bool = True
+    followup_context_turns: int = Field(1, ge=0)
+    letter_versions_max: int = Field(20, gt=0)
+    library_page_size: int = Field(50, gt=0)
+    title_max_chars: int = Field(80, gt=0)
+    matter_name_max_chars: int = Field(120, gt=0)
+    letter_max_chars: int = Field(12_000, gt=0)
+    note_max_chars: int = Field(4_000, gt=0)
+    # Undelivered turn_done/turn_failed events kept per sign-in until GET /api/events connects.
+    events_backlog: int = Field(20, gt=0)
+
     # Evaluation harness (eval/, M9). Input and result files are fixed names under eval_dir (see properties below).
     eval_dir: Path = EVAL_DIR
     eval_bootstrap_resamples: int = Field(10_000, gt=0)

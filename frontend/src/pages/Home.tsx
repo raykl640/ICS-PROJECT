@@ -1,12 +1,14 @@
-import { BookOpen, MessageSquare, Sun } from "lucide-react";
+import { BookOpen, FileText, MessageSquare, Sun } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import type { UiLanguage } from "../api/types";
-import { useSession } from "../app/contexts";
+import { listConversations, listLetters } from "../api/library";
+import { useAuth, useSession } from "../app/contexts";
 import { PageTitle } from "../app/PageTitle";
 import { Composer } from "../components/Composer";
 import { Badge, Card, EmptyState } from "../design/components/Display";
 import { isBusy } from "../hooks/session";
+import { useLoad } from "../hooks/useLoad";
 import { type StringKey, useI18n } from "../i18n";
 
 // The ten Acts with their domain wording (ARCHITECTURE §2; Legal Aid Act from the router's terms, DEVIATIONS D28).
@@ -27,6 +29,8 @@ const TOPICS = [
 export function Home() {
   const { t } = useI18n();
   const { state, submit } = useSession();
+  const { me } = useAuth();
+  const signedIn = Boolean(me?.user && !me.locked);
   const navigate = useNavigate();
   const [question, setQuestion] = useState("");
   const box = useRef<HTMLTextAreaElement>(null);
@@ -87,10 +91,13 @@ export function Home() {
 
       <div className="flex flex-col gap-6">
         <Card title={t("continue_title")}>
-          {state.phase === "idle" ? (
-            <EmptyState icon={<MessageSquare size={28} />} title={t("continue_empty_title")}>
-              {t("continue_empty_body")}
-            </EmptyState>
+          <SavedRecent />
+          {state.phase === "idle" || state.conversationId ? (
+            signedIn ? null : (
+              <EmptyState icon={<MessageSquare size={28} />} title={t("continue_empty_title")}>
+                {t("continue_empty_body")}
+              </EmptyState>
+            )
           ) : (
             <Link to="/ask" className="-mx-2 flex items-start gap-3 rounded-md px-2 py-2 text-ink hover:bg-sunken">
               <MessageSquare aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-ink-muted" />
@@ -118,6 +125,53 @@ export function Home() {
           </EmptyState>
         </Card>
       </div>
+    </div>
+  );
+}
+
+const RECENT = "limit=3";
+
+/** Signed in: the latest chats and letters from the library. */
+function SavedRecent() {
+  const { t } = useI18n();
+  const { me } = useAuth();
+  const enabled = Boolean(me?.user && !me.locked);
+  const chats = useLoad(enabled ? "home-chats" : null, () => listConversations(RECENT)).result;
+  const letters = useLoad(enabled ? "home-letters" : null, () => listLetters(RECENT)).result;
+  if (!enabled || chats.status !== "ok" || letters.status !== "ok") return null;
+  const items = [
+    ...chats.data.items.map((c) => ({
+      id: c.id,
+      href: `/ask/${c.id}`,
+      title: c.title,
+      icon: MessageSquare,
+      busy: c.turns === 0,
+    })),
+    ...letters.data.items.map((l) => ({
+      id: l.id,
+      href: `/letters/${l.id}`,
+      title: l.title,
+      icon: FileText,
+      busy: false,
+    })),
+  ];
+  if (items.length === 0) return <p className="text-ink-muted">{t("continue_empty_signed_in")}</p>;
+  return (
+    <div className="flex flex-col gap-1">
+      <ul className="flex flex-col">
+        {items.map(({ id, href, title, icon: Icon, busy }) => (
+          <li key={id}>
+            <Link to={href} className="-mx-2 flex items-start gap-3 rounded-md px-2 py-2 text-ink hover:bg-sunken">
+              <Icon aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-ink-muted" />
+              <span className="line-clamp-2 min-w-0 flex-1 font-semibold">{title}</span>
+              {busy && <Badge tone="info">{t("answer_in_progress")}</Badge>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link to="/library" className="mt-2 font-semibold text-brand underline underline-offset-3">
+        {t("library_open")}
+      </Link>
     </div>
   );
 }

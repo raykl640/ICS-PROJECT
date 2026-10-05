@@ -2,6 +2,7 @@ import {
   CircleHelp,
   CircleUser,
   Home,
+  Library as LibraryIcon,
   Lock,
   LogIn,
   LogOut,
@@ -28,6 +29,7 @@ import { useMediaQuery } from "../design/useMediaQuery";
 import { isBusy, type Phase } from "../hooks/session";
 import { type StringKey, useI18n } from "../i18n";
 import { useAuth, useSession, useSettings } from "./contexts";
+import { EventsBridge } from "./EventsBridge";
 import { LockScreen } from "./LockScreen";
 import { requestPageFocus } from "./pageFocus";
 import { TEXT_SIZES, type ThemeChoice } from "./settings";
@@ -35,6 +37,7 @@ import { TEXT_SIZES, type ThemeChoice } from "./settings";
 const NAV: { href: string; key: StringKey; icon: typeof Home }[] = [
   { href: "/", key: "nav_home", icon: Home },
   { href: "/ask", key: "nav_ask", icon: MessageSquare },
+  { href: "/library", key: "nav_library", icon: LibraryIcon },
   { href: "/how-it-works", key: "nav_how", icon: CircleHelp },
   { href: "/settings", key: "nav_settings", icon: SettingsIcon },
 ];
@@ -186,16 +189,16 @@ function GuestBanner({ pathname }: { pathname: string }) {
 }
 
 /** Toast when an answer finishes while the user is on another page. */
-function useAnswerReadyToast(phase: Phase, pathname: string): void {
+function useAnswerReadyToast(phase: Phase, pathname: string, background: boolean): void {
   const { t } = useI18n();
   const toast = useToast();
   const previous = useRef(phase);
   useEffect(() => {
-    if (isBusy(previous.current) && phase === "done" && pathname !== "/ask") {
+    if (isBusy(previous.current) && phase === "done" && !background && !pathname.startsWith("/ask")) {
       toast({ title: t("answer_ready"), description: t("answer_ready_body"), tone: "success" });
     }
     previous.current = phase;
-  }, [phase, pathname, t, toast]);
+  }, [phase, pathname, background, t, toast]);
 }
 
 /** Layout of every page: navigation, top bar, health notice, the routed page and the command palette. */
@@ -225,7 +228,7 @@ export function AppShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  useAnswerReadyToast(state.phase, pathname);
+  useAnswerReadyToast(state.phase, pathname, state.background);
 
   const systemDark = useMediaQuery("(prefers-color-scheme: dark)");
   const dark = settings.theme === "dark" || (settings.theme === "system" && systemDark);
@@ -271,7 +274,7 @@ export function AppShell() {
           label: t(key),
           icon: <Icon size={20} />,
           href,
-          current: href === pathname,
+          current: href === "/" ? pathname === "/" : pathname.startsWith(href),
           primary: true,
         }))}
         collapsed={collapsed}
@@ -314,6 +317,7 @@ export function AppShell() {
           </Suspense>
         </main>
       </div>
+      <EventsBridge />
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}

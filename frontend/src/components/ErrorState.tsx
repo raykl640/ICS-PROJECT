@@ -10,6 +10,7 @@ function describe(error: SessionError): { key: StringKey; retry: boolean; detail
   if (error.kind === "disconnected") return { key: "error_disconnected", retry: true };
   if (isEngineError(error)) return { key: "error_engine", retry: true };
   if (error.kind === "http" && error.status === 429) return { key: "error_rate", retry: true };
+  if (error.code === "stopped") return { key: "stopped_title", retry: true };
   if (error.code === "busy") return { key: "error_busy", retry: true };
   if (error.kind === "http" && error.status === 422)
     return { key: "error_generic", retry: false, detail: error.message };

@@ -1,5 +1,5 @@
-import { ListTree } from "lucide-react";
-import { useState } from "react";
+import { ListTree, Square } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import type { SourceChunk } from "../api/types";
 import { Button } from "../design/components/Button";
 import { Notice, Skeleton } from "../design/components/Display";
@@ -43,10 +43,14 @@ interface AnswerProps {
   onCite: (chunkId: string) => void;
   /** Shown when the sources can be opened (null hides the button). */
   onShowSources: (() => void) | null;
+  /** Shows a Stop button while the answer is being written. */
+  onStop?: () => void;
+  /** Replaces the letter tab's download buttons (a saved answer opens the letter workspace instead). */
+  letterActions?: ReactNode;
 }
 
 /** The streamed answer: progress, tabs that follow the stream until the user picks one, warnings and disclaimer. */
-export function Answer({ state, sections, sources, onCite, onShowSources }: AnswerProps) {
+export function Answer({ state, sections, sources, onCite, onShowSources, onStop, letterActions }: AnswerProps) {
   const { t } = useI18n();
   const [chosen, setChosen] = useState<Section | null>(null);
   const busy = isBusy(state.phase);
@@ -95,6 +99,7 @@ export function Answer({ state, sections, sources, onCite, onShowSources }: Answ
             sources={sources}
             onCite={onCite}
             streaming={busy && state.latest === section}
+            letterActions={letterActions}
           />
         ),
       }))}
@@ -117,10 +122,19 @@ export function Answer({ state, sections, sources, onCite, onShowSources }: Answ
         )
       }
       actions={
-        onShowSources && (
-          <Button icon={<ListTree size={18} />} onClick={onShowSources}>
-            {t("sources_open", { count: sources.length })}
-          </Button>
+        (onShowSources || (busy && onStop)) && (
+          <>
+            {onShowSources && (
+              <Button icon={<ListTree size={18} />} onClick={onShowSources}>
+                {t("sources_open", { count: sources.length })}
+              </Button>
+            )}
+            {busy && onStop && (
+              <Button variant="danger" icon={<Square size={16} />} onClick={onStop}>
+                {t("stop")}
+              </Button>
+            )}
+          </>
         )
       }
       footer={done?.disclaimer ?? t("disclaimer")}
@@ -135,9 +149,10 @@ interface BodyProps {
   sources: SourceChunk[];
   onCite: (chunkId: string) => void;
   streaming: boolean;
+  letterActions?: ReactNode;
 }
 
-function SectionBody({ section, text, state, sources, onCite, streaming }: BodyProps) {
+function SectionBody({ section, text, state, sources, onCite, streaming, letterActions }: BodyProps) {
   const { t } = useI18n();
   if (!text) {
     if (!isBusy(state.phase)) return <p className="text-ink-muted">{t("tab_missing")}</p>;
@@ -153,7 +168,14 @@ function SectionBody({ section, text, state, sources, onCite, streaming }: BodyP
     );
   }
   if (section === "letter") {
-    return <LetterTab text={text} sessionId={state.sessionId ?? ""} finished={state.phase === "done"} />;
+    return (
+      <LetterTab
+        text={text}
+        sessionId={state.sessionId ?? ""}
+        finished={state.phase === "done"}
+        actions={letterActions}
+      />
+    );
   }
   return (
     <div className={streaming ? "stream-caret" : undefined}>

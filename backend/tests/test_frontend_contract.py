@@ -22,6 +22,11 @@ def test_frontend_limits_mirror_settings() -> None:
         "max_comment_chars": settings.max_comment_chars,
         "password_min_chars": settings.password_min_chars,
         "username_max_chars": settings.username_max_chars,
+        "title_max_chars": settings.title_max_chars,
+        "matter_name_max_chars": settings.matter_name_max_chars,
+        "letter_max_chars": settings.letter_max_chars,
+        "note_max_chars": settings.note_max_chars,
+        "letter_versions_max": settings.letter_versions_max,
     }
 
 

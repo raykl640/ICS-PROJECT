@@ -75,17 +75,32 @@ def chunk_header(n: int, chunk: LegalChunk) -> str:
     return f"[CHUNK {n}] {chunk.act}, {unit}{chunk.section_num}, Page {chunk.page}:"
 
 
-def _user_part(blocks: Sequence[str], question: str) -> str:
-    """CONTEXT block followed by the wrapped question."""
-    return "CONTEXT:\n" + "\n\n".join(blocks) + f"\n\nUSER QUESTION: <question>{question}</question>"
+def _user_part(blocks: Sequence[str], question: str, earlier: Sequence[str] = ()) -> str:
+    """CONTEXT block followed by the wrapped question; a follow-up first repeats the earlier question(s) (D23)."""
+    if not earlier:
+        asked = f"<question>{question}</question>"
+    else:
+        lines = [f"Earlier question: <question>{e}</question>" for e in earlier]
+        asked = "\n".join([*lines, f"Question: <question>{question}</question>"])
+    return "CONTEXT:\n" + "\n\n".join(blocks) + f"\n\nUSER QUESTION: {asked}"
 
 
-def build_prompt(question: str, chunks: Sequence[LegalChunk], settings: Settings | None = None) -> PromptBuild:
-    """Prompt for the ranked chunks; lowest-ranked chunk text is truncated (then dropped) first to fit the budget."""
+def build_prompt(
+    question: str,
+    chunks: Sequence[LegalChunk],
+    settings: Settings | None = None,
+    earlier: Sequence[str] = (),
+) -> PromptBuild:
+    """Prompt for the ranked chunks; lowest-ranked chunk text is truncated (then dropped) first to fit the budget.
+
+    earlier: previous questions of a follow-up (oldest first), shown before the question as "Earlier question:"."""
     settings = settings or get_settings()
     per_word = settings.tokens_per_word
     safe_question = clean_question(question, settings.max_question_chars)
-    fixed = est_tokens(f"SYSTEM: {SYSTEM_PROMPT}", per_word) + est_tokens(_user_part([], safe_question), per_word)
+    safe_earlier = [clean_question(e, settings.max_question_chars) for e in earlier if e.strip()]
+    fixed = est_tokens(f"SYSTEM: {SYSTEM_PROMPT}", per_word) + est_tokens(
+        _user_part([], safe_question, safe_earlier), per_word
+    )
     if fixed > settings.prompt_budget:
         raise PromptBudgetError(f"fixed prompt needs {fixed} tokens, budget is {settings.prompt_budget}")
     limits = FitLimits(
@@ -99,4 +114,5 @@ def build_prompt(question: str, chunks: Sequence[LegalChunk], settings: Settings
     kept = [(c, f.body) for c, f in zip(chunks, fitted, strict=True) if f.body is not None]
     blocks = [f"{chunk_header(i, c)}\n{body}" for i, (c, body) in enumerate(kept, 1)]
     flags = tuple(ChunkFlag(c.chunk_id, f.truncated, f.body is None) for c, f in zip(chunks, fitted, strict=True))
-    return PromptBuild(SYSTEM_PROMPT, _user_part(blocks, safe_question), tuple(c for c, _ in kept), flags)
+    user = _user_part(blocks, safe_question, safe_earlier)
+    return PromptBuild(SYSTEM_PROMPT, user, tuple(c for c, _ in kept), flags)

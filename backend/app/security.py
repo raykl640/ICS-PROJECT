@@ -22,6 +22,12 @@ def strip_invisible(text: str) -> str:
     )
 
 
+def strip_invisible_block(text: str) -> str:
+    """Multi-line text: CRLF/CR become LF; other control (Cc) and format (Cf) characters dropped; tabs become spaces."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\t", " ")
+    return "".join(ch for ch in text if ch == "\n" or unicodedata.category(ch) not in ("Cc", "Cf"))
+
+
 def clean_question(question: str, max_chars: int) -> str:
     """Strip control characters, neutralise prompt/role markers, collapse whitespace and cap the length."""
     text = strip_invisible(question)

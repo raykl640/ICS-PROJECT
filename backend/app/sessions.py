@@ -48,6 +48,15 @@ class SessionStore:
             return None
         return item[1]
 
+    def discard(self, session_id: str) -> None:
+        """Forget a session (a query that could not start)."""
+        self._items.pop(session_id, None)
+
+    def live(self) -> list[tuple[str, SessionData]]:
+        """(id, session) of every unexpired session, oldest first."""
+        now = self._clock()
+        return [(sid, data) for sid, (created, data) in self._items.items() if not self._expired(created, data, now)]
+
     def purge(self) -> int:
         """Drop every expired session; returns how many were dropped."""
         now = self._clock()

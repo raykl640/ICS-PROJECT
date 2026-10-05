@@ -59,4 +59,4 @@ def fake_pipeline(sparse_dir: Path, settings: Settings, reranker: CrossEncoderLi
     """Full retrieve -> rerank pipeline over the synthetic corpus; FakeReranker unless one is given."""
     retriever = fake_retriever(build_parts(sparse_dir), settings)
     scope = ScopeClassifier(EMB, SCOPE, settings.scope_neighbours)
-    return ContextPipeline(retriever, reranker or FakeReranker(), scope, settings)
+    return ContextPipeline(retriever, reranker or FakeReranker(), scope, settings, STORE)

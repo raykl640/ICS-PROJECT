@@ -1,6 +1,8 @@
+import { Bookmark, BookmarkCheck } from "lucide-react";
 import { useEffect } from "react";
 import type { SourceChunk } from "../api/types";
 import { reduceMotion } from "../app/settings";
+import { Button } from "../design/components/Button";
 import { Badge, Skeleton } from "../design/components/Display";
 import { SourceCard } from "../design/components/Legal";
 import { useI18n } from "../i18n";
@@ -17,10 +19,13 @@ export function Sources({
   chunks,
   failed,
   highlight,
+  bookmarks,
 }: {
   chunks: SourceChunk[] | null;
   failed: boolean;
   highlight: Highlight | null;
+  /** Signed in: which sections are saved, and how to save one (hidden for guests). */
+  bookmarks?: { saved: ReadonlySet<string>; save: (chunkId: string) => void };
 }) {
   const { t } = useI18n();
 
@@ -46,7 +51,7 @@ export function Sources({
         <ol className="flex flex-col gap-3">
           {chunks.map((chunk) => (
             <li key={chunk.chunk_id}>
-              <Source chunk={chunk} highlighted={highlight?.chunkId === chunk.chunk_id} />
+              <Source chunk={chunk} highlighted={highlight?.chunkId === chunk.chunk_id} bookmarks={bookmarks} />
             </li>
           ))}
         </ol>
@@ -55,8 +60,17 @@ export function Sources({
   );
 }
 
-function Source({ chunk, highlighted }: { chunk: SourceChunk; highlighted: boolean }) {
+function Source({
+  chunk,
+  highlighted,
+  bookmarks,
+}: {
+  chunk: SourceChunk;
+  highlighted: boolean;
+  bookmarks?: { saved: ReadonlySet<string>; save: (chunkId: string) => void };
+}) {
   const { t } = useI18n();
+  const saved = bookmarks?.saved.has(chunk.chunk_id) ?? false;
   const schedule = chunk.unit_type === "schedule";
   const unit = schedule ? "" : t(chunk.unit_type === "article" ? "unit_article" : "unit_section");
   const mark = schedule ? "Sch." : `${chunk.unit_type === "article" ? "Art." : "s."} ${chunk.section_num}`;
@@ -70,6 +84,18 @@ function Source({ chunk, highlighted }: { chunk: SourceChunk; highlighted: boole
       locator={[chunk.part, t("source_page", { page: chunk.page })].filter(Boolean).join(" · ")}
       regionLabel={`${chunk.act} ${chunk.section_num}`}
       highlighted={highlighted}
+      actions={
+        bookmarks && (
+          <Button
+            variant="ghost"
+            icon={saved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+            disabled={saved}
+            onClick={() => bookmarks.save(chunk.chunk_id)}
+          >
+            {t(saved ? "bookmarked" : "bookmark_source")}
+          </Button>
+        )
+      }
       badge={
         chunk.truncated && (
           <p className="text-sm">

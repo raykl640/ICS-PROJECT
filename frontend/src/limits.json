@@ -2,5 +2,10 @@
   "max_question_chars": 1000,
   "max_comment_chars": 500,
   "password_min_chars": 10,
-  "username_max_chars": 32
+  "username_max_chars": 32,
+  "title_max_chars": 80,
+  "matter_name_max_chars": 120,
+  "letter_max_chars": 12000,
+  "note_max_chars": 4000,
+  "letter_versions_max": 20
 }

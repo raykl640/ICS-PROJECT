@@ -9,8 +9,8 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncGenerator, AsyncIterator, Callable
-from contextlib import asynccontextmanager, suppress
-from dataclasses import dataclass
+from contextlib import aclosing, asynccontextmanager, suppress
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
@@ -23,8 +23,11 @@ from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from backend.app.accounts.auth import AuthSessions
+from backend.app.accounts.auth import AuthSession, AuthSessions
 from backend.app.accounts.db import Database
+from backend.app.accounts.library import Library, NewTurn, Sections, not_found
+from backend.app.accounts.library_routes import library as library_routes
+from backend.app.accounts.routes import COOKIE
 from backend.app.accounts.routes import account as account_routes
 from backend.app.accounts.routes import auth as auth_routes
 from backend.app.accounts.service import AccountError, Accounts
@@ -37,8 +40,10 @@ from backend.app.lang.service import LanguageService, load_ui_strings
 from backend.app.letter import letter_docx, letter_text
 from backend.app.logging_setup import configure_logging
 from backend.app.models import (
+    CitationCheck,
     FeedbackIn,
     FeedbackOut,
+    ParsedResponse,
     QueryRequest,
     QueryResponse,
     RetrievedChunk,
@@ -48,9 +53,10 @@ from backend.app.models import (
 )
 from backend.app.retrieval.meta import REBUILD_COMMAND
 from backend.app.retrieval.pipeline import ContextPipeline
+from backend.app.runs import EventHub, RunBuffer
 from backend.app.security import RateLimiter, clean_comment, clean_question
 from backend.app.sessions import SessionsFull, SessionStore
-from backend.app.stream import AnswerStream
+from backend.app.stream import AnswerStream, sse
 from backend.app.web import (
     BodyLimitMiddleware,
     RequestGuardMiddleware,
@@ -69,6 +75,7 @@ _NOT_STREAMABLE: dict[str, tuple[str, str]] = {
     "aborted": ("aborted", "This answer was interrupted. Please ask the question again."),
     "error": ("generation_failed", "This answer failed. Please ask the question again."),
 }
+STOPPED_MESSAGE = "You stopped this answer."
 
 
 class ApiError(Exception):
@@ -96,10 +103,13 @@ class Runtime:
     query_limiter: RateLimiter
     feedback_limiter: RateLimiter
     answers: AnswerStream
+    hub: EventHub
     wall_clock: Callable[[], float] = time.time
     pipeline: ContextPipeline | None = None
     models_warm: bool = False
     accounts: Accounts | None = None
+    library: Library | None = None
+    runs: dict[str, RunBuffer] = field(default_factory=dict)
 
 
 async def _runtime(request: Request) -> Runtime:
@@ -120,12 +130,53 @@ def _check_rate(limiter: RateLimiter, request: Request) -> None:
         raise ApiError(429, "rate_limited", "Too many requests. Please wait and try again.", {"Retry-After": retry})
 
 
-def _session(rt: Runtime, session_id: str) -> SessionData:
-    """The live session or 404."""
+def _caller(request: Request, rt: Runtime) -> AuthSession | None:
+    """The sign-in behind the request's cookie, if any (locked or not)."""
+    if rt.accounts is None:
+        return None
+    return rt.accounts.session(request.cookies.get(COOKIE))
+
+
+def _session(rt: Runtime, session_id: str, request: Request) -> SessionData:
+    """The live session or 404; a signed-in user's session is visible to that user only."""
     session = rt.sessions.get(session_id)
+    if session is not None and session.owner_id is not None:
+        caller = _caller(request, rt)
+        if caller is None or caller.user_id != session.owner_id:
+            session = None
     if session is None:
         raise ApiError(404, "session_not_found", "Unknown or expired session. Please ask the question again.")
     return session
+
+
+@dataclass(frozen=True)
+class _Asker:
+    """A signed-in, unlocked asker; save_key is their data key when "Save history" is on (else None)."""
+
+    user_id: str
+    auth_key: str
+    save_key: bytes | None
+
+
+def _asker(request: Request, rt: Runtime) -> _Asker | None:
+    """Who is asking: None for guests, 423 when the sign-in is locked (asking counts as activity)."""
+    session = _caller(request, rt)
+    if session is None or rt.accounts is None:
+        return None
+    if session.dek is None:
+        raise AccountError(423, "locked", "HakiAI is locked. Enter your password to continue.")
+    rt.accounts.sessions.touch(session)
+    keep = rt.accounts.prefs(session).save_history
+    return _Asker(session.user_id, session.token_hash, session.dek if keep else None)
+
+
+async def _earlier(rt: Runtime, asker: _Asker | None, conversation_id: str | None) -> list[str]:
+    """English questions a follow-up builds on (D23); only in the asker's own saved conversations."""
+    if conversation_id is None:
+        return []
+    if asker is None or asker.save_key is None or rt.library is None:
+        raise not_found("conversation")
+    return await run_in_threadpool(rt.library.earlier_questions, asker.user_id, asker.save_key, conversation_id)
 
 
 def _busy(rt: Runtime, message: str) -> ApiError:
@@ -133,17 +184,23 @@ def _busy(rt: Runtime, message: str) -> ApiError:
     return ApiError(503, "busy", message, {"Retry-After": str(rt.deps.settings.busy_retry_after_s)})
 
 
-def _flag_truncated(question_en: str, chunks: list[RetrievedChunk], rt: Runtime) -> list[RetrievedChunk]:
+def _flag_truncated(
+    question_en: str, chunks: list[RetrievedChunk], rt: Runtime, earlier: list[str]
+) -> list[RetrievedChunk]:
     """Mark the chunks the prompt budget will shorten or drop, so /api/sources can say so."""
     if not chunks:
         return []
-    truncated = set(build_prompt(question_en, [c.chunk for c in chunks], rt.deps.settings).truncated_ids)
+    prompt = build_prompt(question_en, [c.chunk for c in chunks], rt.deps.settings, earlier)
+    truncated = set(prompt.truncated_ids)
     return [c.model_copy(update={"truncated": c.chunk.chunk_id in truncated}) for c in chunks]
 
 
 @api.post("/query")
 async def query(body: QueryRequest, request: Request, rt: RT) -> QueryResponse:
-    """Retrieve and rerank context for a question and open a session; the answer streams from /api/stream/{id}."""
+    """Retrieve and rerank context for a question and open a session; the answer streams from /api/stream/{id}.
+
+    Signed in: the turn is saved (history on), a follow-up adds the earlier question to retrieval (D23), and by
+    default the answer is generated in the background, surviving a disconnect (D24)."""
     settings = rt.deps.settings
     question = clean_question(body.question, settings.max_question_chars)
     if not question:
@@ -151,21 +208,35 @@ async def query(body: QueryRequest, request: Request, rt: RT) -> QueryResponse:
     _check_rate(rt.query_limiter, request)
     if rt.pipeline is None:
         raise ApiError(503, "not_ready", "The service is still starting. Please try again shortly.")
+    asker = await run_in_threadpool(_asker, request, rt)
+    earlier = await _earlier(rt, asker, body.conversation_id)
     prepared = await run_in_threadpool(rt.deps.language.prepare_query, question, body.language)
-    result = await run_in_threadpool(rt.pipeline.retrieve_context, prepared.english)
+    result = await run_in_threadpool(rt.pipeline.retrieve_context, " ".join([*earlier, prepared.english]))
+    background = asker is not None and settings.background_runs and body.background is not False and not result.null
     session = SessionData(
         question=question,
         question_en=prepared.english,
         lang=prepared.original_lang,
-        chunks=_flag_truncated(prepared.english, result.chunks, rt),
+        chunks=_flag_truncated(prepared.english, result.chunks, rt, earlier),
         fallback=result.null,
         acts=result.debug.acts or [],
         status="done" if result.null else "pending",
+        earlier_en=earlier,
+        background=background,
     )
+    ticket = _enter_gate(rt) if background else None
     try:
-        session_id = rt.sessions.create(session)
-    except SessionsFull as exc:
-        raise _busy(rt, "Too many answers are being generated. Please try again shortly.") from exc
+        await _attach_owner(rt, session, asker, body.conversation_id)
+        session_id = _create_session(rt, session)
+    except BaseException:
+        if ticket is not None:
+            ticket.release()
+        await _drop_new_conversation(rt, session)
+        raise
+    if result.null:
+        await _after_run(rt, session_id, session)
+    elif ticket is not None:
+        _start_background(rt, session_id, session, ticket)
     log.info(
         "query",
         extra={
@@ -175,46 +246,221 @@ async def query(body: QueryRequest, request: Request, rt: RT) -> QueryResponse:
             "null_response": result.null,
             "chunks": len(session.chunks),
             "acts": session.acts,
+            "follow_up": bool(earlier),
+            "background": background,
             "retrieval_ms": round(result.debug.timings_ms["total"]),
         },
     )
-    return QueryResponse(session_id=session_id, null_response=result.null, acts=session.acts, language=session.lang)
+    return QueryResponse(
+        session_id=session_id,
+        null_response=result.null,
+        acts=session.acts,
+        language=session.lang,
+        conversation_id=session.conversation_id,
+        background=background,
+    )
+
+
+def _enter_gate(rt: Runtime) -> Ticket:
+    """A place in the LLM queue, or 503 busy."""
+    try:
+        return rt.gate.enter()
+    except GateFull as exc:
+        raise _busy(rt, "Too many people are waiting for an answer. Please try again shortly.") from exc
+
+
+def _create_session(rt: Runtime, session: SessionData) -> str:
+    """Store the session, or 503 busy when every slot is generating."""
+    try:
+        return rt.sessions.create(session)
+    except SessionsFull as exc:
+        raise _busy(rt, "Too many answers are being generated. Please try again shortly.") from exc
+
+
+async def _attach_owner(rt: Runtime, session: SessionData, asker: _Asker | None, conversation_id: str | None) -> None:
+    """Record the signed-in asker on the session and, with history on, the conversation the turn goes into."""
+    if asker is None:
+        return
+    session.owner_id = asker.user_id
+    session.auth_key = asker.auth_key
+    if asker.save_key is None or rt.library is None:
+        return
+    session.save_key = asker.save_key
+    if conversation_id is None:
+        conversation_id = await run_in_threadpool(
+            rt.library.create_conversation, asker.user_id, asker.save_key, session.question, session.lang
+        )
+        session.new_conversation = True
+    session.conversation_id = conversation_id
+
+
+def _new_turn(rt: Runtime, session_id: str, session: SessionData) -> NewTurn:
+    """The finished session as a turn to save (sections in the user's language)."""
+    parsed = session.parsed_user or session.parsed or ParsedResponse()
+    return NewTurn(
+        question=session.question,
+        question_en=session.question_en,
+        lang=session.lang,
+        sections=Sections(rights=parsed.rights, steps=parsed.steps, letter=parsed.letter),
+        answer_en=session.answer_en,
+        sources=[(c.chunk.chunk_id, c.rerank_score) for c in session.chunks],
+        acts=session.acts,
+        citation_check=session.citation_check or CitationCheck(),
+        format_ok=session.parsed.format_ok if session.parsed else True,
+        warnings=[] if session.fallback else rt.answers.warnings(session),
+        truncated_chunks=[c.chunk.chunk_id for c in session.chunks if c.truncated],
+        untranslated=session.untranslated,
+        null_response=session.fallback,
+        session_id=session_id,
+    )
+
+
+async def _drop_new_conversation(rt: Runtime, session: SessionData) -> None:
+    """Delete the conversation created for this question if no turn reached it."""
+    session.save_key = None
+    if rt.library is None or session.owner_id is None or session.conversation_id is None:
+        return
+    if session.new_conversation:
+        await run_in_threadpool(rt.library.drop_if_empty, session.owner_id, session.conversation_id)
+        session.conversation_id = None
+
+
+async def _after_run(rt: Runtime, session_id: str, session: SessionData) -> str | None:
+    """Save a finished turn (signed in, history on) and drop the data key; a new conversation whose first answer did
+    not finish is deleted again. Returns the saved turn id."""
+    owner, key, conversation_id = session.owner_id, session.save_key, session.conversation_id
+    session.save_key = None
+    if rt.library is None or owner is None or key is None or conversation_id is None:
+        return None
+    if session.status != "done":
+        await _drop_new_conversation(rt, session)
+        return None
+    try:
+        turn_id = await run_in_threadpool(
+            rt.library.add_turn, owner, key, conversation_id, _new_turn(rt, session_id, session)
+        )
+    except AccountError:
+        log.info("turn_not_saved", extra={"session_id": session_id, "reason": "conversation_deleted"})
+        return None
+    log.info("turn_saved", extra={"session_id": session_id, "turn_id": turn_id})
+    return turn_id
+
+
+def _start_background(rt: Runtime, session_id: str, session: SessionData, ticket: Ticket) -> None:
+    """Generate the answer in a server task that outlives the client's connection (D24)."""
+    buffer = RunBuffer()
+    session.status = "running"
+    rt.runs[session_id] = buffer
+    buffer.task = asyncio.create_task(_drive(rt, session_id, session, ticket, buffer))
+    buffer.task.add_done_callback(lambda _: _retire(rt, session_id, session, ticket, buffer))
+
+
+def _settle(session: SessionData, ticket: Ticket, buffer: RunBuffer) -> None:
+    """End of generation: free the gate, end the followers, mark an unfinished run aborted (idempotent)."""
+    ticket.release()
+    buffer.finish()
+    if session.status in ("pending", "running"):
+        session.status = "aborted"
+
+
+def _retire(rt: Runtime, session_id: str, session: SessionData, ticket: Ticket, buffer: RunBuffer) -> None:
+    """When the run's task is over (saved and notified, or cancelled before it started): settle and forget it."""
+    _settle(session, ticket, buffer)
+    rt.runs.pop(session_id, None)
+
+
+async def _drive(rt: Runtime, session_id: str, session: SessionData, ticket: Ticket, buffer: RunBuffer) -> None:
+    """Run the answer into the buffer; cancellation (DELETE /api/sessions/{id}) closes the LLM stream. Then save the
+    turn and notify the sign-in that asked."""
+    try:
+        async with aclosing(rt.answers.run(session_id, session, ticket)) as events:
+            async for event in events:
+                buffer.push(event)
+    except asyncio.CancelledError:
+        session.status = "aborted"
+        buffer.push(sse("error", {"code": "stopped", "message": STOPPED_MESSAGE}))
+        log.info("generation_stopped", extra={"session_id": session_id})
+    finally:
+        _settle(session, ticket, buffer)
+    turn_id = await _after_run(rt, session_id, session)
+    _notify(rt, session_id, session, turn_id)
+
+
+def _notify(rt: Runtime, session_id: str, session: SessionData, turn_id: str | None) -> None:
+    """turn_done / turn_failed to the sign-in that asked (nothing for a run the user stopped)."""
+    if session.auth_key is None:
+        return
+    payload = {"session_id": session_id, "conversation_id": session.conversation_id}
+    if session.status == "done":
+        rt.hub.publish(session.auth_key, "turn_done", payload | {"turn_id": turn_id})
+    elif session.status == "error":
+        rt.hub.publish(session.auth_key, "turn_failed", payload | {"code": session.error_code or "internal"})
 
 
 async def _finish_run(
-    session_id: str, session: SessionData, events: AsyncGenerator[ServerSentEvent, None], ticket: Ticket
+    rt: Runtime, session_id: str, session: SessionData, events: AsyncGenerator[ServerSentEvent, None], ticket: Ticket
 ) -> None:
-    """After the response ends (finished or client gone): close the run, free the gate, mark unfinished runs aborted."""
+    """After the response ends (finished or client gone): close the run, free the gate, mark unfinished runs aborted,
+    then save a signed-in user's finished turn."""
     await events.aclose()
     ticket.release()
     if session.status == "running":
         session.status = "aborted"
         log.info("generation_aborted", extra={"session_id": session_id})
+    await _after_run(rt, session_id, session)
 
 
 @api.get("/stream/{session_id}", response_class=EventSourceResponse)
-async def stream(session_id: str, rt: RT) -> EventSourceResponse:
-    """SSE answer stream (events in backend/app/stream.py); generated once, replayed on later connections."""
-    session = _session(rt, session_id)
+async def stream(session_id: str, request: Request, rt: RT) -> EventSourceResponse:
+    """SSE answer stream (events in backend/app/stream.py); generated once, replayed on later connections.
+
+    A background run is followed from its first event by any number of connections; leaving does not stop it."""
+    session = _session(rt, session_id, request)
     ping = rt.deps.settings.sse_ping_s
     if session.status == "done":
         return EventSourceResponse(rt.answers.replay(session), ping=ping)
+    buffer = rt.runs.get(session_id)
+    if buffer is not None:
+        return EventSourceResponse(buffer.follow(), ping=ping)
     if session.status in _NOT_STREAMABLE:
         raise ApiError(409, *_NOT_STREAMABLE[session.status])
-    try:
-        ticket = rt.gate.enter()
-    except GateFull as exc:
-        raise _busy(rt, "Too many people are waiting for an answer. Please try again shortly.") from exc
+    ticket = _enter_gate(rt)
     session.status = "running"
     events = rt.answers.run(session_id, session, ticket)
-    finish = BackgroundTask(_finish_run, session_id, session, events, ticket)
+    finish = BackgroundTask(_finish_run, rt, session_id, session, events, ticket)
     return EventSourceResponse(events, ping=ping, background=finish)
 
 
+@api.delete("/sessions/{session_id}")
+async def stop(session_id: str, request: Request, rt: RT) -> dict[str, bool]:
+    """Stop the caller's background run: the LLM stream is closed and the gate freed before this returns.
+
+    stopped=false when it had already finished; guests stop by closing the stream (404 here)."""
+    session = _session(rt, session_id, request)
+    if session.owner_id is None:
+        raise ApiError(404, "session_not_found", "Unknown or expired session. Please ask the question again.")
+    buffer = rt.runs.get(session_id)
+    task = buffer.task if buffer else None
+    if task is None or task.done():
+        return {"stopped": False}
+    task.cancel()
+    await asyncio.wait({task})
+    return {"stopped": True}
+
+
+@api.get("/events", response_class=EventSourceResponse)
+async def events(request: Request, rt: RT) -> EventSourceResponse:
+    """turn_done / turn_failed {session_id, conversation_id, turn_id | code} for this sign-in's background runs."""
+    caller = await run_in_threadpool(_caller, request, rt)
+    if caller is None:
+        raise AccountError(401, "auth_required", "Please sign in.")
+    return EventSourceResponse(rt.hub.subscribe(caller.token_hash), ping=rt.deps.settings.sse_ping_s)
+
+
 @api.get("/sources/{session_id}", response_model_exclude_none=True)
-async def sources(session_id: str, rt: RT) -> SourcesResponse:
+async def sources(session_id: str, request: Request, rt: RT) -> SourcesResponse:
     """The retrieved chunks, verbatim, in rank order (empty for a null response)."""
-    session = _session(rt, session_id)
+    session = _session(rt, session_id, request)
     debug = rt.deps.settings.debug_scores
     chunks = [
         SourceChunk(
@@ -242,10 +488,13 @@ def _attachment(filename: str) -> dict[str, str]:
 
 @api.get("/letter/{session_id}")
 async def letter(
-    session_id: str, rt: RT, fmt: Annotated[Literal["txt", "docx"], Query(alias="format")] = "txt"
+    session_id: str,
+    request: Request,
+    rt: RT,
+    fmt: Annotated[Literal["txt", "docx"], Query(alias="format")] = "txt",
 ) -> Response:
     """The FORMAL LETTER section (Kiswahili when the user asked in Kiswahili) as .txt or .docx, with the disclaimer."""
-    session = _session(rt, session_id)
+    session = _session(rt, session_id, request)
     if session.fallback:
         raise ApiError(404, "no_letter", "There is no letter because no answer was generated for this question.")
     if session.status != "done":
@@ -263,7 +512,7 @@ async def letter(
 async def feedback(body: FeedbackIn, request: Request, rt: RT) -> FeedbackOut:
     """Record a thumbs up/down once per session: ids, rating, comment and flags only, never question or answer."""
     _check_rate(rt.feedback_limiter, request)
-    session = _session(rt, body.session_id)
+    session = _session(rt, body.session_id, request)
     if session.feedback_given:
         return FeedbackOut(recorded=False)
     settings = rt.deps.settings
@@ -375,6 +624,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     rt.accounts = await run_in_threadpool(_open_accounts, rt)
     app.state.accounts = rt.accounts
     rt.pipeline = await run_in_threadpool(_load_pipeline, deps)
+    rt.library = Library(deps.settings, rt.accounts.db, rt.pipeline.find_chunk, rt.wall_clock)
+    app.state.library = rt.library
     await run_in_threadpool(_warm_up, rt.pipeline, deps.language)
     rt.models_warm = True
     await _check_ollama(deps)
@@ -386,6 +637,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         purge.cancel()
         with suppress(asyncio.CancelledError):
             await purge
+        runs = [buffer.task for buffer in rt.runs.values() if buffer.task is not None]
+        for task in runs:
+            task.cancel()
+        await asyncio.gather(*runs, return_exceptions=True)
 
 
 def _install_error_handlers(app: FastAPI) -> None:
@@ -425,25 +680,30 @@ def create_app(
     auto-lock, token expiry and stored timestamps."""
     s = deps.settings
     app = FastAPI(title="HakiAI API", version="0.1.0", lifespan=_lifespan)
+    ui = load_ui_strings(s.ui_strings_path)
     app.state.runtime = Runtime(
         deps=deps,
         sessions=SessionStore(s.session_ttl_s, s.max_sessions, clock),
         gate=LLMGate(s.max_queue),
         query_limiter=RateLimiter(s.rate_limit_per_min, clock),
         feedback_limiter=RateLimiter(s.rate_limit_per_min, clock),
-        answers=AnswerStream(s, deps.llm, deps.language, deps.refs, load_ui_strings(s.ui_strings_path)),
+        answers=AnswerStream(s, deps.llm, deps.language, deps.refs, ui),
+        hub=EventHub(s.events_backlog),
         wall_clock=wall_clock,
     )
+    app.state.sessions = app.state.runtime.sessions
+    app.state.ui_strings = ui
     app.state.auth_limiter = RateLimiter(s.auth_rate_limit_per_min, clock)
     _install_error_handlers(app)
     app.include_router(api)
     app.include_router(auth_routes)
     app.include_router(account_routes)
+    app.include_router(library_routes)
     if s.dev_mode:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=[s.cors_dev_origin],
-            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
             allow_headers=["*"],
             allow_credentials=True,
         )

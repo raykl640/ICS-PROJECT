@@ -29,11 +29,12 @@ export function ToastProvider({ closeLabel, regionLabel, children }: ToastProvid
     <ToastContext.Provider value={show}>
       <RToast.Provider label={regionLabel} duration={6000}>
         {children}
-        {toasts.map(({ id, title, description, tone = "info" }) => {
+        {toasts.map(({ id, title, description, tone = "info", action, duration }) => {
           const Icon = ICONS[tone];
           return (
             <RToast.Root
               key={id}
+              duration={duration}
               onOpenChange={(open) => !open && drop(id)}
               className="flex items-start gap-3 rounded-md border border-line-subtle bg-raised p-3 text-ink shadow-overlay"
             >
@@ -42,6 +43,15 @@ export function ToastProvider({ closeLabel, regionLabel, children }: ToastProvid
                 <RToast.Title className="font-semibold">{title}</RToast.Title>
                 {description && (
                   <RToast.Description className="text-sm text-ink-muted">{description}</RToast.Description>
+                )}
+                {action && (
+                  <RToast.Action
+                    altText={action.label}
+                    onClick={action.onSelect}
+                    className="target mt-2 cursor-pointer rounded-sm px-2 font-semibold text-brand underline underline-offset-3 hover:bg-sunken"
+                  >
+                    {action.label}
+                  </RToast.Action>
                 )}
               </div>
               <RToast.Close

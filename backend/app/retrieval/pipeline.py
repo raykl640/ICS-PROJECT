@@ -11,11 +11,12 @@ from typing import Protocol
 
 from backend.app.config import Settings
 from backend.app.interfaces import CrossEncoderLike, Embedder
-from backend.app.models import RetrievedChunk
+from backend.app.models import LegalChunk, RetrievedChunk
 from backend.app.retrieval.embedder import STEmbedder
 from backend.app.retrieval.hybrid import RetrievalResult, load_retriever
 from backend.app.retrieval.reranker import CEReranker, is_confident, rerank
 from backend.app.retrieval.scope import load_scope
+from backend.app.retrieval.store import ChunkStore
 
 
 class CandidateSource(Protocol):
@@ -59,12 +60,24 @@ class ContextPipeline:
     """Retrieves, reranks and decides whether the context is confident enough to generate from."""
 
     def __init__(
-        self, retriever: CandidateSource, reranker: CrossEncoderLike, scope: ScopeCheck, settings: Settings
+        self,
+        retriever: CandidateSource,
+        reranker: CrossEncoderLike,
+        scope: ScopeCheck,
+        settings: Settings,
+        store: ChunkStore | None = None,
     ) -> None:
         self._retriever = retriever
         self._reranker = reranker
         self._scope = scope
         self._settings = settings
+        self._store = store
+
+    def find_chunk(self, chunk_id: str) -> LegalChunk | None:
+        """A corpus chunk by id (saved answers and bookmarks refer to chunks by id); None if unknown."""
+        if self._store is None or chunk_id not in self._store:
+            return None
+        return self._store.get([chunk_id])[0]
 
     def retrieve_context(self, question_en: str) -> ContextResult:
         """Top rerank_top chunks, or null=True with no chunks when neither the scope check nor the reranker vouches."""
@@ -106,4 +119,4 @@ def load_pipeline(
     reranker = reranker or CEReranker(
         settings.reranker_model, settings.reranker_max_length, settings.reranker_batch_size
     )
-    return ContextPipeline(retriever, reranker, load_scope(settings, embedder), settings)
+    return ContextPipeline(retriever, reranker, load_scope(settings, embedder), settings, retriever.store)

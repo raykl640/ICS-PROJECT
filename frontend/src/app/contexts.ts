@@ -21,7 +21,9 @@ export function useSettings(): SettingsValue {
 
 export interface SessionValue {
   state: SessionState;
-  submit: (question: string, language: RequestedLanguage) => Promise<void>;
+  submit: (question: string, language: RequestedLanguage, conversationId?: string) => Promise<void>;
+  attach: (sessionId: string, question: string, conversationId: string) => void;
+  stopAnswer: () => void;
   retry: () => void;
   reset: () => void;
   health: Health | null;
@@ -51,5 +53,21 @@ export const AuthContext = createContext<AuthValue | null>(null);
 export function useAuth(): AuthValue {
   const value = useContext(AuthContext);
   if (!value) throw new Error("useAuth needs an AuthProvider");
+  return value;
+}
+
+export interface LibraryValue {
+  /** Changes whenever saved data may have changed (an answer was saved, an item was edited). */
+  version: number;
+  /** Tell every library view to reload. */
+  bump: () => void;
+}
+
+export const LibraryContext = createContext<LibraryValue | null>(null);
+
+/** The library refresh signal. */
+export function useLibrary(): LibraryValue {
+  const value = useContext(LibraryContext);
+  if (!value) throw new Error("useLibrary needs a LibraryProvider");
   return value;
 }

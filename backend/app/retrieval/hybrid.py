@@ -68,6 +68,11 @@ class HybridRetriever:
         self._router = router
         self._settings = settings
 
+    @property
+    def store(self) -> ChunkStore:
+        """The chunks this retriever returns."""
+        return self._store
+
     def retrieve(self, question: str) -> RetrievalResult:
         """Top-n hybrid candidates; the dense and sparse searches run concurrently."""
         start = time.perf_counter()

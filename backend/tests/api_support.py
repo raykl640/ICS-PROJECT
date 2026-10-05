@@ -50,6 +50,17 @@ class FakeClock:
         return self.now
 
 
+class TickingClock:
+    """Epoch seconds that advance one second per reading, so stored times are distinct and ordered."""
+
+    def __init__(self, start: float = 1_800_000_000.0) -> None:
+        self.now = start
+
+    def __call__(self) -> float:
+        self.now += 1
+        return self.now
+
+
 def api_settings(tmp_path: Path, **overrides: Any) -> Settings:
     """Settings for API tests: feedback and frontend paths under tmp_path."""
     fields: dict[str, Any] = {"feedback_path": tmp_path / "feedback.jsonl", "frontend_dist": tmp_path / "no-dist"}
@@ -61,13 +72,17 @@ def make_app(
     llm: LLMClient,
     *,
     clock: Callable[[], float] | None = None,
+    wall_clock: Callable[[], float] | None = None,
     sw_en: Translator | None = None,
     en_sw: Translator | None = None,
     **overrides: Any,
 ) -> FastAPI:
-    """App over the synthetic corpus with the given fake LLM (and optional translators/clock)."""
+    """App over the synthetic corpus with the given fake LLM (and optional translators/clocks)."""
     deps = fake_deps(api_settings(tmp_path, **overrides), tmp_path / "work", llm=llm, sw_en=sw_en, en_sw=en_sw)
-    return create_app(deps, clock=clock) if clock else create_app(deps)
+    clocks: dict[str, Callable[[], float]] = {"clock": clock} if clock else {}
+    if wall_clock:
+        clocks["wall_clock"] = wall_clock
+    return create_app(deps, **clocks)
 
 
 def runtime(app: FastAPI) -> Runtime:
@@ -119,11 +134,16 @@ async def call(
     *,
     body: dict[str, Any] | None = None,
     disconnect_when: Callable[[str], bool] | None = None,
+    disconnect_after: float | None = None,
+    cookie: str | None = None,
 ) -> Reply:
-    """Drive the ASGI app directly; disconnect_when(body so far) triggers an http.disconnect."""
+    """Drive the ASGI app directly; disconnect_when(body so far) or disconnect_after (seconds) triggers an
+    http.disconnect; cookie ("name=value") is sent as the Cookie header."""
     path, _, query = path.partition("?")
     payload = json.dumps(body).encode() if body is not None else b""
     disconnect = asyncio.Event()
+    if disconnect_after is not None:
+        asyncio.get_running_loop().call_later(disconnect_after, disconnect.set)
     request_sent = False
     status, headers, chunks = 0, {}, []
 
@@ -155,12 +175,31 @@ async def call(
         "raw_path": path.encode(),
         "query_string": query.encode(),
         "root_path": "",
-        "headers": [(b"host", b"test"), (b"content-type", b"application/json"), (b"x-haki", b"1")],
+        "headers": [
+            (b"host", b"test"),
+            (b"content-type", b"application/json"),
+            (b"x-haki", b"1"),
+            *([(b"cookie", cookie.encode())] if cookie else []),
+        ],
         "client": ("127.0.0.1", 50000),
         "server": ("test", 80),
     }
     await app(scope, receive, send)
     return Reply(status, headers, b"".join(chunks))
+
+
+async def sign_up(app: FastAPI, username: str, password: str = "a long enough password") -> str:
+    """Register a user through the API; returns the sign-in cookie as "haki_auth=…"."""
+    reply = await call(app, "POST", "/api/auth/register", body={"username": username, "password": password})
+    assert reply.status == 200, reply.text
+    return reply.headers["set-cookie"].split(";", 1)[0]
+
+
+async def sign_in(app: FastAPI, username: str, password: str = "a long enough password") -> str:
+    """A further sign-in of an existing user; returns its cookie."""
+    reply = await call(app, "POST", "/api/auth/login", body={"username": username, "password": password})
+    assert reply.status == 200, reply.text
+    return reply.headers["set-cookie"].split(";", 1)[0]
 
 
 async def wait_until(condition: Callable[[], bool], timeout_s: float = 5.0) -> None:
