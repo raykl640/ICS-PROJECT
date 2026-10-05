@@ -29,7 +29,7 @@ DEFAULT_QUERIES: tuple[str, ...] = (
     "how many days of annual leave am I entitled to",
     "can I get free legal help if I cannot afford a lawyer",
 )
-STAGES: tuple[str, ...] = ("route", "embed", "dense", "sparse", "rrf", "rerank", "total")
+STAGES: tuple[str, ...] = ("route", "embed", "dense", "sparse", "rrf", "rerank", "scope", "total")
 
 
 def percentile(values: Sequence[float], p: float) -> float:

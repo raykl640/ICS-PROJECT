@@ -25,3 +25,16 @@ M8 Frontend: Query, Response (3 tabs, streaming), Sources panel, Feedback bar, d
 M9 Evaluation: eval/ with 15 retrieval queries (FAISS vs BM25 vs hybrid, P@5), 20 functional queries (5 Swahili), grounding checker script.
    >> HUMAN GATE: you write the ground-truth sections for the 15 retrieval queries.
 M10 Docs & hardening: README, setup script, error handling, final full test run.
+
+## v2 — product rework (M11–M18; spec: docs/DESIGN_V2.md, prompts: prompts/milestones/M11–M18.md)
+Owner decisions (2026-10-05): pywebview + PyInstaller desktop app (Windows .exe via Inno Setup, Linux AppImage + .deb);
+small installer + first-run setup wizard + USB offline bundle; local accounts with per-account encrypted history (recovery
+code); daily highlights = curated corpus sections + local-LLM blurbs, flagged until a human approves them.
+M11 Design language: 3 directions, tokens, Radix primitives, style guide, screenshots.  >> HUMAN GATE: pick a direction (.gates/M11-design.ok)
+M12 App shell + routing + Ask v2 on the chosen design (guest mode), settings, "How it works".
+M13 Local accounts: SQLite, argon2id, AES-GCM per-user keys, recovery code, auto-lock, guest/private modes, export/delete.
+M14 Conversations with follow-ups, background answers + notifications, library, letter workspace, matters, bookmarks, notes.
+M15 Laws browser/reader with cross-references, full-text search, command palette.
+M16 Knowledge of the day, life-situation guides, glossary browser.  >> HUMAN GATE: review highlights/topics (.gates/M16-content-reviewed.ok, before M18)
+M17 Desktop app: launcher, setup wizard, managed Ollama, offline bundle, PyInstaller, Inno Setup, AppImage/.deb, CI matrix.
+M18 Polish, onboarding, accessibility audit, docs, v2.0.0.

@@ -1,4 +1,5 @@
 # HakiAI design (M0–M7) — read this instead of re-deriving
+v2 (M11–M18: accounts, library, laws browser, highlights, desktop app) → docs/DESIGN_V2.md, which wins on v2 names/signatures.
 Precedence: this file wins on names/signatures. Deviations from ARCHITECTURE.md are logged in docs/DEVIATIONS.md.
 
 ## Tree  (backend/app/...; tests mirror in backend/tests/, fixtures in backend/tests/fixtures/)
@@ -37,9 +38,11 @@ retrieval/  embedder.py STEmbedder (implements interfaces.Embedder: encode(list[
             reranker.py CEReranker(model,max_length=512,batch=8; lazy shared model; warmup()) implements CrossEncoderLike (raw logits);
             pair_text(chunk) "{act} {unit} {num} {title}: {text}"; rerank(model,q,candidates,top)->list[RetrievedChunk] (desc, ties keep
             RRF order); is_confident(scored,threshold,min_chunks)->bool  (≥min_confident_chunks with score >= relevance_threshold, D13)
-            pipeline.py ContextPipeline(retriever,reranker,settings).retrieve_context(q_en)->ContextResult(chunks ≤rerank_top, null,
-            debug: ContextDebug(acts,widened,candidates,scores[(id,score)],timings_ms route/embed/dense/sparse/rrf/rerank/total));
-            null → chunks=[]. load_pipeline(settings, embedder|None, reranker|None) | bench.py + scripts/bench_retrieval.py (p50/p95, --fake)
+            pipeline.py ContextPipeline(retriever,reranker,scope,settings).retrieve_context(q_en)->ContextResult(chunks ≤rerank_top, null,
+            debug: ContextDebug(acts,widened,candidates,scores[(id,score)],scope_margin,timings_ms route/embed/dense/sparse/rrf/rerank/
+            scope/total)); null = < min_confident_chunks candidates, or (scope margin < scope_margin and not is_confident) (D21);
+            null → chunks=[]. load_pipeline(settings, embedder|None, reranker|None)
+            scope.py ScopeClassifier(embedder, ScopeExamples, neighbours).margin(q)->float; load_scope(settings, embedder); scope.yaml | bench.py + scripts/bench_retrieval.py (p50/p95, --fake)
 generation/ prompt.py build_prompt(q,chunks[,settings])->PromptBuild(system,user,chunks,chunk_flags[ChunkFlag(chunk_id,truncated,dropped)];
             .text "SYSTEM: …\n\nCONTEXT: …USER QUESTION: <question>…</question>", .truncated, .truncated_ids) (§7.1 + rules, D14)
             budget.py est_tokens(str,per_word)->int; truncate_text; fit_bodies([(header_tokens,body)],FitLimits)->list[Fitted(body|None,truncated)]
@@ -104,8 +107,9 @@ evaluation/ (M9; eval/*.py are thin entry points, data + results under settings.
 - Refs: "section N"/"s. N"/"sec N" bind to the nearest named Section-unit Act; bare ones resolve within the routed Acts. Each
   resolved, indexed chunk whose unit_type matches is put at sparse rank 1 (guarantees exact-reference hits reach the reranker).
 - Widening: each leg (dense, sparse) with < min_filtered_hits (5) filtered hits is rerun unfiltered; widened = any leg widened.
-- Reranker: cross-encoder outputs unbounded logits (not probabilities). relevance_threshold default -8.0 (D20; was 0.0), tuned in M9 on in-corpus vs
-  out-of-corpus queries (eval/), result recorded in PROGRESS.md.
+- Reranker: cross-encoder outputs unbounded logits (not probabilities). relevance_threshold default -2.0 (D21), tuned in M9 on in-corpus vs
+  out-of-corpus queries (eval/), result recorded in PROGRESS.md. It is one of two ways in: an in-scope question (scope margin
+  >= scope_margin 0.06, MiniLM similarity to scope.yaml examples) is answered even when no chunk reaches it (D21).
 
 ## Generation
 - Ollama options: temperature 0.1, num_ctx 8192 (always sent explicitly), num_predict 1500.

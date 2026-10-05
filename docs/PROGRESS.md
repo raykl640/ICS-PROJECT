@@ -308,3 +308,29 @@ Done:
 Open issues:
 - Still provisional: rerun `eval/tune_threshold.py` once eval/ground_truth.json exists (HUMAN_TODO).
 - Recall gaps below any sane threshold: pregnancy dismissal (s.46 not in top 3) and phone-refund wording (top -7.8).
+
+## Fix: answer any wording, refuse only unrelated questions (2026-10-05)
+Done:
+- retrieval/scope.py + scope.yaml (98 in-scope paraphrase anchors in 9 areas, 67 out-of-scope incl. foreign law): MiniLM
+  margin; pipeline null only if < 2 candidates, or out of scope and the reranker is not confident (D21). config: scope_path,
+  scope_margin 0.06, scope_neighbours 3; relevance_threshold -8.0 -> -2.0. ContextDebug.scope_margin + "scope" timing.
+- Probe results (real stack): 106/109 legal questions answered, 60/63 unrelated refused; Kiswahili/slang through the API in
+  SW mode answered; "hello"/"bake a cake" refused. 681 tests + 7 real scope tests pass.
+Open issues:
+- Retrieval recall for some lay wording: pregnancy dismissal misses s.46 in the top 5; "fridge broke" gets generic Consumer
+  Protection sections. Candidate fix: lay -> legal query expansion (not done).
+- tune_threshold.py sweeps relevance_threshold only; add a scope_margin sweep once eval/ground_truth.json exists.
+- CLAUDE.md hard rule 2 still states the threshold-only rule (owner's file, not edited): see D21.
+
+## v2 plan (2026-10-05)
+Done:
+- Owner asked for a full UI/UX rework plus accounts with saved history, a library of chats/answers/letters, a laws browser and
+  search, "legal knowledge of the day", and Windows/Linux desktop builds. Planned as M11–M18: docs/DESIGN_V2.md,
+  docs/BUILD_PLAN.md "v2", prompts/milestones/M11–M18.md; new gates in prompts/HUMAN_STEPS.md and docs/HUMAN_TODO.md.
+Decisions (owner): pywebview + PyInstaller; small installer + first-run wizard + USB offline bundle; per-account encrypted
+history with a recovery code; highlights = curated sections + local-LLM blurbs, flagged until approved.
+Decisions (builder): Radix primitives + lucide icons + bundled @fontsource fonts; SQLite via stdlib; argon2id + AES-GCM; signed-in
+answers keep generating in the background with a notification; follow-up questions; planned deviations D22–D26.
+Open issues:
+- The D21 scope fix (scope.py, pipeline changes) is still uncommitted; commit it before M11.
+Next: M11 Design language (run interactively).

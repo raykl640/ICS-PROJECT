@@ -12,7 +12,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D7, D8, D16 | SSE, endpoints, sessions | in force |
 | D9 | citation verification | in force |
 | D10 | parameter values | in force |
-| D13, D20 | inclusive threshold; value -8.0 (was 0.0) | in force; the value is provisional until tuned (HUMAN_TODO) |
+| D13, D20, D21 | null decision: inclusive threshold -2.0 plus semantic scope check | in force; D20's value superseded by D21; provisional until tuned (HUMAN_TODO) |
 | D14 | generation prompt rules and budget | in force |
 | D17 | frontend shape | in force |
 | D18 | evaluation harness | in force; results pending human input |
@@ -212,3 +212,26 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
   27 hand-written questions, not the M9 ground truth; still provisional until `eval/tune_threshold.py` runs on the human
   set. Still refused at -8.0: "can i be fired for being pregnant" (-9.5) and "I bought a phone that stopped working after
   a week, can I get a refund?" (-8.9): a retrieval-recall problem, not a threshold one.
+
+## D21 Null decision: semantic scope check plus cross-encoder threshold (§7.5) — supersedes D20's value
+- What: the fixed fallback is used only when (a) fewer than min_confident_chunks (2) candidates exist, or (b) the question
+  is out of scope by both checks: its scope margin (retrieval/scope.py: mean of the top 3 MiniLM cosine similarities to
+  the in-scope examples in scope.yaml minus the same for the out-of-scope examples) is below scope_margin 0.06, and fewer
+  than 2 reranked chunks reach relevance_threshold, now -2.0. ARCHITECTURE §7.5 and CLAUDE.md hard rule 2 describe only
+  the threshold rule; the LLM is still never called on the null path.
+- Why: the owner requires any wording to be answered and only unrelated questions refused. The cross-encoder alone cannot
+  do that: lay wording of covered situations ("bought a fridge, broke in a week, they refuse to replace" -10.6) scores
+  like unrelated text ("chapati recipe" -11.1), so no single threshold separates them (D20's -8.0 still refused many).
+  The keyword router and dense similarity to statute text overlap too ("weather in Nairobi" is closer to the corpus than
+  "matatu overcharged me"). Similarity to example questions separates intent rather than wording, uses the embedder
+  already loaded (about 10 ms), needs no new model and no index rebuild.
+- Values: chosen on 68 hand-written probe questions, then checked on 65 new ones written before looking at their
+  scores, plus the 15 English functional questions. Before 4 Kenyan everyday-English examples (boda boda, matatu, askari,
+  plot owner) were added, the fresh set missed 2 legal questions; after, 1 (Sheng "askari wanted kitu kidogo"). Totals:
+  106/109 legal questions answered (the 3 misses are Kiswahili/Sheng sent untranslated in EN mode; through the API in SW
+  mode they are answered), 60/63 unrelated refused. Answered although unrelated: "how to register a company in Kenya"
+  (Kenyan law outside the corpus; the model is told to say when the text does not cover it), "labour laws in India",
+  "eviction rules in New York".
+- Impact: far fewer fallbacks; some foreign or out-of-corpus legal questions now reach the model, which answers only from
+  Kenyan text with Kenyan citations. scope.yaml holds paraphrase anchors only, no statute text. eval/tune_threshold.py
+  still sweeps relevance_threshold alone; with the scope check in front, its recommendation applies to the reranker path only.

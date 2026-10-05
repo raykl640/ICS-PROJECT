@@ -12,6 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT_DIR / "data"
 SOURCES_PATH = DATA_DIR / "sources.yaml"
 DOMAINS_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "domains.yaml"
+SCOPE_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "scope.yaml"
 LANG_DIR = ROOT_DIR / "backend" / "app" / "lang"
 FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
 EVAL_DIR = ROOT_DIR / "eval"
@@ -68,6 +69,7 @@ class Settings(BaseSettings):
     manifest_path: Path = DATA_DIR / "corpus_manifest.json"
     parse_report_path: Path = DATA_DIR / "processed" / "parse_report.md"
     domains_path: Path = DOMAINS_PATH
+    scope_path: Path = SCOPE_PATH
     glossary_path: Path = LANG_DIR / "glossary.json"
     ui_strings_path: Path = LANG_DIR / "ui_strings.json"
     acts: list[ActSpec] = Field(default_factory=lambda: load_acts(SOURCES_PATH))
@@ -89,8 +91,12 @@ class Settings(BaseSettings):
     min_filtered_hits: int = Field(5, gt=0)
     top_n: int = Field(20, gt=0)
     rerank_top: int = Field(5, gt=0)
-    relevance_threshold: float = -8.0
+    relevance_threshold: float = -2.0
     min_confident_chunks: int = Field(2, gt=0)
+    # Semantic scope check (retrieval/scope.py): a question whose margin reaches scope_margin is answered even when the
+    # cross-encoder is not confident; the fallback is used only when both say no (DEVIATIONS D21).
+    scope_margin: float = 0.06
+    scope_neighbours: int = Field(3, gt=0)
     embed_split_over_words: int = Field(200, gt=0)
     embed_window_words: int = Field(180, gt=0)
     embed_window_stride: int = Field(120, gt=0)

@@ -20,11 +20,13 @@ so users, examiners and future maintainers can judge its answers. It follows ARC
   citations of Schedules (not extracted); claims made without any citation.
 - **Truncation:** five long sections may not fit the 8192-token context. The lowest-ranked sections are shortened first, and
   the Sources panel flags them as truncated. The model may then miss a sentence that matters.
-- **Null fallback:** when fewer than two chunks reach the relevance threshold, the system refuses with a fixed message and
-  never calls the model. The threshold (cross-encoder logit ≥ 0.0) is provisional. On the development laptop, 4 of 10
-  in-scope lay questions were refused (eviction, compulsory land acquisition, legal aid, a faulty-phone refund), while
-  off-topic questions scored about −10. It must be tuned with human ground truth (`eval/tune_threshold.py`); until then some
-  answerable questions get the fallback.
+- **Null fallback:** the system refuses with a fixed message, and never calls the model, only when the question is
+  out of scope by both checks: its MiniLM similarity to the in-scope examples (retrieval/scope.yaml) does not beat the
+  out-of-scope ones by 0.06, and fewer than two chunks reach cross-encoder logit −2.0 (D21). On hand-written probe sets
+  this answered 106 of 109 legal questions however worded (the 3 refused were Kiswahili/Sheng sent in EN mode, so not
+  translated; in SW mode they are answered) and refused 60 of 63 unrelated ones. Remaining errors: foreign-law
+  questions about covered topics ("eviction rules in New York") get an answer from Kenyan text, with Kenyan citations.
+  Both values are provisional until tuned with human ground truth.
 
 ## 2. Kiswahili is best effort
 

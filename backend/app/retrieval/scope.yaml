@@ -1,0 +1,195 @@
+# Scope examples (loaded by backend/app/retrieval/scope.py).
+# A question counts as in scope when its MiniLM embedding sits closer to the in_scope examples than to the out_of_scope
+# ones (mean of the top scope_neighbours cosine similarities, margin >= scope_margin in config.py).
+# in_scope: everyday ways people describe situations the corpus Acts deal with, grouped by area. They are paraphrase
+#           anchors, not legal statements: no statute text, section numbers or answers belong here.
+# out_of_scope: topics with nothing to do with the corpus, including other countries' law. Kenyan legal topics the
+#               corpus does not cover (tax, company registration, family law) are deliberately in neither list:
+#               they reach the model, which says when the retrieved text does not answer them.
+# Not used by the tests (they use a synthetic table). Changing this file needs no index rebuild.
+in_scope:
+  employment:
+    - My employer dismissed me without giving any reason
+    - I lost my job and the company did not pay my final dues
+    - The manager terminated my contract over the phone
+    - My salary is always late and sometimes not paid at all
+    - The company is cutting jobs, what compensation should I get
+    - Am I allowed sick leave with pay
+    - My supervisor makes me work extra hours and never pays overtime
+    - I work as a nanny and my employer withholds my wages
+    - Do I have to get a written contract for my job
+    - The boss deducted money from my pay without explaining
+    - Can an employer refuse to give me a certificate of service after I leave
+    - I was suspended at work without a hearing
+    - How many hours a week can a worker be made to work
+    - Can a young child be hired to work on a farm
+    - I was hurt on the job and my employer will not help
+    - My wife is expecting a baby, can I take time off work
+    - My employer will not release my documents after I resigned
+  tenancy_and_rent:
+    - My landlord wants to throw me out of the house
+    - The landlord changed the locks while I was away
+    - The owner of the building switched off electricity to make me leave
+    - Can the landlord increase my rent whenever he wants
+    - I moved out but the landlord kept my security deposit
+    - My tenant has not paid rent for months, what can I do
+    - The landlord seized my furniture because of rent arrears
+    - The house I rent is falling apart and the landlord will not repair it
+    - How much notice must a landlord give before ending a tenancy
+    - My business premises lease is being terminated by the owner
+    - The caretaker is harassing tenants to vacate the flats
+    - Who decides a fair rent for a house
+    - The plot owner wants me out of my single room
+  land:
+    - Someone has fenced off part of my plot
+    - A relative sold our family land without my consent
+    - How do I transfer land after buying it
+    - I bought a plot and the seller refuses to hand over the documents
+    - The county wants to take my farm for a public project
+    - How is compensation calculated when the state takes private land
+    - How long can I lease public land
+    - My neighbour is building on my side of the fence
+    - Can my land be registered in two names
+    - Squatters have settled on my land
+  consumer:
+    - I was sold a defective product and the shop refuses to take it back
+    - The trader lied about the quality of the goods
+    - The seller charged me more than the advertised price
+    - I paid online but the goods never arrived
+    - The supplier sold me expired food
+    - My new television stopped working and the shop will not repair it
+    - The contract I signed with the company has unfair terms hidden in the small print
+    - A company keeps sending me unsolicited goods and demanding payment
+    - The car dealer hid the fact that the vehicle had been in an accident
+    - Customer service refuses to honour the warranty
+  police:
+    - A police officer hit me during an arrest
+    - The officers demanded money from me at a checkpoint
+    - How do I report misconduct by a police officer
+    - Police shot a protester in our area
+    - An officer confiscated my belongings and kept them
+    - Can the police use force on someone who is not resisting
+    - The police refused to record my complaint at the station
+    - Police officers threatened me at night
+    - Who investigates complaints against the police
+    - An askari demanded a bribe from me
+  criminal_procedure:
+    - My brother is in custody and has not been charged
+    - How soon must a suspect be taken before a magistrate
+    - Can I be released on bond while the case continues
+    - The police searched my home without showing any document
+    - What happens when a person is charged in court
+    - Do I have to answer questions after being arrested
+    - My case keeps being adjourned, what can I do
+    - Can a private citizen arrest a thief
+    - How do I appeal against a conviction
+    - My relative was detained over the weekend without seeing a judge
+  traffic:
+    - I was stopped for overspeeding, what is the penalty
+    - The traffic officer took my driving licence
+    - What happens if I drive a car that is not insured
+    - I hit a pedestrian, what should I do
+    - Can the police hold my vehicle after an accident
+    - Is it an offence to drive after drinking alcohol
+    - The bus conductor charged passengers more than the fare
+    - Do I need a licence to ride a motorbike taxi
+    - My car has no inspection sticker, can I be fined
+    - The boda boda rider was fined by traffic police
+    - The matatu was overloaded with passengers
+  constitutional_rights:
+    - I was treated unfairly because of my religion
+    - The government stopped us from holding a peaceful demonstration
+    - Is it legal for the state to read my private messages
+    - I was denied a job because of my disability
+    - Do I have the right to clean water
+    - Can a citizen be denied an identity card
+    - A public hospital refused to treat me in an emergency
+    - Can my child be refused admission to a public school
+    - Is it lawful for officials to evict people without notice
+    - Women are being paid less than men for the same job
+    - Can someone be held in prison without trial
+  legal_aid:
+    - I need a lawyer but I have no money
+    - Where can poor people get help with a court case
+    - Can the state give me an advocate for my criminal case
+    - Who qualifies for legal assistance paid by the government
+    - How do I apply for help from a legal aid provider
+    - Is there free legal advice for refugees and children
+out_of_scope:
+  greetings_and_chat:
+    - Good morning
+    - Hi there how are you
+    - Thank you so much
+    - Who made you
+    - Are you a robot
+    - Can you talk in a funny voice
+    - I am bored, entertain me
+    - Goodbye
+  cooking_and_home:
+    - How long should I boil eggs
+    - Give me a recipe for pilau
+    - How do I remove stains from a white shirt
+    - What is the best way to clean a carpet
+    - How to make mandazi soft
+    - How do I grow sukuma wiki in a small garden
+  health_and_fitness:
+    - What are the symptoms of malaria
+    - How much water should I drink a day
+    - Is it safe to take paracetamol with coffee
+    - What exercises help with back pain
+    - How can I sleep better at night
+    - What foods are good for diabetes
+  technology:
+    - How do I reset my phone to factory settings
+    - Which laptop is best for programming
+    - My wifi keeps disconnecting
+    - How do I learn JavaScript
+    - How to recover deleted photos on Android
+    - What is artificial intelligence
+  science_and_education:
+    - Why is the sky blue
+    - What is the capital of Australia
+    - Explain how volcanoes form
+    - How many bones are in the human body
+    - Solve this equation for x
+    - Who wrote Things Fall Apart
+    - What is the speed of light
+  sports_and_entertainment:
+    - Who is the best footballer in the world
+    - When does the Premier League start
+    - Recommend a good movie to watch tonight
+    - Who won the Olympic marathon
+    - What are the rules of chess
+    - Play me some music
+  business_and_money:
+    - How do I start a poultry business
+    - Which crops are most profitable to farm
+    - How do I save money on a small salary
+    - What is the exchange rate of the dollar today
+    - How do I invest in the stock market
+    - Give me ideas for a small business
+  travel_and_foreign_law:
+    - What is the best time to visit Mombasa beaches
+    - How do I get a tourist visa for Dubai
+    - What are the immigration rules in Canada
+    - How does the American Supreme Court work
+    - What is the minimum wage in Germany
+    - How do I become a citizen of the United Kingdom
+    - What are the gun laws in Texas
+    - How do I file a patent with the US patent office
+    - How does copyright law work in the United States
+    - How do I pay taxes in America
+    - What rights do I have under the US constitution
+    - How does divorce work in England
+  weather_and_news:
+    - Will it rain tomorrow
+    - What is the temperature in Kisumu today
+    - What is happening in the news today
+    - When is the long rains season
+  creative_and_misc:
+    - Write a story about a lion
+    - Tell me something funny
+    - Translate hello into French
+    - What is the meaning of life
+    - Give me a motivational quote
+    - Random words xyz test

@@ -20,7 +20,7 @@ flowchart TD
         D --> F[RRF k=60 → top 20]
         S --> F
         F --> X[cross-encoder ms-marco<br/>→ top 5]
-        X --> C{≥ 2 chunks with<br/>score ≥ threshold?}
+        X --> C{in scope by MiniLM examples<br/>or ≥ 2 chunks with score ≥ threshold?}
         C -->|no| N[session done, fallback<br/>LLM never called]
         C -->|yes| P[session pending<br/>5 chunks stored]
     end
@@ -100,7 +100,7 @@ limits in `frontend/src/limits.json`, and a test fails if they drift.
 | §5.2 domain filter on FAISS only | filter on both indexes, per-leg widening below 5 hits, explicit Act/section/Article refs override and inject | D3 |
 | §2 all sections indexed | repealed sections kept in chunks.json but not indexed; preamble, TOC, amendment notes not chunked; Schedules are one chunk each | D4, D11 |
 | §7.1 prompt verbatim | §7.1 text plus fixed rules (headers, citation format, placeholders, question-as-data); token budget with truncation | D5, D14 |
-| §7.5 "above a threshold" | inclusive `>=`; threshold 0.0 until tuned with human ground truth | D13 |
+| §7.5 "above a threshold" | inclusive `>=`, threshold −2.0; fallback only if the semantic scope check also fails | D13, D21 |
 | §8.2 translate before streaming | English draft streams live; `translated` event replaces it; citations masked through MarianMT | D6, D15 |
 | §8.2 opus-mt-sw-en | opus-mt-swc-en (sw-en does not exist on the Hub) | D15 |
 | §8 five endpoints | six (adds POST /api/feedback); richer SSE events; explicit session states | D7, D8, D16 |

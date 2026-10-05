@@ -9,6 +9,7 @@ from backend.app.retrieval.hybrid import HybridRetriever
 from backend.app.retrieval.pipeline import ContextPipeline
 from backend.app.retrieval.refs import RefExtractor
 from backend.app.retrieval.router import DomainTable, Router
+from backend.app.retrieval.scope import ScopeClassifier, ScopeExamples
 from backend.app.retrieval.sparse import SparseIndex
 from backend.app.retrieval.store import ChunkStore
 from backend.app.retrieval.windows import WindowSpec
@@ -33,6 +34,10 @@ TABLE = DomainTable.build(
     ACTS,
 )
 EMB = FakeEmbedder()
+SCOPE = ScopeExamples(
+    in_scope=["my boss sacked me", "the landlord kicked me out", "police beat me"],
+    out_scope=["chapati recipe", "football score", "weather tomorrow"],
+)
 STORE = ChunkStore(corpus())
 
 
@@ -53,4 +58,5 @@ def fake_retriever(parts: tuple[DenseIndex, SparseIndex], settings: Settings) ->
 def fake_pipeline(sparse_dir: Path, settings: Settings, reranker: CrossEncoderLike | None = None) -> ContextPipeline:
     """Full retrieve -> rerank pipeline over the synthetic corpus; FakeReranker unless one is given."""
     retriever = fake_retriever(build_parts(sparse_dir), settings)
-    return ContextPipeline(retriever, reranker or FakeReranker(), settings)
+    scope = ScopeClassifier(EMB, SCOPE, settings.scope_neighbours)
+    return ContextPipeline(retriever, reranker or FakeReranker(), scope, settings)
