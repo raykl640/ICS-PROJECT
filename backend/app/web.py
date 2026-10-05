@@ -15,8 +15,12 @@ _HEADERS = (
     (b"permissions-policy", b"camera=(), microphone=(), geolocation=()"),
     (b"cross-origin-opener-policy", b"same-origin"),
 )
+# sha256 of the one inline script in frontend/index.html (applies theme/text settings before first paint);
+# test_frontend_contract.py recomputes it, so editing that script without updating this hash fails the tests.
+PREPAINT_SCRIPT_SHA256 = "VfkE1Zc3MzC7WjYhoxEUH1BGZj7Ee6FNUzHB7gBwt0I="
 _CSP = (
-    b"default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'; "
+    b"default-src 'self'; script-src 'self' 'sha256-" + PREPAINT_SCRIPT_SHA256.encode() + b"'; "
+    b"img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'; "
     b"frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 )
 # FastAPI's Swagger/ReDoc pages load their assets from a CDN, which the CSP would block.

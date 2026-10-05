@@ -1,7 +1,8 @@
+import { Copy, Download } from "lucide-react";
 import { useState } from "react";
 import { letterUrl } from "../api/client";
+import { Button, ButtonLink } from "../design/components/Button";
 import { useI18n } from "../i18n";
-import { BUTTON_SECONDARY } from "./buttons";
 
 type CopyState = "idle" | "copied" | "failed";
 
@@ -20,29 +21,29 @@ export function LetterTab({ text, sessionId, finished }: { text: string; session
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-line bg-paper px-5 py-6 font-serif text-[1.0625rem] leading-relaxed whitespace-pre-wrap shadow-inner sm:px-8">
+    <div className="flex flex-col gap-4">
+      <div className="rounded-md border border-line-subtle bg-raised px-5 py-6 font-reading leading-relaxed whitespace-pre-wrap sm:px-8">
         {text}
       </div>
-      {text.includes("[") && <p className="text-base text-muted">{t("letter_hint")}</p>}
+      {text.includes("[") && <p className="text-ink-muted">{t("letter_hint")}</p>}
       {finished ? (
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={copyLetter} className={BUTTON_SECONDARY}>
+          <Button icon={<Copy size={18} />} onClick={copyLetter}>
             {t("copy_letter")}
-          </button>
-          <a href={letterUrl(sessionId, "txt")} download className={BUTTON_SECONDARY}>
+          </Button>
+          <ButtonLink href={letterUrl(sessionId, "txt")} download icon={<Download size={18} />}>
             {t("download_letter_txt")}
-          </a>
-          <a href={letterUrl(sessionId, "docx")} download className={BUTTON_SECONDARY}>
+          </ButtonLink>
+          <ButtonLink href={letterUrl(sessionId, "docx")} download icon={<Download size={18} />}>
             {t("download_letter_docx")}
-          </a>
-          <span role="status" className="text-sm font-medium text-muted">
+          </ButtonLink>
+          <span role="status" className="text-sm font-semibold text-ink-muted">
             {copy === "copied" && t("copied")}
             {copy === "failed" && t("copy_failed")}
           </span>
         </div>
       ) : (
-        <p className="text-sm text-muted">{t("letter_wait")}</p>
+        <p className="text-sm text-ink-muted">{t("letter_wait")}</p>
       )}
     </div>
   );

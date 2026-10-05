@@ -17,7 +17,8 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D17 | frontend shape | in force |
 | D18 | evaluation harness | in force; results pending human input |
 | D19 | operations: offline setup, preflight, run scripts, Docker, portability | in force |
-| D27 | v2 design system mechanics (M11) | in force |
+| D27 | v2 design system mechanics (M11) | (a) superseded by D28; rest in force |
+| D28 | v2 app shell, static theme, pre-paint script, guest Ask (M12) | in force |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -253,3 +254,30 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 - Impact: in M12, main.tsx must apply the theme before the first render (else a 120 ms colour fade can show at load), and
   the style guide becomes a dev-only route. A new colour role needs an entry in COLOR_ROLES, in all three theme files and
   in the PAIRS list in contrast.ts.
+
+## D28 v2 app shell: static theme, pre-paint script, guest Ask — feat(M12)
+- What:
+  - (a) The M11 gate chose "Mahakama colours + Jua radius". The theme is now static CSS (frontend/src/design/tokens.css)
+    keyed on data-theme/data-contrast on <html>. That replaces D27(a), the runtime CSSOM tokens. The contrast test parses
+    tokens.css and applies the cascade itself. The TS theme files, the other two directions and their four fonts are gone.
+  - (b) An inline script in index.html sets data-theme/contrast/text/motion and lang from localStorage before first paint.
+    The CSP gains `script-src 'self' 'sha256-…'` for exactly that script (backend/app/web.py PREPAINT_SCRIPT_SHA256).
+    test_frontend_contract.py recomputes the hash from frontend/index.html and dist/index.html. A vitest runs the script
+    against settings.ts on 28 stored/OS combinations.
+  - (c) Routes in M12: / (Home), /ask, /settings, /how-it-works, a 404, and /styleguide in dev builds only. The sidebar lists
+    only these, since Library, Laws and Today do not exist yet. /ask holds the one current question in memory (app-level
+    provider, survives moving between pages, lost on reload). /ask/:conversationId waits for M14's stored conversations.
+  - (d) The composer's EN/SW sets the answer language for that question. It starts at the interface language, which
+    Settings and the top bar switch.
+  - (e) Topic tiles use ARCHITECTURE §2's domain wording. §2 has no row for the 10th Act, the Legal Aid Act, so its
+    tile reads "Legal aid and legal representation", taken from that Act's router terms (retrieval/domains.yaml).
+    Clicking a tile starts the question with the Act's name, which the router treats as an explicit Act.
+  - (f) ETA: averages of time to first token, tokens per second and answer length from answers fully streamed in this
+    browser (localStorage "hakiai.speed", numbers only). Replays and reconnects are not samples. No estimate is shown
+    before the first sample, or once an answer runs longer than the average.
+  - (g) The answer-ready toast appears only when the answer finishes while the user is on another page.
+- Why: (a)/(b) the milestone requires attributes before first paint; colours must then follow those attributes without
+  JavaScript, under the existing CSP. (c) no dead links and no persistence before accounts (M13/M14). (e) no invented
+  legal descriptions. (f) an honest estimate, never a made-up number.
+- Impact: editing the pre-paint script requires updating the hash in web.py (the tests fail otherwise). A new colour role
+  needs tokens.css (all four blocks if it changes with contrast), COLOR_ROLES and PAIRS.

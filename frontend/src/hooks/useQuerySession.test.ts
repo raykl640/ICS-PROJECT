@@ -52,6 +52,9 @@ test("queued -> generating -> done, tokens split into sections and sources loade
   expect(state.phase).toBe("done");
   expect(state.done).toEqual(DONE);
   expect(state.draft.steps).toBe("1. Write down the dates.");
+  expect(state).toMatchObject({ connections: 1, tokens: 2 });
+  expect(state.generatingAt).not.toBeNull();
+  expect(state.lastTokenAt! >= state.firstTokenAt!).toBe(true);
   expect(stream.closed).toBe(true);
   await waitFor(() => expect(result.current.state.sources).toEqual(SOURCES));
 });
@@ -101,6 +104,8 @@ test("a dropped connection reconnects and the replay replaces the partial answer
   act(() => second.emit("done", DONE));
   expect(result.current.state.draft.rights).toBe("Your employer must give a reason (Sample Employment Act, s. 4).");
   expect(result.current.state.reconnecting).toBe(false);
+  // The replay restarts the count, and a second connection marks the timing as unusable for the ETA.
+  expect(result.current.state).toMatchObject({ connections: 2, tokens: 1 });
 });
 
 test("after the last reconnect fails the session is disconnected; retry asks again", async () => {

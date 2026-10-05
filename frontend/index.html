@@ -4,10 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f6f4ee" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f1512" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f2e7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1712" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>HakiAI — Kenyan legal information</title>
+    <!-- Pre-paint: same rules as src/app/settings.ts. Its sha256 is allowed by the CSP in backend/app/web.py
+         (test_frontend_contract.py fails if they differ), so edit both together. -->
+    <script>
+      (function () {
+        var s = {};
+        try {
+          s = JSON.parse(localStorage.getItem("hakiai.settings") || "{}") || {};
+        } catch (e) {}
+        var m = function (q) {
+          return !!(window.matchMedia && window.matchMedia(q).matches);
+        };
+        var d = document.documentElement;
+        d.setAttribute(
+          "data-theme",
+          s.theme === "light" || s.theme === "dark" ? s.theme : m("(prefers-color-scheme: dark)") ? "dark" : "light",
+        );
+        d.setAttribute(
+          "data-contrast",
+          s.contrast === "standard" || s.contrast === "more"
+            ? s.contrast
+            : m("(prefers-contrast: more)")
+              ? "more"
+              : "standard",
+        );
+        d.setAttribute("data-text", /^(sm|md|lg|xl)$/.test(s.text) ? s.text : "md");
+        d.setAttribute("data-motion", s.motion === "reduce" ? "reduce" : "system");
+        d.setAttribute("lang", s.language === "sw" ? "sw" : "en");
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

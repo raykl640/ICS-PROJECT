@@ -1,5 +1,9 @@
 # HakiAI v2 design directions (M11)
 
+**Outcome (M11 gate):** "Mahakama colours + Jua radius". M12 made it the only theme (frontend/src/design/tokens.css:
+Mahakama palette and fonts, with Jua's 8/14/22 px corners). The Jua and Kitabu screenshots below remain as the record of
+the choice; the style guide now lives at /styleguide in dev builds, without a direction switcher.
+
 Three visual directions for the v2 interface, built from the same components so that only the design tokens differ. Pick
 one, or a mix, and write the choice into `.gates/M11-design.ok`. M12 builds the whole app on it.
 
@@ -7,10 +11,8 @@ one, or a mix, and write the choice into `.gates/M11-design.ok`. M12 builds the 
 - Screenshots: `docs/design/<direction>/<screen>-<width>-<mode>.png`, where the screens are `home`, `conversation` and
   `reader`, the widths are 1280 and 375 px, and the modes are light and dark. Each direction also has
   `conversation-375-light-sources.png`, which shows the sources panel as a bottom sheet on a phone.
-- Live: `cd frontend && npm run dev`, then open <http://localhost:5173/styleguide>. The bar at the top switches direction,
-  light/dark, standard/more contrast, text size (SM–XL) and view (all components, or one of the three mock screens). This
-  page exists only in dev builds.
-- Regenerate the screenshots: `cd frontend && npm run design:screens`.
+- Live (after M12): `cd frontend && npm run dev`, then open <http://localhost:5173/styleguide> for every component on the
+  chosen theme. The M11 switcher and mock screens were removed with the unchosen directions.
 
 All text in the mock screens is placeholder (lorem ipsum, "Sample Act (placeholder)", "Section 0.x"). None of it is
 statute text and none of it is a claim about Kenyan law.

@@ -1,17 +1,19 @@
 import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createRef } from "react";
+import { useState } from "react";
 import limits from "../limits.json";
 import { renderIn } from "../test/render";
-import { QueryPanel } from "./QueryPanel";
+import { Composer } from "./Composer";
+
+function Harness({ busy = false, onSubmit }: { busy?: boolean; onSubmit: (q: string, l: string) => void }) {
+  const [value, setValue] = useState("");
+  return <Composer label="Your question" value={value} onChange={setValue} onSubmit={onSubmit} busy={busy} examples />;
+}
 
 function setup(busy = false) {
   const onSubmit = vi.fn();
-  const onLanguage = vi.fn();
-  renderIn(
-    <QueryPanel busy={busy} compact={false} onLanguage={onLanguage} onSubmit={onSubmit} textareaRef={createRef()} />,
-  );
-  return { onSubmit, onLanguage, box: screen.getByRole("textbox", { name: "Your question" }) };
+  renderIn(<Harness busy={busy} onSubmit={onSubmit} />);
+  return { onSubmit, box: screen.getByRole("textbox", { name: "Your question" }) };
 }
 
 test("the counter tracks the limit and input stops at it", () => {
@@ -23,22 +25,27 @@ test("the counter tracks the limit and input stops at it", () => {
   ).toBeInTheDocument();
 });
 
-test("Ctrl+Enter submits the trimmed question; blank questions cannot be sent", async () => {
+test("Ctrl+Enter submits the trimmed question in the chosen language; blank questions cannot be sent", async () => {
   const user = userEvent.setup();
   const { box, onSubmit } = setup();
   expect(screen.getByRole("button", { name: "Ask" })).toBeDisabled();
+  await user.click(screen.getByRole("radio", { name: "Kiswahili" }));
   await user.type(box, "  Why was I fired?  ");
   await user.keyboard("{Control>}{Enter}{/Control}");
-  expect(onSubmit).toHaveBeenCalledWith("Why was I fired?");
+  expect(onSubmit).toHaveBeenCalledWith("Why was I fired?", "sw");
 });
 
-test("example chips fill the box and the language choice is reported", async () => {
+test("the answer language starts as the interface language", async () => {
+  const onSubmit = vi.fn();
+  renderIn(<Harness onSubmit={onSubmit} />, "sw");
+  expect(screen.getByRole("radio", { name: "Kiswahili" })).toBeChecked();
+});
+
+test("example chips fill the box; the disclaimer is always shown", async () => {
   const user = userEvent.setup();
-  const { box, onLanguage } = setup();
+  const { box } = setup();
   await user.click(screen.getByRole("button", { name: /fired me without notice/ }));
   expect(box).toHaveValue("My employer fired me without notice. What are my rights?");
-  await user.click(screen.getByRole("radio", { name: "Kiswahili" }));
-  expect(onLanguage).toHaveBeenCalledWith("sw");
   expect(screen.getByText(/legal information, not legal advice/)).toBeInTheDocument();
 });
 

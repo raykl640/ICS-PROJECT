@@ -6,7 +6,7 @@ classifiers), npm licences from each package's `package.json`, and model licence
 
 **Summary:** every dependency and model is under a permissive licence (MIT, BSD, 0BSD, Apache-2.0, ISC, PSF, MIT-CMU);
 the bundled fonts are under the SIL Open Font License 1.1. The only
-weak-copyleft licence is MPL-2.0, used by certifi and tqdm. It is file-level and applies only if those files are modified,
+weak-copyleft licence is MPL-2.0, used by certifi and tqdm (and, as a test-only tool, axe-core). It is file-level and applies only if those files are modified,
 which this project does not do. No GPL or AGPL code is bundled.
 
 ## Models (downloaded once by `scripts/setup_offline.py`, never redistributed with the code)
@@ -120,21 +120,21 @@ Direct dependencies are marked ●.
 | types-requests | 2.33.0.20260906 | Apache-2.0 |
 | pip-audit (audit only, not pinned) | 2.10.1 | Apache-2.0 |
 
-## Frontend (production dependencies: 145 packages, updated in M11)
+## Frontend (production dependencies: 144 packages, updated in M12)
 
 | Licence | Packages |
 |---|---|
-| MIT | 135, including react 19.3.0, react-dom 19.3.0, react-markdown 10.1.0, scheduler, the unified/remark/rehype/mdast/hast utilities and the @radix-ui/* primitives (dialog 1.1.23, dropdown-menu 2.1.24, tabs 1.1.21, tooltip 1.2.16, popover 1.1.23, toast 1.2.23, toggle-group 1.1.19, scroll-area 1.2.18, with their internal packages) |
+| MIT | 139, including react 19.3.0, react-dom 19.3.0, react-router 8.4.0, react-markdown 10.1.0, scheduler, the unified/remark/rehype/mdast/hast utilities and the @radix-ui/* primitives (dialog 1.1.23, dropdown-menu 2.1.24, tabs 1.1.21, tooltip 1.2.16, popover 1.1.23, toast 1.2.23, toggle-group 1.1.19, scroll-area 1.2.18, with their internal packages) |
 | ISC | 2 (lucide-react 1.52.0, @ungap/structured-clone 1.4.0) |
 | 0BSD | 1 (tslib 2.8.1, pulled in by Radix) |
-| OFL-1.1 | 6 font packages, all 5.3.0: @fontsource-variable/source-serif-4, source-sans-3, nunito, lora, literata, ibm-plex-sans |
+| OFL-1.1 | 2 font packages, both 5.3.0: @fontsource-variable/source-serif-4 and source-sans-3 |
 
 The fonts are bundled with the app (offline). OFL-1.1 allows bundling and redistribution with software; it only forbids
-selling the fonts on their own and reusing their reserved names for modified versions. After the M11 design gate only the
-chosen direction's two families stay in the app bundle; the others are referenced by the dev-only style guide.
+selling the fonts on their own and reusing their reserved names for modified versions. The four fonts of the two directions
+not chosen at the M11 gate were removed in M12.
 
-The development dependencies (Vite, Tailwind, ESLint, Vitest, Playwright, TypeScript) are build and test tools only and
-are not part of the bundle. Regenerate this table with `npm ls --omit=dev --all --json` and each package's `license` field.
+The development dependencies (Vite, Tailwind, ESLint, Vitest, Playwright, TypeScript, and @axe-core/playwright 4.13.0 with
+axe-core, MPL-2.0, for accessibility checks in e2e) are build and test tools only and are not part of the bundle. Regenerate this table with `npm ls --omit=dev --all --json` and each package's `license` field.
 
 ## Dependency audit (2026-10-05)
 
@@ -144,6 +144,7 @@ are not part of the bundle. Regenerate this table with `npm ls --omit=dev --all 
 | `pip-audit` (installed .venv) | 122 installed packages | No known vulnerabilities. torch (+cpu) and the local hakiai-backend package were not audited. |
 | `npm audit` (frontend) | 376 packages (89 prod, 288 dev) | 0 vulnerabilities. |
 | `npm audit --omit=dev` (frontend, M11, after adding Radix, lucide and fonts) | 145 prod packages | 0 vulnerabilities. |
+| `npm audit` (frontend, M12, after adding react-router and @axe-core/playwright, removing 4 fonts) | all packages | 0 vulnerabilities. |
 
 Nothing was upgraded. Rerun both audits before each release, and upgrade a pin only when a finding applies to how this
 project uses the package.

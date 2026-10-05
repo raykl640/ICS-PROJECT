@@ -107,3 +107,28 @@ export function EmptyState({
     </div>
   );
 }
+
+const NOTICE_TONES = { info: "border-l-info", warn: "border-l-warn", danger: "border-l-danger" } as const;
+
+/** A bordered notice block; the tone is a coloured edge, the words carry the meaning. */
+export function Notice({
+  tone,
+  title,
+  children,
+}: {
+  tone: keyof typeof NOTICE_TONES;
+  title?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      className={cx(
+        "rounded-md border border-l-4 border-line-subtle bg-surface px-4 py-3 text-ink",
+        NOTICE_TONES[tone],
+      )}
+    >
+      {title && <p className="font-semibold">{title}</p>}
+      {children}
+    </div>
+  );
+}

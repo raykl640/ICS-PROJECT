@@ -1,8 +1,9 @@
+import { RotateCcw } from "lucide-react";
 import type { Health } from "../api/types";
+import { Button } from "../design/components/Button";
+import { Notice } from "../design/components/Display";
 import { isEngineError, type SessionError } from "../hooks/session";
 import { type StringKey, useI18n } from "../i18n";
-import { Banner } from "./Banner";
-import { BUTTON_PRIMARY } from "./buttons";
 
 /** The user-facing message key, and whether asking again could help. */
 function describe(error: SessionError): { key: StringKey; retry: boolean; detail?: string } {
@@ -29,20 +30,22 @@ export function ErrorState({
   const { key, retry, detail } = describe(error);
   const healthMessage = isEngineError(error) ? health?.error?.message : undefined;
   return (
-    <div role="alert" className="space-y-4">
-      <Banner tone="danger" title={t("error_title")}>
-        <p className="mt-1">{t(key)}</p>
-        {detail && <p className="mt-1 text-sm">{detail}</p>}
-        {healthMessage && (
-          <p className="mt-2 text-sm">
-            {t("health_details")} <code className="break-words">{healthMessage}</code>
-          </p>
-        )}
-      </Banner>
+    <div className="flex flex-col items-start gap-4">
+      <div role="alert" className="w-full">
+        <Notice tone="danger" title={t("error_title")}>
+          <p className="mt-1">{t(key)}</p>
+          {detail && <p className="mt-1 text-sm">{detail}</p>}
+          {healthMessage && (
+            <p className="mt-2 text-sm">
+              {t("health_details")} <code className="break-words">{healthMessage}</code>
+            </p>
+          )}
+        </Notice>
+      </div>
       {retry && (
-        <button type="button" onClick={onRetry} className={BUTTON_PRIMARY}>
+        <Button variant="primary" icon={<RotateCcw size={18} />} onClick={onRetry}>
           {t("retry")}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -53,12 +56,12 @@ export function HealthBanner({ health }: { health: Health | null }) {
   const { t } = useI18n();
   if (!health || health.status === "ok") return null;
   return (
-    <Banner tone="warn" title={t("health_title")}>
+    <Notice tone="warn" title={t("health_title")}>
       {health.error && (
         <p className="mt-1 text-sm">
           {t("health_details")} <code className="break-words">{health.error.message}</code>
         </p>
       )}
-    </Banner>
+    </Notice>
   );
 }

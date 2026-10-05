@@ -31,7 +31,7 @@ flowchart TD
     G --> PB[prompt builder §7.1 + rules<br/>token budget, truncation]
     PB --> O[Ollama /api/generate<br/>mistral:7b-instruct Q4_K_M, temp 0.1]
     O -->|tokens| SP[SectionSplitter<br/>RIGHTS / STEPS / LETTER]
-    SP -->|token events| UI[React: Response tabs]
+    SP -->|token events| UI[React: answer tabs]
     SP --> CC[citation check vs the 5 chunks]
     CC -->|sw| T2[MarianMT en→sw<br/>sentence by sentence, masked]
     CC --> DONE[done event: warnings, disclaimer]
@@ -71,7 +71,7 @@ rebuild command (`IndexMismatchError`), and `python -m backend.app.preflight` re
 | 6 Generation | `generation/prompt.py`, `budget.py`, `llm.py`, `parse.py`, `citations.py`, `service.py`, `gate.py` | Ollama (`LLMClient`) | `FakeLLM` |
 | 6b Language | `lang/detect.py`, `segment.py`, `translator.py`, `protect.py`, `glossary.py`, `service.py` | MarianMT (`Translator`) | `FakeTranslator` |
 | 7 Delivery | `main.py`, `stream.py`, `sessions.py`, `letter.py`, `feedback.py`, `security.py`, `web.py`, `deps.py`, `devstack.py` | — | `HAKI_FAKE_BACKENDS=1` |
-| 7 Frontend | `frontend/src/` (React 19, Vite, Tailwind 4) | — | mock EventSource (vitest), Playwright e2e |
+| 7 Frontend | `frontend/src/` (React 19, Vite, Tailwind 4, react-router, Radix primitives; v2 shell since M12) | — | mock EventSource (vitest), Playwright e2e + axe |
 | Evaluation | `evaluation/` + `eval/*.py` entry points | the real stack via HTTP | fake stack |
 | Operations | `offline.py` (setup), `preflight.py` (run checks), `scripts/run.sh`, `run.ps1`, `Dockerfile` | — | injected tools |
 

@@ -3,60 +3,61 @@ import { cx } from "../cx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./Tabs";
 
 interface AnswerCardProps {
-  /** The question this answer is for (the card's heading). */
-  question: ReactNode;
+  /** The card heading (the question is shown above the card). */
+  title: ReactNode;
+  /** Right of the heading, e.g. the live status line. */
   meta?: ReactNode;
-  tabs: { id: string; label: string; content: ReactNode }[];
-  value?: string;
-  onValueChange?: (id: string) => void;
-  /** While set, replaces the tabs (the answer is still being generated). */
-  pending?: ReactNode;
+  /** Between the heading and the tabs, e.g. progress steps while the answer is written. */
+  status?: ReactNode;
+  tabs: { id: string; label: ReactNode; content: ReactNode }[];
+  value: string;
+  onValueChange: (id: string) => void;
+  /** Marks the tab panels aria-busy while text is still arriving. */
+  busy?: boolean;
+  /** Below the tabs, e.g. warnings once the answer is complete. */
+  notes?: ReactNode;
   actions?: ReactNode;
   /** Always rendered: the "legal information, not legal advice" disclaimer goes here. */
   footer: ReactNode;
   className?: string;
 }
 
-/** One answer: question heading, Rights / Steps / Letter tabs (or a pending state), actions and disclaimer. */
+/** One answer: heading, status, What the law says / What you can do / Draft letter tabs, actions and disclaimer. */
 export function AnswerCard({
-  question,
+  title,
   meta,
+  status,
   tabs,
   value,
   onValueChange,
-  pending,
+  busy,
+  notes,
   actions,
   footer,
   className,
 }: AnswerCardProps) {
   return (
     <article className={cx("rounded-lg border border-line-subtle bg-surface shadow-raised", className)}>
-      <header className="flex flex-wrap items-start justify-between gap-2 px-4 pt-4 sm:px-5">
-        <h2 className="min-w-0 font-display-style text-xl text-ink">{question}</h2>
-        {meta && <div className="flex flex-wrap items-center gap-2">{meta}</div>}
+      <header className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-4 sm:px-5">
+        <h2 className="min-w-0 font-display-style text-xl text-ink">{title}</h2>
+        {meta}
       </header>
-      <div className="px-4 pb-4 sm:px-5">
-        {pending ?? (
-          <Tabs
-            value={value}
-            onValueChange={onValueChange}
-            defaultValue={value === undefined ? tabs[0]?.id : undefined}
-          >
-            <TabsList className="mt-2">
-              {tabs.map((t) => (
-                <TabsTrigger key={t.id} value={t.id}>
-                  {t.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {tabs.map((t) => (
-              <TabsContent key={t.id} value={t.id} className="leading-relaxed text-ink">
-                {t.content}
-              </TabsContent>
-            ))}
-          </Tabs>
-        )}
-      </div>
+      {status && <div className="px-4 pt-3 sm:px-5">{status}</div>}
+      <Tabs value={value} onValueChange={onValueChange} className="px-4 pb-4 sm:px-5">
+        <TabsList fit className="mt-3">
+          {tabs.map((t) => (
+            <TabsTrigger key={t.id} value={t.id}>
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {tabs.map((t) => (
+          <TabsContent key={t.id} value={t.id} aria-busy={busy} className="text-[1.0625rem] leading-relaxed text-ink">
+            {t.content}
+          </TabsContent>
+        ))}
+      </Tabs>
+      {notes && <div className="flex flex-col gap-3 border-t border-line-subtle px-4 py-4 sm:px-5">{notes}</div>}
       {actions && <div className="flex flex-wrap gap-2 border-t border-line-subtle px-4 py-3 sm:px-5">{actions}</div>}
       <footer className="rounded-b-lg border-t border-line-subtle bg-sunken px-4 py-3 text-sm text-ink-muted sm:px-5">
         {footer}
@@ -65,36 +66,69 @@ export function AnswerCard({
   );
 }
 
-interface SourceCardProps extends Omit<ComponentProps<"article">, "title"> {
+interface SourceCardProps {
+  id: string;
   act: string;
-  /** e.g. "Section 12 · page 4". */
+  /** e.g. "Section 4 — Reasons for ending a job". */
+  heading: string;
+  /** Short margin mark, e.g. "s. 4". */
+  mark: string;
+  /** e.g. "Part II · Page 3". */
   locator: string;
+  /** Accessible name of the scrollable text region. */
+  regionLabel: string;
+  /** Shown under the locator, e.g. a "shortened" notice. */
+  badge?: ReactNode;
   /** Highlighted after a citation jump. */
   highlighted?: boolean;
-  actions?: ReactNode;
-  children: ReactNode;
+  /** The verbatim provision text (line breaks kept). */
+  children: string;
 }
 
-/** One retrieved source, shown verbatim in the reading face. */
-export function SourceCard({ act, locator, highlighted, actions, children, className, ...props }: SourceCardProps) {
+/** One retrieved provision, verbatim in the reading face; focusable so a citation jump can land on it. */
+export function SourceCard({
+  id,
+  act,
+  heading,
+  mark,
+  locator,
+  regionLabel,
+  badge,
+  highlighted,
+  children,
+}: SourceCardProps) {
   return (
     <article
+      id={id}
       tabIndex={-1}
+      aria-label={`${act}, ${heading}`}
+      data-highlighted={highlighted ? "true" : "false"}
       className={cx(
-        "rounded-md border bg-raised p-4",
+        "scroll-mt-4 rounded-md border bg-raised motion-colors",
         highlighted ? "border-focus outline-2 outline-offset-2 outline-focus" : "border-line-subtle",
-        className,
       )}
-      {...props}
     >
-      <header className="mb-2 flex items-start justify-between gap-2">
+      <header className="flex gap-3 border-b border-line-subtle px-4 py-3">
+        <span aria-hidden="true" className="w-12 shrink-0 pt-0.5 font-display-style text-lg leading-tight text-brand">
+          {mark}
+        </span>
         <div className="min-w-0">
-          <h3 className="font-semibold text-ink">{act}</h3>
+          <p className="text-sm font-semibold text-ink-muted">{act}</p>
+          <h3 className="font-display-style text-lg leading-snug text-ink">{heading}</h3>
           <p className="text-sm text-ink-muted">{locator}</p>
+          {badge && <div className="mt-2">{badge}</div>}
         </div>
-        {actions}
       </header>
-      <LawText size="sm">{children}</LawText>
+      <div
+        role="region"
+        tabIndex={0}
+        aria-label={regionLabel}
+        className={cx("max-h-96 overflow-y-auto px-4 py-3", highlighted && "bg-highlight/40")}
+      >
+        <LawText size="sm" className="whitespace-pre-wrap">
+          {children}
+        </LawText>
+      </div>
     </article>
   );
 }

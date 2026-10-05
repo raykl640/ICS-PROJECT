@@ -1,0 +1,90 @@
+/* HakiAI theme (M11 gate: "Mahakama colours + Jua radius"). The only place raw colour values live.
+   index.html's pre-paint script sets data-theme (light|dark) and data-contrast (standard|more) on <html>.
+   Cascade: :root < [data-theme=dark] < [data-contrast=more] < dark + more, so the last block must override every key the
+   more-contrast block sets. src/design/contrast.test.ts parses this file and checks every pair in all four states. */
+
+:root {
+  color-scheme: light;
+  --hk-canvas: #f6f2e7;
+  --hk-surface: #fdfaf2;
+  --hk-raised: #ffffff;
+  --hk-sunken: #ece5d3;
+  --hk-ink: #14231b;
+  --hk-ink-muted: #4a5a50;
+  --hk-line: #857f6e;
+  --hk-line-subtle: #ddd5c1;
+  --hk-brand: #1c5a3b;
+  --hk-brand-ink: #fdfaf2;
+  --hk-accent: #7a5712;
+  --hk-success: #2a6631;
+  --hk-warn: #7f4d00;
+  --hk-danger: #9e2a19;
+  --hk-info: #1f4e78;
+  --hk-focus: #7a5712;
+  --hk-highlight: #f2e2ad;
+
+  --hk-shadow-raised: 0 1px 2px rgb(20 35 27 / 0.08);
+  --hk-shadow-overlay: 0 8px 24px rgb(20 35 27 / 0.18);
+  --hk-scrim: rgb(14 23 18 / 0.45);
+
+  --hk-font-ui: "Source Sans 3 Variable", "Segoe UI", system-ui, sans-serif;
+  --hk-font-display: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
+  --hk-font-reading: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
+  --hk-display-weight: 620;
+  --hk-display-tracking: -0.01em;
+
+  --hk-radius-sm: 8px;
+  --hk-radius-md: 14px;
+  --hk-radius-lg: 22px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --hk-canvas: #0e1712;
+  --hk-surface: #142019;
+  --hk-raised: #1a2920;
+  --hk-sunken: #09100c;
+  --hk-ink: #ede7d7;
+  --hk-ink-muted: #b3b8a8;
+  --hk-line: #6f7d71;
+  --hk-line-subtle: #28382e;
+  --hk-brand: #83c89d;
+  --hk-brand-ink: #0a1a11;
+  --hk-accent: #d8b45f;
+  --hk-success: #8fcf91;
+  --hk-warn: #e9b45c;
+  --hk-danger: #f29c88;
+  --hk-info: #90c1ea;
+  --hk-focus: #d8b45f;
+  --hk-highlight: #463a14;
+
+  --hk-shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4);
+  --hk-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.55);
+  --hk-scrim: rgb(0 0 0 / 0.6);
+}
+
+:root[data-contrast="more"] {
+  --hk-ink: #08120d;
+  --hk-ink-muted: #2f3a33;
+  --hk-line: #5d584b;
+  --hk-brand: #123f29;
+  --hk-accent: #5a3f08;
+  --hk-success: #1b4a21;
+  --hk-warn: #5c3800;
+  --hk-danger: #761c0f;
+  --hk-info: #143856;
+  --hk-focus: #5a3f08;
+}
+
+:root[data-theme="dark"][data-contrast="more"] {
+  --hk-ink: #fbf7ec;
+  --hk-ink-muted: #d6dacb;
+  --hk-line: #9aa69b;
+  --hk-brand: #a9e0bc;
+  --hk-accent: #ecd08e;
+  --hk-success: #b3e4b4;
+  --hk-warn: #f4cf8e;
+  --hk-danger: #f8c0b2;
+  --hk-info: #b8d8f3;
+  --hk-focus: #ecd08e;
+}

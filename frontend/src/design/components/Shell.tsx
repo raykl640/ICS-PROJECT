@@ -1,7 +1,7 @@
 import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 import { cx } from "../cx";
-import { useMediaQuery } from "../useTheme";
+import { useMediaQuery } from "../useMediaQuery";
 import { IconButton } from "./Button";
 import { Dialog, DialogContent } from "./Dialog";
 import { Kbd } from "./Display";
@@ -26,6 +26,8 @@ interface SidebarProps {
   collapseLabel: string;
   expandLabel: string;
   brand?: ReactNode;
+  /** Renders each link; pass the router's link so navigation stays client-side (default: a plain anchor). */
+  linkComponent?: ComponentType<ComponentProps<"a"> & { href: string }>;
 }
 
 /** App navigation: left column from 768 px (collapsible to icons), bottom bar of primary items below. */
@@ -37,6 +39,7 @@ export function Sidebar({
   collapseLabel,
   expandLabel,
   brand,
+  linkComponent: Link = PlainLink,
 }: SidebarProps) {
   // Narrow: last in the page flow and sticky to the bottom. Wide: a full-height column whose inner nav is sticky.
   return (
@@ -65,7 +68,7 @@ export function Sidebar({
         <ul className="flex justify-around md:flex-col md:justify-start md:gap-1">
           {items.map((item) => {
             const link = (
-              <a
+              <Link
                 href={item.href}
                 aria-current={item.current ? "page" : undefined}
                 className={cx(
@@ -81,7 +84,7 @@ export function Sidebar({
                   {item.icon}
                 </span>
                 <span className={cx(collapsed && "md:sr-only")}>{item.label}</span>
-              </a>
+              </Link>
             );
             return (
               <li key={item.id} className={cx(!item.primary && "hidden md:block")}>
@@ -101,6 +104,10 @@ export function Sidebar({
   );
 }
 
+function PlainLink(props: ComponentProps<"a"> & { href: string }) {
+  return <a {...props} />;
+}
+
 interface TopBarProps {
   start?: ReactNode;
   search?: { label: string; shortcut: string; onOpen: () => void };
@@ -116,10 +123,10 @@ export function TopBar({ start, search, end }: TopBarProps) {
         <button
           type="button"
           onClick={search.onOpen}
-          className="target inline-flex cursor-pointer items-center gap-2 rounded-md border border-line bg-surface px-3 text-ink-muted motion-colors hover:text-ink sm:w-72"
+          className="target inline-flex cursor-pointer items-center gap-2 rounded-md border border-line bg-surface px-3 text-ink-muted motion-colors hover:text-ink sm:w-64 lg:w-80"
         >
           <Search aria-hidden="true" size={18} />
-          <span className="sr-only flex-1 text-left sm:not-sr-only">{search.label}</span>
+          <span className="sr-only flex-1 truncate text-left sm:not-sr-only">{search.label}</span>
           <span className="hidden sm:inline-flex">
             <Kbd>{search.shortcut}</Kbd>
           </span>

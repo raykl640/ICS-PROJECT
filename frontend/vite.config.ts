@@ -18,5 +18,7 @@ export default defineConfig({
     setupFiles: "./src/test-setup.ts",
     include: ["src/**/*.test.{ts,tsx}"],
     globals: true,
+    // tokens.css and design.css are read as text by the contrast and raw-colour tests.
+    css: { include: [/src\/design\/(tokens|design)\.css/] },
   },
 });

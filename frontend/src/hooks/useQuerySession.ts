@@ -48,11 +48,11 @@ function connect(run: Run, sessionId: string, attempt: number, dispatch: Dispatc
     dispatch(action);
   };
 
-  on("status", (event) => dispatch({ type: "status", payload: payload<StatusPayload>(event) }));
+  on("status", (event) => dispatch({ type: "status", payload: payload<StatusPayload>(event), at: Date.now() }));
   on("token", (event) => {
     const deltas = splitter.feed(payload<TokenPayload>(event).text);
     const latest = deltas.length ? deltas[deltas.length - 1].section : null;
-    dispatch({ type: "token", sections: splitter.snapshot(), latest, seen: [...splitter.seen] });
+    dispatch({ type: "token", sections: splitter.snapshot(), latest, seen: [...splitter.seen], at: Date.now() });
   });
   on("translated", (event) => dispatch({ type: "translated", sections: payload<TranslatedPayload>(event).sections }));
   on("done", (event) => {

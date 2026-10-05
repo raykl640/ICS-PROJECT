@@ -11,6 +11,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Settings and speed samples live in localStorage and on <html>: start every test clean.
+  localStorage.clear();
+  for (const name of ["theme", "contrast", "text", "motion"]) delete document.documentElement.dataset[name];
   vi.mocked(console.error).mockRestore();
   expect(errors.map((args) => args.map(String).join(" "))).toEqual([]);
 });

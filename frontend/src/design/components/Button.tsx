@@ -47,3 +47,19 @@ export function IconButton({ label, icon, variant = "ghost", className, type = "
     </button>
   );
 }
+
+type ButtonLinkProps = ComponentProps<"a"> & { variant?: ButtonVariant; icon?: ReactNode };
+
+/** A link styled as a button (downloads, navigation); same target size and variants. */
+export function ButtonLink({ variant = "secondary", icon, className, children, ...props }: ButtonLinkProps) {
+  return (
+    <a className={cx(BASE, "px-4 py-2 no-underline", VARIANTS[variant], className)} {...props}>
+      {icon && (
+        <span aria-hidden="true" className="inline-flex">
+          {icon}
+        </span>
+      )}
+      {children}
+    </a>
+  );
+}

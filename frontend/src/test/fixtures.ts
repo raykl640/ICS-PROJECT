@@ -43,3 +43,5 @@ export const DONE: DonePayload = {
 };
 
 export const QUERY_OK = { session_id: "s1", null_response: false, acts: ["sample-employment-act"], language: "en" };
+
+export const HEALTHY = { status: "ok", ollama: true, model_present: true, indexes_loaded: true, models_warm: true };

@@ -1,0 +1,21 @@
+import { useEffect, useRef } from "react";
+import { cx } from "../design/cx";
+import { takePageFocus } from "./pageFocus";
+
+/** The page's <h1>: sets the document title and takes focus after a navigation. */
+export function PageTitle({ children, hidden, className }: { children: string; hidden?: boolean; className?: string }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    document.title = `${children} — HakiAI`;
+    if (takePageFocus()) ref.current?.focus();
+  }, [children]);
+  return (
+    <h1
+      ref={ref}
+      tabIndex={-1}
+      className={cx(hidden ? "sr-only" : "font-display-style text-3xl text-ink sm:text-4xl", "outline-none", className)}
+    >
+      {children}
+    </h1>
+  );
+}

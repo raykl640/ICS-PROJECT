@@ -46,12 +46,14 @@ Questions can be up to 1,000 characters. You can ask up to ten questions a minut
 ## Waiting for the answer
 
 HakiAI runs on one computer, so answers take time: often one to two minutes, longer for the first question after it
-starts. The status line tells you what is happening:
-- **Searching the statutes…**
-- **Found 5 relevant provisions.**
-- **Waiting for the answer engine: you are number 2 in line.** Someone else's answer is being written first.
-- **Writing the answer from the retrieved law…** The text appears as it is written.
-- **Translating the answer into Kiswahili…** (Kiswahili only)
+starts. Above the answer, a list of steps shows what is happening:
+- **Searching the laws**, then how many relevant provisions were found.
+- **Waiting in line**, with your number in the line, while someone else's answer is written first.
+- **Writing the answer**, with the time so far. After the first answer on a computer, HakiAI also estimates the time left
+  from how fast earlier answers were written in this browser. The text appears as it is written.
+- **Translating into Kiswahili** (Kiswahili only).
+
+You can open other pages while you wait. The answer keeps coming, and a notice tells you when it is ready.
 
 ## Reading the answer
 
@@ -59,13 +61,13 @@ The answer has three tabs:
 
 | Tab | What it gives you |
 |---|---|
-| **Rights Explanation** | What the law says about your situation, with the Act and section for each point, e.g. (Employment Act, s. 41). |
-| **Recommended Steps** | A numbered list of things you can do next. |
-| **Formal Letter** | A draft letter to the other side (employer, landlord, …). |
+| **What the law says** | What the law says about your situation, with the Act and section for each point, e.g. (Employment Act, s. 41). |
+| **What you can do** | A numbered list of things you can do next. |
+| **Draft letter** | A draft letter to the other side (employer, landlord, …). |
 
-- **Check the sources:** press **Show the legal text used** to open the **Sources** panel. It shows the exact text of the
-  sections the answer was written from, with the page number in the official document. Click a citation in the answer,
-  like *s. 41*, to jump to that section.
+- **Check the sources:** on a wide screen the **Sources** panel sits beside the answer; on a phone, press **Sources** under
+  the answer. It shows the exact text of the sections the answer was written from, with the page number in the official
+  document. Click a citation in the answer, like *s. 41*, to jump to that section.
 - **Warnings to take seriously:**
   - *"Some citations in this answer could not be matched to the retrieved sources."* The answer mentions a section that
     HakiAI did not actually read. Treat that part with suspicion.
@@ -77,7 +79,7 @@ The answer has three tabs:
 
 ## Using the letter
 
-1. Open the **Formal Letter** tab when the answer is complete.
+1. Open the **Draft letter** tab when the answer is complete.
 2. Replace every part in **[brackets]**, such as [Your Name], [Date] and [Recipient], with your own details.
 3. Use **Copy letter**, **Download letter (.docx)** (opens in Word or LibreOffice), or **Download letter (.txt)**.
 4. Read the letter carefully and change anything that is not true for you before you send it. Keep a copy.
@@ -103,3 +105,10 @@ comment are saved, never your question or the answer.
 - HakiAI runs entirely on the computer in front of you (or in your office). Your question is not sent to the internet.
 - It does not keep your question or the answer after about an hour, and does not write them to its logs.
 - It has no accounts and no history.
+
+## Settings
+
+**Settings** (in the menu, or the sliders button at the top for quick changes) lets you choose a light or dark theme,
+more contrast, a larger text size, less motion, and the interface language (English or Kiswahili). They are saved in this
+browser on this computer only. **How it works** explains in plain words how answers are made and what HakiAI cannot do.
+Press **Ctrl K** to search pages and commands.

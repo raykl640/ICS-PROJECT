@@ -12,7 +12,8 @@
 - [x] M8 Frontend — 2026-10-05
 - [x] M9 Evaluation — 2026-10-05 (harness only; human ground truth, ratings, survey and laptop runs pending)
 - [x] M10 Hardening & docs — 2026-10-05 (v1.0.0 tag waits for the final audit)
-- [x] M11 Design language — 2026-10-05 (awaiting human design gate)
+- [x] M11 Design language — 2026-10-05 (gate passed: "Mahakama colours + Jua radius")
+- [x] M12 App shell, routing, Ask v2 — 2026-10-05
 
 ## M0 Scaffold (2026-10-04)
 Done:
@@ -386,3 +387,52 @@ Open issues:
 Blocked: human design gate. Read docs/design/README.md and the screenshots, then write the chosen direction (or a mix)
 into .gates/M11-design.ok.
 Next: M12, only after .gates/M11-design.ok exists.
+
+## M12 App shell, routing and Ask v2 (2026-10-05)
+Done:
+- Gate: the owner's file was saved as .gates/m11-design.ok; it was renamed to M11-design.ok (content unchanged:
+  "Mahakama colours + Jua radius"), which prompts/autopilot.sh checks for.
+- Theme: frontend/src/design/tokens.css is the only theme (Mahakama palette and fonts, Jua's 8/14/22 px radii). The TS
+  theme files, the M11 mock screens and switcher, styleguide.html, e2e-design, and the Nunito/Lora/Literata/Plex fonts
+  were removed. The contrast test parses tokens.css (4 states).
+- Pre-paint: an inline script in index.html sets data-theme/contrast/text/motion and lang from localStorage. Its sha256 is
+  in the backend CSP (web.py) and checked by test_frontend_contract.py against index.html and dist/index.html.
+- App (src/app/): Providers (settings + i18n, tooltips, toasts, session, health, speed recorder), AppShell (skip link,
+  Sidebar → bottom bar below 768 px, TopBar with Ctrl/Cmd+K command palette, EN/SW switch, display quick menu, health
+  notice, answer-ready toast), lazy routes (/, /ask, /settings, /how-it-works, 404, dev-only /styleguide), ErrorBoundary,
+  PageTitle (title + focus after navigation), settings.ts.
+- Pages: Home (composer with counter, EN/SW, Ctrl/Cmd+Enter and examples; 10 topic tiles; Continue and Knowledge of the day
+  with empty states), Conversation (question bubble, Answer card with tabs What the law says / What you can do / Draft
+  letter, streaming caret, progress steps searching → in line (position) → writing (elapsed, ETA) → translating; Sources
+  beside the answer from 1024 px, a bottom sheet below; citation → highlighted, focused source; warnings, null screen,
+  error/retry, feedback, referral, disclaimer on every answer), Settings, How HakiAI works (from LIMITATIONS.md), 404.
+- Session reducer: connections, token count, generating/first/last-token times. lib/eta.ts learns speed per browser.
+- v1 QueryPanel, ResponsePanel, SourcesPanel, Header, Banner, buttons.ts, styles.css and lib/media.ts were replaced and
+  deleted. 82 strings were added (EN + SW drafts under the needs_human_review flag) and 8 unused v1 keys removed (190
+  keys now). User guide, as-built doc, LICENSES (react-router MIT; @axe-core/playwright MPL-2.0, dev-only) updated.
+- Tests:
+  - 170 vitest: all v1 behaviour ported (tabs follow the stream, arrows, citation jump, null, engine error + retry,
+    composer, feedback, referral, markdown safety, splitter, citations, hook); plus routing (404, direct loads, focus on
+    navigation, palette, topic tile), settings persistence and the pre-paint script parity, ETA maths, error boundary,
+    style-guide route.
+  - 7 Playwright e2e on the fake backend: ask → stream → sources sheet → .docx/.txt → feedback; null; error → Try again;
+    deep links + reload + 404; pre-paint applied with the app's JS blocked under the real CSP; axe on Home, Ask (answered)
+    and Settings in light and dark: 0 serious/critical. Any CSP console violation fails a test; I checked that a wrong hash
+    fails.
+  - Backend check.sh: 683 passed, coverage 97.2%.
+- Bundle: entry 124.5 KB gzipped JS; Home route total ≈ 139 KB (budget 200 KB). Conversation chunk 43.8 KB (react-markdown);
+  CSS 7.6 KB.
+- Screenshots (npm run screenshots → frontend/test-results/screens, 9 views × 375/1280 × light/dark) reviewed.
+Decisions: see DEVIATIONS D28 (static tokens + pre-paint hash, routes and guest /ask, answer vs interface language, Legal
+Aid tile wording, ETA rules, toast only when away).
+Fixed during review:
+- The top-bar search label wrapped at 1280 px.
+- On phones the "writing" badge pushed the third answer tab off-screen. Below 640 px the answer tabs are now three equal
+  columns with wrapping labels (M11 open issue closed).
+- An M11 test bug: vitest blanks CSS imports, so the raw-colour check never actually read design.css. vite.config.ts now
+  lets the design CSS through as text.
+Open issues:
+- An answer in progress is lost on page reload (guest mode, in memory). M14 brings stored conversations.
+- The ETA needs one fully streamed answer in that browser before it shows a time remaining.
+- New Kiswahili strings await the human review (HUMAN_TODO).
+Next: M13 Local accounts.

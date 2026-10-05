@@ -1,4 +1,28 @@
-import type { ColorRole, Contrast } from "./themes/types";
+// Colour roles defined in tokens.css (as --hk-<role>), and the WCAG checks the contrast test applies to them.
+
+export const COLOR_ROLES = [
+  "canvas",
+  "surface",
+  "raised",
+  "sunken",
+  "ink",
+  "ink-muted",
+  "line",
+  "line-subtle",
+  "brand",
+  "brand-ink",
+  "accent",
+  "success",
+  "warn",
+  "danger",
+  "info",
+  "focus",
+  "highlight",
+] as const;
+
+export type ColorRole = (typeof COLOR_ROLES)[number];
+export type Mode = "light" | "dark";
+export type Contrast = "standard" | "more";
 
 const channel = (value: number): number => {
   const c = value / 255;

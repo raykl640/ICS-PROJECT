@@ -3,6 +3,9 @@
 // otherwise any source with that unit and number matches.
 import type { SourceChunk } from "../api/types";
 
+/** DOM id of a source card (citation links point here). */
+export const sourceId = (chunkId: string): string => `source-${chunkId}`;
+
 export interface CitationSpan {
   start: number;
   end: number;

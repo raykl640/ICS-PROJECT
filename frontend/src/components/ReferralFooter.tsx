@@ -17,16 +17,16 @@ export function ReferralFooter({ entries = FILE_ENTRIES }: { entries?: Referral[
   const verified = entries.filter((entry) => entry.verified === true);
   if (!verified.length) return null;
   return (
-    <section aria-labelledby="referral-title" className="rounded-xl border border-line bg-surface p-5">
-      <h2 id="referral-title" className="font-serif text-xl font-semibold">
+    <section aria-labelledby="referral-title" className="rounded-lg border border-line-subtle bg-surface p-5">
+      <h2 id="referral-title" className="font-display-style text-xl text-ink">
         {t("referral_title")}
       </h2>
-      <ul className="mt-3 space-y-3">
+      <ul className="mt-3 flex flex-col gap-3">
         {verified.map((entry) => (
           <li key={entry.name}>
-            <p className="font-semibold">{entry.name}</p>
-            {entry.description?.[language] && <p className="text-muted">{entry.description[language]}</p>}
-            {entry.contact && <p className="font-medium text-brand-strong">{entry.contact}</p>}
+            <p className="font-semibold text-ink">{entry.name}</p>
+            {entry.description?.[language] && <p className="text-ink-muted">{entry.description[language]}</p>}
+            {entry.contact && <p className="font-semibold text-brand">{entry.contact}</p>}
           </li>
         ))}
       </ul>

@@ -1,7 +1,7 @@
 // rehype plugin: wraps citations that resolve to a retrieved chunk in <a data-cite="chunk_id">, rendered as buttons.
 import type { Element, ElementContent, Root, RootContent } from "hast";
 import type { SourceChunk } from "../api/types";
-import { findCitations } from "./citations";
+import { findCitations, sourceId } from "./citations";
 
 const SKIP = new Set(["a", "code", "pre"]);
 
@@ -14,7 +14,7 @@ function split(value: string, sources: SourceChunk[]): ElementContent[] {
     parts.push({
       type: "element",
       tagName: "a",
-      properties: { href: `#source-${span.chunkId}`, dataCite: span.chunkId },
+      properties: { href: `#${sourceId(span.chunkId)}`, dataCite: span.chunkId },
       children: [{ type: "text", value: value.slice(span.start, span.end) }],
     });
     at = span.end;

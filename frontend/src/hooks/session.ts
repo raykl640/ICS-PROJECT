@@ -30,14 +30,21 @@ export interface SessionState {
   sources: SourceChunk[] | null;
   sourcesFailed: boolean;
   reconnecting: boolean;
+  /** Stream connections opened for this session (a reconnect replays the answer, so its timing is not a sample). */
+  connections: number;
+  /** Token events received on the current connection, and when generation and the first/last token happened (ms). */
+  tokens: number;
+  generatingAt: number | null;
+  firstTokenAt: number | null;
+  lastTokenAt: number | null;
 }
 
 export type SessionAction =
   | { type: "submit"; question: string; requested: RequestedLanguage }
   | { type: "queried"; response: QueryResponse }
   | { type: "connect" }
-  | { type: "status"; payload: StatusPayload }
-  | { type: "token"; sections: Sections; latest: Section | null; seen: Section[] }
+  | { type: "status"; payload: StatusPayload; at: number }
+  | { type: "token"; sections: Sections; latest: Section | null; seen: Section[]; at: number }
   | { type: "translated"; sections: Sections }
   | { type: "done"; payload: DonePayload; sections: Sections }
   | { type: "null"; payload: NullPayload }
@@ -65,6 +72,11 @@ export const initialSession: SessionState = {
   sources: null,
   sourcesFailed: false,
   reconnecting: false,
+  connections: 0,
+  tokens: 0,
+  generatingAt: null,
+  firstTokenAt: null,
+  lastTokenAt: null,
 };
 
 const STAGE_PHASE: Record<StatusPayload["stage"], Phase> = {
@@ -88,13 +100,25 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         sources: action.response.null_response ? [] : null,
       };
     case "connect":
-      return { ...state, draft: emptySections(), translated: null, latest: null, seen: [], done: null };
+      return {
+        ...state,
+        draft: emptySections(),
+        translated: null,
+        latest: null,
+        seen: [],
+        done: null,
+        connections: state.connections + 1,
+        tokens: 0,
+        firstTokenAt: null,
+        lastTokenAt: null,
+      };
     case "status":
       return {
         ...state,
         phase: STAGE_PHASE[action.payload.stage],
         chunkCount: action.payload.chunks ?? state.chunkCount,
         queuePosition: action.payload.stage === "queued" ? (action.payload.position ?? null) : null,
+        generatingAt: action.payload.stage === "generating" ? (state.generatingAt ?? action.at) : state.generatingAt,
         reconnecting: false,
       };
     case "token":
@@ -105,6 +129,10 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         latest: action.latest ?? state.latest,
         seen: action.seen,
         reconnecting: false,
+        tokens: state.tokens + 1,
+        generatingAt: state.generatingAt ?? action.at,
+        firstTokenAt: state.firstTokenAt ?? action.at,
+        lastTokenAt: action.at,
       };
     case "translated":
       return { ...state, translated: action.sections };

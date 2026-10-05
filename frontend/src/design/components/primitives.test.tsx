@@ -1,8 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { DIRECTIONS, resolvePalette } from "../themes";
-import { applyTheme } from "../useTheme";
 import { Button } from "./Button";
 import { CommandPalette } from "./CommandPalette";
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from "./Dialog";
@@ -321,25 +319,5 @@ describe("own components", () => {
     const items = within(screen.getByRole("list", { name: "Answer progress" })).getAllByRole("listitem");
     expect(items[1]).toHaveAttribute("aria-current", "step");
     expect(items.map((i) => i.textContent)).toEqual(["Searching, done", "Writing, in progress", "Checking, waiting"]);
-  });
-
-  it("applyTheme writes the resolved tokens and data attributes", () => {
-    const root = document.createElement("div");
-    applyTheme(
-      root,
-      { direction: "jua", mode: "system", contrast: "system", text: "lg", motion: "reduce" },
-      "dark",
-      "more",
-    );
-    const palette = resolvePalette(DIRECTIONS.jua, "dark", "more");
-    expect(root.style.getPropertyValue("--hk-ink")).toBe(palette.ink);
-    expect(root.style.getPropertyValue("--hk-font-reading")).toContain("Lora");
-    expect(root.dataset).toMatchObject({
-      direction: "jua",
-      theme: "dark",
-      contrast: "more",
-      text: "lg",
-      motion: "reduce",
-    });
   });
 });
