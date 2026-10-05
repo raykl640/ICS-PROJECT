@@ -23,6 +23,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D23, D24 | follow-up context; background runs (M14) | in force |
 | D30 | laws browser mechanics (M15) | in force |
 | D31 | "Registry" redesign replaces the Mahakama/Jua look | in force (supersedes the visual parts of D27, D28) |
+| D32 | corpus of 25 Acts (15 added after M15) | in force |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -383,3 +384,22 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
   replaced by Masthead (nav collapse strings are now unused). e2e axe checks wait for entry animations to settle
   (e2e/settle.ts). contrast.test.ts also checks the masthead pairs and ink on highlight. The M11 screenshots in docs/design/
   show the old directions and were not regenerated.
+
+## D32 Corpus expanded from 10 to 25 Acts — owner request after M15
+- What: the owner added 15 statute PDFs to data/raw_pdfs/: Labour Relations Act (Cap 233), Penal Code (Cap 63), Evidence Act
+  (Cap 80), Civil Procedure Act (Cap 21), Small Claims Court Act (Cap 10A), Limitation of Actions Act (Cap 22), Land
+  Registration Act (Cap 300), Marriage Act (Cap 150), Matrimonial Property Act (Cap 152), Law of Succession Act (Cap 160),
+  Counter-Trafficking in Persons Act (Cap 61), Refugees Act (Cap 173), Public Health Act (Cap 242), Mental Health Act
+  (Cap 248), HIV and AIDS Prevention and Control Act (Cap 246A). ARCHITECTURE §2 lists 9 Acts (BUILD_PLAN made it 10).
+  - (a) data/sources.yaml: title, Cap, year and FRBR URI copied from page 1–2 of each PDF; all use the default parser profile.
+  - (b) domains.yaml: aliases and 25–46 lay terms per new Act (Kiswahili hints unverified). Labour Relations Act, Penal Code
+    and Refugees Act join the Constitution co-domain rule. Terms that collided after stemming were dropped or made phrases
+    ("deni" matched "denied"; "charge", "admission", "contribution" are now "charge on land", "admission of guilt",
+    "contribution to the property").
+  - (c) scope.yaml: in-scope anchors for unions, criminal offences, evidence and civil claims, land registration, family,
+    inheritance, trafficking, refugees and health law; family law is no longer listed as uncovered.
+  - (d) UI: Home topic index and How it works list all 25 Acts; "ten Acts" wording is now "25 Acts" (EN and SW).
+- Why: owner request; the added Acts cover the everyday matters (crime, family, inheritance, debts, health) people ask about.
+- Impact: 3157 chunks (1519 unchanged + 1638 new), 2946 indexed, 4507 dense windows (191 over 256 word-pieces), 1085 linked
+  cross-references. Dense index 6.8 MB; build_corpus ~4 min, build_index ~80 s. The M1 human spot-check gate covered only
+  the first 10 Acts (HUMAN_TODO). relevance_threshold and scope_margin were tuned on the 10-Act corpus and stay unchanged.

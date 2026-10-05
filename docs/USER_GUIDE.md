@@ -9,7 +9,7 @@ parts of the law that apply, explains them in plain language, suggests next step
 
 ## What HakiAI knows
 
-HakiAI reads only ten Kenyan laws:
+HakiAI reads only these 25 Kenyan laws:
 - the Constitution of Kenya 2010;
 - the Employment Act;
 - the Landlord and Tenant (Shops, Hotels and Catering Establishments) Act;
@@ -19,7 +19,22 @@ HakiAI reads only ten Kenyan laws:
 - the National Police Service Act;
 - the Criminal Procedure Code;
 - the Traffic Act;
-- the Legal Aid Act.
+- the Legal Aid Act;
+- the Labour Relations Act;
+- the Penal Code;
+- the Evidence Act;
+- the Civil Procedure Act;
+- the Small Claims Court Act;
+- the Limitation of Actions Act;
+- the Land Registration Act;
+- the Marriage Act;
+- the Matrimonial Property Act;
+- the Law of Succession Act;
+- the Counter-Trafficking in Persons Act;
+- the Refugees Act;
+- the Public Health Act;
+- the Mental Health Act;
+- the HIV and AIDS Prevention and Control Act.
 
 It does not know court cases, county laws, regulations, or changes to these laws made after its copies were published. If
 your problem is not covered by these laws, HakiAI will tell you it cannot find a matching provision.
@@ -86,7 +101,7 @@ The answer has three tabs:
 
 ## When HakiAI cannot help
 
-If you see **"No matching provision found"**, HakiAI could not find a section of its ten laws that clearly covers your
+If you see **"No matching provision found"**, HakiAI could not find a section of its 25 laws that clearly covers your
 question. It does not guess. Try rewording the question with more detail, or ask a qualified advocate. If the computer
 running HakiAI has been set up with verified help organisations, they appear under **Where to get help**.
 

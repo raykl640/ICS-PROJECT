@@ -45,11 +45,11 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    PDF[data/raw_pdfs/*.pdf<br/>10 Acts, data/sources.yaml] --> EX[pdfplumber extract<br/>+ optional OCR]
+    PDF[data/raw_pdfs/*.pdf<br/>25 Acts, data/sources.yaml] --> EX[pdfplumber extract<br/>+ optional OCR]
     EX --> PA[profile-driven parser<br/>Part / section / Article / Schedule]
-    PA --> CH[data/processed/chunks.json<br/>1519 LegalChunks, 133 repealed]
+    PA --> CH[data/processed/chunks.json<br/>3157 LegalChunks, 211 repealed]
     CH --> BI[build_index]
-    BI --> FA[data/indexes/dense<br/>2274 windows, meta.json]
+    BI --> FA[data/indexes/dense<br/>4507 windows, meta.json]
     BI --> WH[data/indexes/sparse<br/>Whoosh, meta.json]
     HF[(Hugging Face cache<br/>4 models)] -.-> BI
     SO[scripts/setup_offline.py] -.->|once, online| HF

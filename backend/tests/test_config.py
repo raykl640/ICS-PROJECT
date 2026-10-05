@@ -43,11 +43,12 @@ def test_disclaimer_states_information_not_advice() -> None:
     assert "legal information, not legal advice" in DISCLAIMER
 
 
-def test_corpus_has_ten_acts_with_unique_files() -> None:
+def test_corpus_has_25_acts_with_unique_files_and_caps() -> None:
     acts = Settings().acts
-    assert len(acts) == 10
-    assert len({a.file for a in acts}) == 10
-    assert len({a.name for a in acts}) == 10
+    assert len(acts) == 25
+    assert len({a.file for a in acts}) == 25
+    assert len({a.name for a in acts}) == 25
+    assert len({a.cap for a in acts if a.cap}) == 24  # the Constitution has no Cap
 
 
 def test_constitution_uses_articles() -> None:

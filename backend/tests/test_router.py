@@ -15,6 +15,21 @@ P = "national-police-service-act"
 CPC = "criminal-procedure-code"
 T = "traffic-act"
 LA = "legal-aid-act"
+LR = "labour-relations-act"
+PC = "penal-code"
+EV = "evidence-act"
+CIV = "civil-procedure-act"
+SC = "small-claims-court-act"
+LIM = "limitation-of-actions-act"
+LRG = "land-registration-act"
+M = "marriage-act"
+MP = "matrimonial-property-act"
+S = "law-of-succession-act"
+TIP = "counter-trafficking-in-persons-act"
+REF = "refugees-act"
+PH = "public-health-act"
+MH = "mental-health-act"
+HIV = "hiv-and-aids-prevention-and-control-act"
 
 
 @pytest.fixture(scope="module")
@@ -35,7 +50,7 @@ CASES: list[tuple[str, list[str] | None]] = [
     ("My landlord locked my apartment because of rent arrears", [R, LT, C]),
     ("My tenant has refused to pay rent for my commercial building", [LT, R, C]),
     # land, consumer, traffic, legal aid (no co-domain)
-    ("How do I get a title deed for my plot?", [L]),
+    ("How do I get a title deed for my plot?", [L, LRG]),
     ("The government took my land for a road without compensation", [L]),
     ("I bought a phone that stopped working and the seller refused a refund", [CP]),
     ("The goods I received were counterfeit", [CP]),
@@ -47,7 +62,7 @@ CASES: list[tuple[str, list[str] | None]] = [
     # police and criminal procedure
     ("Police officers beat me at the police station", [P, C]),
     ("I was arrested and held for three days without being taken to court", [CPC, C]),
-    ("How much is cash bail for a traffic offence?", [CPC, T, C]),
+    ("How much is cash bail for a traffic offence?", [CPC, T, PC, C]),
     ("I was charged with drunk driving", [T, CPC, C]),
     # multi-Act and rights-only
     ("My employer fired me and the police arrested me when I protested", [E, C, P, CPC]),
@@ -60,10 +75,26 @@ CASES: list[tuple[str, list[str] | None]] = [
     ("Cap 226 termination notice", [E]),
     ("Does the Constitution protect tenants from eviction?", [C]),
     ("Compare section 41 of the Employment Act with Article 41 of the Constitution", [E, C]),
+    # Acts added with the 25-Act corpus
+    ("Our employer refuses to recognise the workers union", [LR, E, C]),
+    ("Someone stole my phone at the market", [PC, C]),
+    ("Can a WhatsApp screenshot be used as evidence?", [EV]),
+    ("A customer owes me 50,000 shillings and refuses to pay", [SC]),
+    ("Is it too late to sue for something that happened years ago?", [LIM, CIV]),
+    ("How do I register my marriage?", [M]),
+    ("My father died without a will, who inherits his land?", [S, L]),
+    ("An agent took my passport and forced me to work without pay", [TIP]),
+    ("How do I apply for refugee status?", [REF, C]),
+    ("My neighbour's sewage flows into my compound", [PH]),
+    ("Can my relative be admitted to a psychiatric hospital against her will?", [MH]),
+    ("Can my employer disclose my HIV status?", [HIV, E, C]),
+    ("What does the Matrimonial Property Act say about contribution?", [MP]),
+    ("Cap 160 dependants", [S]),
     # Kiswahili fallbacks
     ("mwajiri wangu amenifuta kazi bila notisi", [E, C]),
     ("mwenye nyumba anataka kunifukuza", [R, C]),
     ("polisi walinipiga", [P, C]),
+    ("ndoa yangu haijasajiliwa", [M]),
     # no match -> full corpus
     ("What is the weather like today?", None),
     ("Tell me a joke", None),

@@ -8,6 +8,7 @@
 - Section-aware chunking: sections are stored whole; long ones are embedded as overlapping header-prefixed windows (see DESIGN.md "Retrieval").
 - Layout: fresh build in backend/app/ per CLAUDE.md; the earlier untracked app/, scripts/, tests/ etc. move to legacy/ (git-ignored, reference only) at the start of M0.
 - Corpus = 10 Acts: the 9 in ARCHITECTURE.md §2 + Legal Aid Act (the proposal's scope names only 2; the architecture is newer). PDFs live in data/raw_pdfs/ (rename from data/raw/ in M0).
+  Expanded to 25 Acts after M15 at the owner's request (DEVIATIONS D32).
 - Full M0–M7 signatures and further ambiguity defaults: see docs/DESIGN.md.
 
 ## Milestones (each ends: tests green, commit, PROGRESS.md updated)

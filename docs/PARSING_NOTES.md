@@ -66,3 +66,11 @@ The Act years in config match the FRBR URIs (resolves the M0 open issue).
 - default: unit "section", Part tracking, no Chapters, header `... (Cap. N) Kenya`.
 - constitution-of-kenya: unit "article", Chapter tracking (Part resets at each Chapter), header `Constitution of Kenya Kenya`.
 - Skip-block `INDEX TO THE ...` and editorial-note stripping are in the default profile (only CPC has an index today).
+
+## Corpus expansion to 25 Acts (2026-10-05, DEVIATIONS D32)
+- The 15 added PDFs are the same Kenya Law / Laws.Africa layout (cover page, FRBR URI on page 1–2, "(Cap. N)" running
+  headers, "Part X – TITLE" headings); all parse with the default profile. Cap 10A and 246A match HEADER_RE's optional letter.
+- Parse report: 1638 new chunks, 0 duplicates, 0 out-of-order, 0 mid-sentence; 78 repealed (Penal Code 48).
+- Mental Health Act: gap 31 → 40 is in the source. Act No. 27 of 2022 rewrote Part XII; the revised PDF (and its own table
+  of contents) runs from s.31 straight to Part XIII, s.40. Not a parser miss.
+- Long chunks to watch in retrieval: Labour Relations Act Sch2, Land Registration Act s.2, Law of Succession Act s.3 and Sch1.

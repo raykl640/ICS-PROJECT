@@ -5,13 +5,17 @@
 #          mention overrides keyword routing.
 # Kiswahili entries are common everyday words used only as routing hints (unverified; see docs/HUMAN_TODO.md).
 co_domain: constitution-of-kenya
-# Rights topics (employment, housing, police, fair trial): the Constitution is added after these Acts.
+# Rights topics (employment, labour, housing, police, fair trial, criminal offences, refugees): the Constitution is
+# added after these Acts.
 co_domain_for:
   - employment-act
   - landlord-and-tenant-shops-hotels-and-catering-establishments-act
   - rent-restriction-act
   - national-police-service-act
   - criminal-procedure-code
+  - labour-relations-act
+  - penal-code
+  - refugees-act
 
 acts:
   constitution-of-kenya:
@@ -69,3 +73,103 @@ acts:
             represent me, legal assistance, legal advice, paralegal, nlas, national legal aid service, poor, indigent,
             free legal, court appointed, legal clinic, legal help, counsel, defend me, public defender, need a lawyer,
             legal fees, wakili, msaada wa kisheria]
+  labour-relations-act:
+    aliases: [labour relations act]
+    terms: [trade union, union, union dues, union member, union membership, join a union, shop steward, strike,
+            go on strike, striking, lockout, collective bargaining, cba, collective agreement,
+            recognition agreement, employers organisation, trade dispute, labour dispute, conciliation, conciliator,
+            employment and labour relations court, chama cha wafanyakazi, mgomo, workers union, unionisable,
+            union official, union deductions, picketing, industrial action, unfair labour practice, strike notice]
+  penal-code:
+    aliases: [penal code]
+    terms: [crime, criminal, offence, commit an offence, theft, steal, stole, stolen, thief, robbery, robbed,
+            burglary, housebreaking, break in, assault, attacked, hurt me, grievous harm, murder, killed,
+            manslaughter, rape, defilement, indecent, fraud, conman, false pretences, forgery, forged, trespass,
+            malicious damage, arson, kidnapping, abduction, threat, threatened, threatening to kill, corruption,
+            abortion, bigamy, riot, unlawful assembly, handling stolen goods, wizi, mwizi, kuiba]
+  evidence-act:
+    aliases: [evidence act]
+    terms: [evidence, proof, prove, burden of proof, testify, testimony, witness statement, confession,
+            admission of guilt, documentary evidence, electronic evidence, screenshot, recording, whatsapp messages,
+            photo as evidence, hearsay, expert witness, expert opinion, cross examination, presumption, ushahidi,
+            shahidi, proof in court, prove my case, eyewitness, documents in court, accomplice,
+            identification parade]
+  civil-procedure-act:
+    aliases: [civil procedure act]
+    terms: [sue, sued, suing, lawsuit, civil case, civil suit, plaint, file a case, judgment, decree,
+            execution of decree, attachment, auctioneer, injunction, court order, stay of execution,
+            review of judgment, garnishee, costs of the suit, jurisdiction, transfer of suit, kushtaki,
+            kesi ya madai, civil claim, defendant, plaintiff, set aside judgment, ex parte judgment,
+            warrant of attachment, sue the company, take him to court]
+  small-claims-court-act:
+    aliases: []
+    terms: [small claims, small claims court, small claim, owes me money, owed money, owes me, debt, unpaid debt,
+            lent money, borrowed money, loan not repaid, unpaid invoice, recover money, money claim, small debt,
+            customer will not pay, client refused to pay, unpaid rent claim, damage to my property, refund claim,
+            compensation claim, recover a loan, money he owes, money she owes, did not pay me back, pay me back]
+  limitation-of-actions-act:
+    aliases: [limitation of actions act, limitation act]
+    terms: [time limit, time limit to sue, time bar, time barred, statute barred, limitation period,
+            too late to sue, how long do i have, years ago, deadline to sue, adverse possession,
+            lived on the land for years, extension of time, limitation, how long to sue, sue after, case is too old,
+            after six years, after three years, after twelve years, out of time, late claim, claim expired,
+            delay in filing, file late]
+  land-registration-act:
+    aliases: [land registration act]
+    terms: [title deed, land title, land register, registered owner, land registry, land registrar, official search,
+            land search, transfer of land, land transfer, charge on land, caution on land, restriction on title,
+            green card, spouse consent, co ownership, joint tenancy, tenancy in common, rectification, fake title,
+            fraudulent title, lost title deed, hati miliki, hati ya ardhi, register land, registration of land,
+            land records]
+  marriage-act:
+    aliases: [marriage act]
+    terms: [marriage, married, marry, wedding, husband, wife, spouse, divorce, separation, separated, dowry,
+            bride price, customary marriage, church wedding, christian marriage, islamic marriage, hindu marriage,
+            civil marriage, polygamy, polygamous, second wife, come we stay, cohabit, marriage certificate,
+            register my marriage, annulment, child marriage, ndoa, talaka, mahari, mume, mke]
+  matrimonial-property-act:
+    aliases: [matrimonial property act]
+    terms: [matrimonial property, matrimonial home, family home, property after divorce, share property,
+            divide property, division of property, joint property, spouse property, sold our house,
+            sold the family land, contribution to the property, mali ya ndoa, wife's property, husband's property,
+            our house, house we built, land we bought together, property in his name, property in her name,
+            joint account, ownership after separation, matrimonial assets, spouse sold, sold without my consent]
+  law-of-succession-act:
+    aliases: [law of succession act, succession act]
+    terms: [inheritance, inherit, a will, my will, write a will, last will, testament, estate, deceased, died,
+            death of my, widow, widower, orphan, heir, beneficiary, grant of probate, probate,
+            letters of administration, administrator, executor, succession, dependant, dependants, intestate,
+            father died, mother died, husband died, urithi, wosia, marehemu, mjane]
+  counter-trafficking-in-persons-act:
+    aliases: [counter trafficking in persons act, trafficking in persons act]
+    terms: [trafficking, trafficked, human trafficking, trafficker, smuggled, forced labour, forced to work,
+            sold into, sexual exploitation, exploitation, debt bondage, slavery, recruitment agency, job abroad,
+            work abroad, passport taken, took my passport, confiscated my passport, forced me to work,
+            child trafficking, usafirishaji haramu wa binadamu, trafficking victim, victim of trafficking,
+            forced prostitution, organ removal, servitude, gulf, middle east job, fake job offer]
+  refugees-act:
+    aliases: [refugees act, refugee act]
+    terms: [refugee, refugees, asylum, asylum seeker, refugee status, refugee camp, kakuma, dadaab, refugee id,
+            movement pass, fled my country, persecution, deported, deportation, expulsion, unhcr, mkimbizi,
+            wakimbizi, refugee rights, refugee card, register as a refugee, refugee registration, seek asylum,
+            stateless, foreigner fleeing war, refugee children, kambi ya wakimbizi]
+  public-health-act:
+    aliases: [public health act]
+    terms: [public health, nuisance, sanitation, sewage, garbage, waste, latrine, toilet, drainage, quarantine,
+            infectious disease, notifiable disease, outbreak, cholera, isolation, vaccination, vaccine,
+            immunisation, food safety, unsafe food, contaminated water, polluted, pollution, mosquito breeding,
+            health officer, medical officer of health, burial, cemetery, dead body, unfit for human habitation,
+            afya ya umma]
+  mental-health-act:
+    aliases: [mental health act]
+    terms: [mental health, mental illness, mentally ill, mental hospital, psychiatric, psychiatrist,
+            psychiatric hospital, mental disorder, admitted against my will, involuntary admission, mental patient,
+            schizophrenia, bipolar, mentally disabled, depression, afya ya akili, mental illness treatment,
+            psychiatric unit, mathare hospital, mentally unwell, lunatic, insane, guardian of a mental patient,
+            mental capacity, manager of estate, discharged from hospital, kichaa]
+  hiv-and-aids-prevention-and-control-act:
+    aliases: [hiv and aids prevention and control act, hiv act]
+    terms: [hiv, aids, hiv positive, hiv status, hiv test, hiv testing, disclose my status, disclosure of status,
+            confidentiality of my status, stigma, arvs, antiretroviral, positive status, ukimwi, virusi vya ukimwi,
+            living with hiv, hiv discrimination, hiv clinic, hiv medicine, hiv results, partner notification,
+            hiv tribunal, pre test counselling, condoms, prevention of hiv, mother to child transmission]

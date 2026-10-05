@@ -544,3 +544,21 @@ Open issues:
   shared tokens/components; give them a visual pass. Swahili strings still await review (HUMAN_TODO).
 - nav_collapse / nav_expand strings in ui_strings.json are unused now.
 Not committed: left for the owner to review the screenshots first.
+
+## Corpus expanded to 25 Acts (2026-10-05, owner request, not a milestone)
+Done:
+- data/sources.yaml: 15 Acts added (Labour Relations, Penal Code, Evidence, Civil Procedure, Small Claims Court, Limitation of
+  Actions, Land Registration, Marriage, Matrimonial Property, Law of Succession, Counter-Trafficking in Persons, Refugees,
+  Public Health, Mental Health, HIV and AIDS Prevention and Control); title, Cap, year and FRBR URI from each PDF's cover.
+- Rebuilt: chunks.json 3157 chunks (original 10 Acts unchanged at 1519), 2946 indexed, 4507 windows (191 over 256 tokens),
+  refs 1085 linked + 13 unlinked. Default parser profile fits all new PDFs; only gap is in the source (Mental Health ss.32–39).
+- domains.yaml (aliases, 25–46 terms each, Constitution co-domain for Labour Relations, Penal Code, Refugees), scope.yaml
+  (new in-scope areas), ui_strings.json (act_/domain_ keys EN + SW drafts, "25 Acts"), Home topic index, How it works list.
+- Tests: test_config (25 Acts, unique Caps), test_router (+15 new-Act cases, 2 updated routes). check.sh 787 passed, 97.1%;
+  `pytest -m real` 11 passed, 2 skipped (Ollama, pytesseract); frontend lint, typecheck, 237 vitest, build OK.
+- Real retrieval probe: 15/15 lay questions (one per new Act) return that Act's sections in the top 3; off-topic still null.
+- Docs: DEVIATIONS D32, PARSING_NOTES, README, USER_GUIDE, LIMITATIONS (revision dates), ARCHITECTURE_AS_BUILT, BUILD_PLAN.
+Open issues:
+- Human spot-check of the new Acts' chunks (HUMAN_TODO); new Kiswahili strings and routing hints await review.
+- relevance_threshold / scope_margin were set on the 10-Act corpus; retune with eval/ once ground truth exists.
+Not committed: left for the owner to review.

@@ -12,7 +12,7 @@ import { isBusy } from "../hooks/session";
 import { useLoad } from "../hooks/useLoad";
 import { type StringKey, useI18n } from "../i18n";
 
-// The ten Acts with their domain wording (ARCHITECTURE §2; Legal Aid Act from the router's terms, DEVIATIONS D28).
+// The corpus Acts (data/sources.yaml order) with their domain wording (DEVIATIONS D28, D32).
 const TOPICS = [
   "constitution",
   "employment",
@@ -24,6 +24,21 @@ const TOPICS = [
   "cpc",
   "traffic",
   "legal_aid",
+  "labour",
+  "penal",
+  "evidence",
+  "civil_procedure",
+  "small_claims",
+  "limitation",
+  "land_registration",
+  "marriage",
+  "matrimonial",
+  "succession",
+  "trafficking",
+  "refugees",
+  "public_health",
+  "mental_health",
+  "hiv",
 ] as const;
 
 /** Home: ask a question, see what is covered, pick up the current answer. */

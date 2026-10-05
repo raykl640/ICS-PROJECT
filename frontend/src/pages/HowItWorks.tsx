@@ -16,6 +16,21 @@ const ACTS: StringKey[] = [
   "act_cpc",
   "act_traffic",
   "act_legal_aid",
+  "act_labour",
+  "act_penal",
+  "act_evidence",
+  "act_civil_procedure",
+  "act_small_claims",
+  "act_limitation",
+  "act_land_registration",
+  "act_marriage",
+  "act_matrimonial",
+  "act_succession",
+  "act_trafficking",
+  "act_refugees",
+  "act_public_health",
+  "act_mental_health",
+  "act_hiv",
 ];
 
 /** A plain explanation of how answers are made, what is covered, the limits and privacy. */

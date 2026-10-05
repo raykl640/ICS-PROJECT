@@ -4,7 +4,7 @@
 # in_scope: everyday ways people describe situations the corpus Acts deal with, grouped by area. They are paraphrase
 #           anchors, not legal statements: no statute text, section numbers or answers belong here.
 # out_of_scope: topics with nothing to do with the corpus, including other countries' law. Kenyan legal topics the
-#               corpus does not cover (tax, company registration, family law) are deliberately in neither list:
+#               corpus does not cover (tax, company registration) are deliberately in neither list:
 #               they reach the model, which says when the retrieved text does not answer them.
 # Not used by the tests (they use a synthetic table). Changing this file needs no index rebuild.
 in_scope:
@@ -115,6 +115,74 @@ in_scope:
     - Who qualifies for legal assistance paid by the government
     - How do I apply for help from a legal aid provider
     - Is there free legal advice for refugees and children
+  trade_unions:
+    - Our employer refuses to deal with the workers union
+    - Can I be dismissed for joining a union
+    - The workers want to go on strike over pay
+    - The company has not deducted our union dues
+    - How do we report a dispute with management to a conciliator
+  criminal_offences:
+    - Someone stole my phone, what can they be charged with
+    - My neighbour attacked me with a panga
+    - A man broke into my house at night
+    - I was conned out of money by someone pretending to sell land
+    - Someone forged my signature on a document
+    - A person keeps threatening to kill me
+    - My cousin was defiled by a neighbour
+  evidence_and_courts:
+    - Can WhatsApp messages be used as proof in court
+    - Who has to prove the case in court
+    - The police say I confessed but I never did
+    - Can a child give testimony in court
+    - Can I sue someone who damaged my property
+    - The court gave judgment but the other side will not pay
+    - An auctioneer came to take my goods after a court case
+    - How do I get an injunction to stop a demolition
+    - A friend borrowed money and refuses to pay it back
+    - Is there a quick court for small money disputes
+    - Is it too late to take someone to court for something that happened years ago
+    - I have lived on this land for many years, can I claim it
+  land_registration:
+    - How do I do an official search on a title
+    - Someone has a fake title for my land
+    - I lost my title deed, how do I get another one
+    - Can my husband sell land registered in his name without my consent
+    - How do I place a caution on a piece of land
+  family:
+    - How do I register my marriage
+    - My husband wants to marry a second wife without asking me
+    - We have lived together for years, are we married
+    - How do I get a divorce
+    - Can a girl under eighteen be married off
+    - Who keeps the house when a couple separates
+    - My wife left and took everything we bought together
+    - Is dowry required for a marriage to be valid
+  inheritance:
+    - My father died without a will, who inherits his property
+    - My in-laws want to take my late husband's land
+    - How do I write a will
+    - How do I get letters of administration for my mother's estate
+    - Can daughters inherit their father's land
+    - My stepbrother is selling our late father's property
+  trafficking:
+    - An agent took my passport and forces me to work without pay
+    - I was promised a job abroad but ended up being exploited
+    - Children are being taken from the village to work in the city
+  refugees:
+    - How do I apply for refugee status
+    - Can a refugee be sent back to their country
+    - Can refugees work or move out of the camp
+    - My refugee identity card has expired
+  health_law:
+    - My neighbour's sewage flows into my compound
+    - Can the government force me into quarantine
+    - A restaurant sold food that made many people sick
+    - Garbage is dumped next to our houses and the county does nothing
+    - Can a person be admitted to a mental hospital against their will
+    - What rights does a mental patient have
+    - My employer told colleagues that I am HIV positive
+    - Can a clinic test me for HIV without my consent
+    - I was refused a job because of my HIV status
 out_of_scope:
   greetings_and_chat:
     - Good morning

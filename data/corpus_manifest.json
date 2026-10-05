@@ -1,5 +1,14 @@
 {
   "acts": {
+    "civil-procedure-act": {
+      "bytes": 541469,
+      "file": "Civil Procedure Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 36,
+      "sha256": "5d9f98b7cb196b80e870b31fa82ad67ff6db819ea5d966edc03be24e87f25fe9"
+    },
     "constitution-of-kenya": {
       "bytes": 1840152,
       "file": "Constitution of Kenya.pdf",
@@ -17,6 +26,15 @@
       "ocr": "not_needed",
       "pages": 37,
       "sha256": "62c2c0c5ace1752e324bf6dda61b1ab9c59d40739df1048e78b24a4fb875b468"
+    },
+    "counter-trafficking-in-persons-act": {
+      "bytes": 290689,
+      "file": "CounterTrafficking in Persons Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 15,
+      "sha256": "17898ca0d5157d57247f87e349eee149c2266bc005801d027e315b1ad756f022"
     },
     "criminal-procedure-code": {
       "bytes": 1613867,
@@ -36,6 +54,33 @@
       "pages": 45,
       "sha256": "885b46dbf660b95dc98fd485dac785fc89b9261c559eac0fdd83879729781900"
     },
+    "evidence-act": {
+      "bytes": 731811,
+      "file": "Evidence Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 54,
+      "sha256": "3d751bf48fd7e0200550ca517d3809b18888879791afe26f80ba29fb3cbddf64"
+    },
+    "hiv-and-aids-prevention-and-control-act": {
+      "bytes": 351271,
+      "file": "HIV and AIDS Prevention and Control Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 20,
+      "sha256": "c259585d1ebb2f4aafde028828059e86ffb6dd4cb60ecfd5c3359dcd4a07025d"
+    },
+    "labour-relations-act": {
+      "bytes": 540986,
+      "file": "Labour Relations Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 56,
+      "sha256": "45b394915b7d83862760468fe85409783f8c1af460180da1121afbd72f88deef"
+    },
     "land-act": {
       "bytes": 937489,
       "file": "Land Act.pdf",
@@ -44,6 +89,15 @@
       "ocr": "not_needed",
       "pages": 90,
       "sha256": "82dcf68d9fcb28c71432478d92063dac13e471767d78a664b68a1d81a90756af"
+    },
+    "land-registration-act": {
+      "bytes": 567022,
+      "file": "Land Registration Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 45,
+      "sha256": "4032fcff2fac5807ad0ceddbdfa832951057f1c8d6c13b159f72727372d77a9d"
     },
     "landlord-and-tenant-shops-hotels-and-catering-establishments-act": {
       "bytes": 265035,
@@ -54,6 +108,15 @@
       "pages": 13,
       "sha256": "651ec8ce4c63dcd2514bff4a57f14eda6524872e5484795eb01193a7ff7f6098"
     },
+    "law-of-succession-act": {
+      "bytes": 601293,
+      "file": "Law of Succession Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 55,
+      "sha256": "6506a6afd3153c7d5125ba9752d5ee9fb7999c8e6c37c917a1ab88ba4efc682f"
+    },
     "legal-aid-act": {
       "bytes": 448610,
       "file": "Legal Aid Act.pdf",
@@ -62,6 +125,42 @@
       "ocr": "not_needed",
       "pages": 33,
       "sha256": "b89258c09013d73e75fdf51729069478fbabc419af8e1e967170f052f030b3f6"
+    },
+    "limitation-of-actions-act": {
+      "bytes": 368934,
+      "file": "Limitation of Actions Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 22,
+      "sha256": "724d8ba7de45b256735fb941a191f800db5f7f0e118f2edabff08f1020668bcd"
+    },
+    "marriage-act": {
+      "bytes": 455229,
+      "file": "Marriage Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 29,
+      "sha256": "1f1e044bff310c7b79e49e89a3e8a63e52e4c9400c189fa9cd078645e21a16d8"
+    },
+    "matrimonial-property-act": {
+      "bytes": 229140,
+      "file": "Matrimonial Property Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 8,
+      "sha256": "a98f840d2619e4b18f3bc59da24ec48e312777170395e7b98865927a145fc4e5"
+    },
+    "mental-health-act": {
+      "bytes": 486860,
+      "file": "Mental Health Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 40,
+      "sha256": "03d9e751d40abfb0fdcffaf6c7239a17729d6bbd00cdd64f5270843e5cb2de0a"
     },
     "national-police-service-act": {
       "bytes": 682383,
@@ -72,6 +171,33 @@
       "pages": 61,
       "sha256": "efb9708a4c1f9756257d6ff170361039fd6988398063fa8c91b3f4028da38863"
     },
+    "penal-code": {
+      "bytes": 1346482,
+      "file": "Penal Code.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 117,
+      "sha256": "5b2e409932e223dfa8872c67156b0dd86a3317c20118953b5f3f6ddfc0f14ae7"
+    },
+    "public-health-act": {
+      "bytes": 761154,
+      "file": "Public Health Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 62,
+      "sha256": "e0442a7ac220424c2a2d4bf16c03e29cc6172514cda3e3d3a2534e06f9bb68d4"
+    },
+    "refugees-act": {
+      "bytes": 351247,
+      "file": "Refugees Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 24,
+      "sha256": "3d352f7871630138269f182445fc77974dd07d6380030560aeeb48557d512098"
+    },
     "rent-restriction-act": {
       "bytes": 343990,
       "file": "Rent Restriction Act.pdf",
@@ -80,6 +206,15 @@
       "ocr": "not_needed",
       "pages": 22,
       "sha256": "ae2104320f2f0ed58ede3935b92b06f2049286f7de0d7bea656747baf0c8abd8"
+    },
+    "small-claims-court-act": {
+      "bytes": 341450,
+      "file": "Small Claims Court Act.pdf",
+      "low_density_pages": [],
+      "needs_ocr": false,
+      "ocr": "not_needed",
+      "pages": 18,
+      "sha256": "2f825b61f30420f4ce508f0a09b9d00429d61d5c9f64f734be4a1cc19a3a4474"
     },
     "traffic-act": {
       "bytes": 794112,

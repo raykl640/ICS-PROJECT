@@ -47,9 +47,12 @@ so users, examiners and future maintainers can judge its answers. It follows ARC
 
 ## 3. The corpus is small and frozen
 
-- Only ten Acts are covered: the Constitution of Kenya 2010, the Employment Act, the Landlord and Tenant (Shops, Hotels and
+- Only 25 Acts are covered: the Constitution of Kenya 2010, the Employment Act, the Landlord and Tenant (Shops, Hotels and
   Catering Establishments) Act, the Rent Restriction Act, the Land Act, the Consumer Protection Act, the National Police
-  Service Act, the Criminal Procedure Code, the Traffic Act and the Legal Aid Act. Subsidiary legislation, case law, county
+  Service Act, the Criminal Procedure Code, the Traffic Act, the Legal Aid Act, and (added after M15, DEVIATIONS D32) the
+  Labour Relations Act, Penal Code, Evidence Act, Civil Procedure Act, Small Claims Court Act, Limitation of Actions Act,
+  Land Registration Act, Marriage Act, Matrimonial Property Act, Law of Succession Act, Counter-Trafficking in Persons Act,
+  Refugees Act, Public Health Act, Mental Health Act and HIV and AIDS Prevention and Control Act. Subsidiary legislation, case law, county
   laws and practice directions are not included. A question outside these Acts gets the fallback, or a wrong-domain answer
   if the retrieved sections look similar.
 - **Freshness:** the text is whatever revision of each PDF sits in `data/raw_pdfs/`. Amendments after that date are
@@ -67,6 +70,21 @@ so users, examiners and future maintainers can judge its answers. It follows ARC
   | Criminal Procedure Code | 2023-12-11 |
   | Traffic Act | 2024-04-26 |
   | Legal Aid Act | 2022-12-31 |
+  | Labour Relations Act | 2022-12-31 |
+  | Penal Code | 2023-12-11 |
+  | Evidence Act | 2023-12-11 |
+  | Civil Procedure Act | 2022-12-31 |
+  | Small Claims Court Act | 2022-12-31 |
+  | Limitation of Actions Act | 2022-12-31 |
+  | Land Registration Act | 2022-12-31 |
+  | Marriage Act | 2022-12-31 |
+  | Matrimonial Property Act | 2022-12-31 |
+  | Law of Succession Act | 2022-12-31 |
+  | Counter-Trafficking in Persons Act | 2023-12-11 |
+  | Refugees Act | 2022-12-31 |
+  | Public Health Act | 2026-07-10 |
+  | Mental Health Act | 2023-12-11 |
+  | HIV and AIDS Prevention and Control Act | 2022-12-31 |
   - To update, replace the PDF, then run `python -m backend.app.ingestion.build_corpus` and
     `python -m backend.app.ingestion.build_index`. The startup check refuses stale indexes.
   - Repealed sections are detected only from their repeal note.
