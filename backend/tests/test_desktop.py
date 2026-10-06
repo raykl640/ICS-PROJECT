@@ -27,6 +27,7 @@ from backend.app.desktop.launcher import (
     online_env,
     parse_args,
     pull_model,
+    release_bundle_libraries,
     run_setup,
     self_command,
     smoke_checks,
@@ -81,6 +82,27 @@ def test_arguments() -> None:
     assert parse_args(["--self-test", "--no-browser"]).self_test
     with pytest.raises(SystemExit):
         parse_args(["--setup", "--self-test"])
+
+
+@pytest.mark.parametrize(
+    ("env", "expected"),
+    [
+        ({"LD_LIBRARY_PATH": "/app/_internal", "PATH": "/bin"}, {"PATH": "/bin"}),
+        (
+            {"LD_LIBRARY_PATH": "/app/_internal", "LD_LIBRARY_PATH_ORIG": "/opt/lib", "PATH": "/bin"},
+            {"LD_LIBRARY_PATH": "/opt/lib", "PATH": "/bin"},
+        ),
+    ],
+)
+def test_packaged_app_gives_started_programs_their_own_libraries(env: dict[str, str], expected: dict[str, str]) -> None:
+    release_bundle_libraries(env, frozen=True)
+    assert env == expected
+
+
+def test_source_runs_keep_the_library_path() -> None:
+    env = {"LD_LIBRARY_PATH": "/opt/lib"}
+    release_bundle_libraries(env, frozen=False)
+    assert env == {"LD_LIBRARY_PATH": "/opt/lib"}
 
 
 def test_online_env_drops_the_offline_switches_and_quietens_the_hub() -> None:

@@ -19,7 +19,7 @@ import tempfile
 import threading
 import time
 import webbrowser
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -47,6 +47,24 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     mode.add_argument("--self-test", action="store_true", help="check this installation on built-in test data")
     parser.add_argument("--no-browser", action="store_true", help="do not open the browser")
     return parser.parse_args(argv)
+
+
+def release_bundle_libraries(env: MutableMapping[str, str], frozen: bool) -> None:
+    """Undo the packaged app's library path so programs it starts (Ollama, the browser) load their own libraries.
+
+    PyInstaller points LD_LIBRARY_PATH at the bundle (keeping the user's value in LD_LIBRARY_PATH_ORIG); inherited by
+    `ollama serve`, the bundle's older libstdc++ made Ollama's runner fail with "GLIBCXX_3.4.32 not found"."""
+    if not frozen:
+        return
+    original = env.pop("LD_LIBRARY_PATH_ORIG", None)
+    if original is None:
+        env.pop("LD_LIBRARY_PATH", None)
+    else:
+        env["LD_LIBRARY_PATH"] = original
+    if sys.platform == "win32":
+        import ctypes
+
+        ctypes.windll.kernel32.SetDllDirectoryW(None)
 
 
 def self_command() -> list[str]:
@@ -314,6 +332,7 @@ def launch(settings: Settings, open_browser: bool) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry: --self-test, --setup, or launch."""
     args = parse_args(argv)
+    release_bundle_libraries(os.environ, getattr(sys, "frozen", False))
     if args.self_test:
         return self_test()
     if args.setup:

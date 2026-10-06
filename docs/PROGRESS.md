@@ -615,3 +615,13 @@ Not committed: left for the owner to review.
 - Fix: load_retriever checks the indexes first and builds the embedder; the pipeline reuses it (HybridRetriever.embedder).
   Regression test test_missing_indexes_fail_before_any_model_loads fails on the old code even with a warm cache.
 - CI-like run (clean clone, fresh venv, empty HOME, TZ=UTC, minimal env): 815 passed.
+
+## Fix: Ollama started by the packaged app failed every answer (2026-10-06)
+- Symptom: with the v2.0.0-beta.1 Linux release, every question failed (Ollama /api/generate 500, "llama-server process has
+  terminated: exit status 1"), also for a source run sharing that Ollama.
+- Cause: the frozen launcher started `ollama serve` with PyInstaller's LD_LIBRARY_PATH (the bundle's _internal/), so Ollama's
+  runner loaded the bundle's libstdc++ from the ubuntu-22.04 build and failed with "GLIBCXX_3.4.32 not found". Local builds
+  bundle Arch's newer libstdc++, which is why the earlier real run passed.
+- Fix: launcher.release_bundle_libraries restores LD_LIBRARY_PATH from LD_LIBRARY_PATH_ORIG (or drops it) at startup when
+  frozen, and resets the DLL directory on Windows, so Ollama and the browser load their own libraries. 2 tests.
+- Needs a new release (v2.0.0-beta.2); a broken Ollama already started by beta.1 must be restarted once.
