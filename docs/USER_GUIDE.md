@@ -7,6 +7,16 @@ parts of the law that apply, explains them in plain language, suggests next step
 > **HakiAI gives legal information, not legal advice.** It can be wrong. Always check the sources it shows you, and talk
 > to a qualified advocate before you make an important decision.
 
+## Installing HakiAI
+
+- **Windows:** download the installer from the [README](../README.md#windows), run it, and leave "Install Ollama"
+  ticked. Then open HakiAI from the Start menu.
+- **Linux:** paste the one-line command from the [README](../README.md#linux-any-distribution) into a terminal.
+
+The first start downloads the AI models (about 5 GB), so connect to the internet that one time. A small window shows
+the progress, then HakiAI opens in your web browser. Keep that window open while you use HakiAI; closing it quits.
+Your accounts and history stay on this computer, in a HakiAI folder in your user profile.
+
 ## What HakiAI knows
 
 HakiAI reads only these 25 Kenyan laws:

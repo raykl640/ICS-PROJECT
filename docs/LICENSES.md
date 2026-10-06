@@ -7,7 +7,8 @@ classifiers), npm licences from each package's `package.json`, and model licence
 **Summary:** every dependency and model is under a permissive licence (MIT, BSD, 0BSD, Apache-2.0, ISC, PSF, MIT-CMU);
 the bundled fonts are under the SIL Open Font License 1.1. The only
 weak-copyleft licence is MPL-2.0, used by certifi and tqdm (and, as a test-only tool, axe-core). It is file-level and applies only if those files are modified,
-which this project does not do. No GPL or AGPL code is bundled.
+which this project does not do. No GPL or AGPL code is bundled, except the PyInstaller bootloader in the desktop
+builds, whose licence exception allows distributing the packaged app under any terms (see Desktop build tools).
 
 ## Models (downloaded once by `scripts/setup_offline.py`, never redistributed with the code)
 
@@ -22,7 +23,8 @@ which this project does not do. No GPL or AGPL code is bundled.
 ## Corpus
 
 The statute PDFs in `data/raw_pdfs/` come from kenyalaw.org (see `data/sources.yaml`). They are git-ignored and not
-redistributed with this repository. Their redistribution terms were not checked.
+redistributed with this repository. The text parsed from them (`data/processed/chunks.json`) is in the repository and in
+the desktop installers since D34. The redistribution terms of that text were not checked (HUMAN_TODO).
 
 ## Python runtime (`backend/requirements.txt` and everything it pulls in)
 
@@ -68,6 +70,7 @@ Direct dependencies are marked ●.
 | pdfminer.six | 20260107 | MIT |
 | pdfplumber ● | 0.11.10 | MIT |
 | pillow | 12.3.0 | MIT-CMU |
+| platformdirs ● | 4.12.2 | MIT |
 | pycparser | 3.0 | BSD-3-Clause |
 | pydantic ● | 2.13.5 | MIT |
 | pydantic_core | 2.46.5 | MIT |
@@ -121,6 +124,18 @@ Direct dependencies are marked ●.
 | types-PyYAML | 6.0.12.20260906 | Apache-2.0 |
 | types-requests | 2.33.0.20260906 | Apache-2.0 |
 | pip-audit (audit only, not pinned) | 2.10.1 | Apache-2.0 |
+
+## Desktop build tools (`desktop/requirements-build.txt`, build time only)
+
+| Tool | Version | Licence |
+|---|---|---|
+| PyInstaller | 6.22.3 | GPL-2.0-or-later with the bootloader exception (the packaged app may use any licence) |
+| pyinstaller-hooks-contrib | 2026.8 | GPL-2.0 or Apache-2.0 (hooks are build-time only) |
+| altgraph | 0.17.5 | MIT |
+| Inno Setup 6 (Windows installer compiler, preinstalled on the CI runner) | 6.x | Inno Setup licence (free, including commercial use) |
+
+The installers do not include Ollama. The Windows installer can download Ollama's own installer, and the Linux script
+can run Ollama's install script; Ollama is MIT-licensed.
 
 ## Frontend (production dependencies: 144 packages, updated in M12)
 

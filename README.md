@@ -11,6 +11,7 @@ answer built only from the text of Kenyan statutes, with every claim linked to t
 ![React 19](https://img.shields.io/badge/react-19-0e1120)
 ![Runs offline](https://img.shields.io/badge/runs-offline-2231b0)
 ![Status](https://img.shields.io/badge/status-academic%20project-b23a10)
+[![Download](https://img.shields.io/github/v/release/raykl640/ICS-PROJECT?label=download&color=2231b0)](https://github.com/raykl640/ICS-PROJECT/releases/latest)
 
 <img src="docs/screenshots/home.png" alt="HakiAI home screen: a question box, example questions and the list of Acts it covers" width="860">
 
@@ -51,6 +52,67 @@ question ever leaves the machine.
 
 <sub>Screenshots use the small synthetic test corpus, not the real statutes.</sub>
 
+## Install
+
+HakiAI runs on one laptop: 64-bit Windows 10/11 or Linux, 8 GB of RAM and about 10 GB of free disk. The first start
+downloads the AI models (about 5 GB) once; after that it works with no internet connection.
+
+### Windows
+
+1. Download **[HakiAI-Setup-x64.exe](https://github.com/raykl640/ICS-PROJECT/releases/latest/download/HakiAI-Setup-x64.exe)**
+   and run it. It installs for your user only, so no administrator password is needed.
+2. Leave **Install Ollama** ticked if the installer offers it. Ollama is the local AI engine HakiAI writes its answers
+   with.
+3. Open **HakiAI** from the Start menu. A small window shows the progress (the first start downloads the models), then
+   HakiAI opens in your web browser. Keep that window open while you use HakiAI; close it to quit.
+
+> [!NOTE]
+> The installer is not code-signed yet, so Windows may show "Windows protected your PC". Choose **More info → Run
+> anyway**. Each release lists a `.sha256` checksum for the installer. To uninstall, use **Settings → Apps**; it asks
+> whether to keep your accounts and history.
+
+### Linux (any distribution)
+
+Paste this into a terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/raykl640/ICS-PROJECT/main/scripts/install.sh | bash
+```
+
+It installs HakiAI for your user (no root needed), adds it to your applications menu and as the `hakiai` command, and
+checks the download's checksum. It then offers to install Ollama with Ollama's official installer, which asks for your
+password, and to download the AI models straight away. Start HakiAI from the menu or with `hakiai`; it opens in your
+browser.
+
+Works on 64-bit (x86_64) distributions with glibc 2.35 or newer: Ubuntu 22.04+, Debian 12+, Fedora 36+, Linux Mint 21+,
+Arch and others of the same age. Options go after `bash -s --`:
+
+| Command | Does |
+|---|---|
+| `… \| bash -s -- --version v2.0.0` | Install a specific release instead of the latest |
+| `… \| bash -s -- --no-ollama --no-setup` | Skip the Ollama offer and the model download |
+| `… \| bash -s -- --uninstall` | Remove HakiAI (asks before deleting your accounts and history) |
+
+### From source (developers)
+
+This is how the project is developed and works on any system with Python 3.11, Node.js 20+ and
+[Ollama](https://ollama.com). The parsed corpus (`data/processed/chunks.json`) is in the repository; the statute PDFs
+listed in [data/sources.yaml](data/sources.yaml) are needed only to rebuild it.
+
+```bash
+git clone https://github.com/raykl640/ICS-PROJECT.git && cd ICS-PROJECT
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r backend/requirements-dev.txt
+(cd frontend && npm ci && npm run build)
+python scripts/setup_offline.py      # one time, with internet: models, Mistral, indexes
+./scripts/run.sh                     # then open http://127.0.0.1:8000  (Windows: scripts\run.ps1)
+```
+
+No models or PDFs at hand? `make api-fake` plus `cd frontend && npm run dev` runs the whole UI on a synthetic corpus with
+fake models. `python -m backend.app.desktop` starts the same launcher the installers ship.
+
+Full guide, Docker, building the installers yourself, and troubleshooting: **[docs/SETUP.md](docs/SETUP.md)**.
+
 ## Laws covered
 
 Constitution of Kenya 2010 · Employment Act · Landlord and Tenant (Shops) Act · Rent Restriction Act · Land Act ·
@@ -87,24 +149,6 @@ flowchart LR
 
 Details: [docs/ARCHITECTURE_AS_BUILT.md](docs/ARCHITECTURE_AS_BUILT.md).
 
-## Quick start
-
-You need Python 3.11, Node.js 20+, [Ollama](https://ollama.com), about 8 GB of RAM and 8 GB of disk. The statute PDFs are
-not in the repository; put the ten files listed in [data/sources.yaml](data/sources.yaml) into `data/raw_pdfs/` first.
-
-```bash
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -r backend/requirements-dev.txt
-(cd frontend && npm ci && npm run build)
-python scripts/setup_offline.py      # one time, with internet: models, Mistral, indexes
-./scripts/run.sh                     # then open http://127.0.0.1:8000
-```
-
-No models or PDFs at hand? `make api-fake` plus `cd frontend && npm run dev` runs the whole UI on a synthetic corpus with
-fake models.
-
-Full guide, Docker, troubleshooting and evaluation: **[docs/SETUP.md](docs/SETUP.md)**.
-
 ## Tech stack
 
 | Layer | Tools |
@@ -133,9 +177,10 @@ cd frontend && npm test && npm run e2e
 backend/app/    FastAPI app: ingestion, retrieval, generation, lang, accounts, laws, evaluation
 backend/tests/  pytest suite with fakes for every model
 frontend/       React single-page app (vitest unit tests, Playwright end-to-end tests)
-data/           sources.yaml; PDFs, chunks and indexes stay local
+desktop/        packaged app: PyInstaller spec, Windows installer script, icons
+data/           sources.yaml and the parsed corpus (chunks.json); PDFs and indexes stay local
 eval/           retrieval and functional evaluation, usability survey
-scripts/        setup, run, checks and benchmarks
+scripts/        setup, run, install, desktop builds, checks and benchmarks
 docs/           specification, design, deviations, limitations, progress
 ```
 
@@ -155,7 +200,7 @@ docs/           specification, design, deviations, limitations, progress
 ## Roadmap
 
 - Knowledge of the day, life-situation guides and a glossary browser
-- Desktop app for Windows and Linux with a first-run setup wizard and a USB offline bundle
+- Desktop window (instead of the browser) with a graphical first-run setup wizard and a USB offline bundle
 - Human-reviewed Kiswahili interface strings and evaluation ground truth
 
 ## Author and licence

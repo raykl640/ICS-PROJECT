@@ -632,7 +632,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     rt: Runtime = app.state.runtime
     deps = rt.deps
     if deps.setup_logging:
-        configure_logging(deps.settings)
+        configure_logging(deps.settings, level=logging.getLevelNamesMapping()[deps.settings.log_level])
     rt.accounts = await run_in_threadpool(_open_accounts, rt)
     app.state.accounts = rt.accounts
     rt.pipeline = await run_in_threadpool(_load_pipeline, deps)

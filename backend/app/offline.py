@@ -23,6 +23,18 @@ from backend.app.retrieval.meta import IndexMismatchError
 
 ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_ENV = {"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"}
+# Weight formats the PyTorch loaders never read; skipping them saves hundreds of MB per model.
+UNUSED_MODEL_FILES = (
+    "onnx/*",
+    "openvino/*",
+    "*.onnx",
+    "*.h5",
+    "*.msgpack",
+    "*.ot",
+    "*.tflite",
+    "tf_model*",
+    "flax_model*",
+)
 _CORPUS_MODULE = "backend.app.ingestion.build_corpus"
 _INDEX_MODULE = "backend.app.ingestion.build_index"
 _SELF_MODULE = "backend.app.offline"
@@ -54,10 +66,11 @@ def _run(command: Sequence[str], env: Mapping[str, str] | None) -> int:
 
 
 def _download(model: str) -> object:
-    """Cache every file of a Hugging Face model (imported here so --offline-check never loads the hub client)."""
+    """Cache a Hugging Face model without its unused ONNX/OpenVINO/TF/Flax/Rust variants (imported here so
+    --offline-check never loads the hub client)."""
     from huggingface_hub import snapshot_download
 
-    return snapshot_download(model)
+    return snapshot_download(model, ignore_patterns=list(UNUSED_MODEL_FILES))
 
 
 def real_tools() -> Tools:

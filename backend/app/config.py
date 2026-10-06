@@ -1,15 +1,35 @@
 """All tunable settings live here (CLAUDE.md hard rule 4). Override any field with env var HAKI_<FIELD>."""
 
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+import platformdirs
 import yaml
 from pydantic import AnyHttpUrl, BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+APP_NAME = "HakiAI"
+
+
+def resource_root() -> Path:
+    """Repository root, or the unpacked bundle (sys._MEIPASS) in the packaged desktop app (D34)."""
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", "."))
+    return Path(__file__).resolve().parents[2]
+
+
+def user_data_root(data_dir: Path) -> Path:
+    """Where writable files go: data/ in a source checkout, the per-user data folder in the packaged app (D34)."""
+    if getattr(sys, "frozen", False):
+        return Path(platformdirs.user_data_dir(APP_NAME, appauthor=False))
+    return data_dir
+
+
+ROOT_DIR = resource_root()
 DATA_DIR = ROOT_DIR / "data"
+USER_DATA_DIR = user_data_root(DATA_DIR)
 SOURCES_PATH = DATA_DIR / "sources.yaml"
 DOMAINS_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "domains.yaml"
 SCOPE_PATH = ROOT_DIR / "backend" / "app" / "retrieval" / "scope.yaml"
@@ -65,7 +85,7 @@ class Settings(BaseSettings):
     processed_dir: Path = DATA_DIR / "processed"
     index_dir: Path = DATA_DIR / "indexes"
     chunks_path: Path = DATA_DIR / "processed" / "chunks.json"
-    feedback_path: Path = DATA_DIR / "feedback.jsonl"
+    feedback_path: Path = USER_DATA_DIR / "feedback.jsonl"
     manifest_path: Path = DATA_DIR / "corpus_manifest.json"
     parse_report_path: Path = DATA_DIR / "processed" / "parse_report.md"
     domains_path: Path = DOMAINS_PATH
@@ -127,6 +147,11 @@ class Settings(BaseSettings):
     ollama_read_timeout_s: float = Field(300.0, gt=0)
     ollama_health_timeout_s: float = Field(3.0, gt=0)
     ollama_keep_alive: str = "30m"
+    # Desktop launcher (D34): where to get Ollama, its log when the launcher starts it, how long to wait for it.
+    ollama_download_url: str = "https://ollama.com/download"
+    ollama_log_path: Path = USER_DATA_DIR / "ollama.log"
+    ollama_start_wait_s: float = Field(30.0, gt=0)
+    self_test_timeout_s: float = Field(60.0, gt=0)
     prompt_safety_tokens: int = Field(256, ge=0)
     chunk_token_budget: int = Field(1200, gt=0)
     min_chunk_tokens: int = Field(40, gt=0)
@@ -143,6 +168,7 @@ class Settings(BaseSettings):
     sse_ping_s: float = Field(15.0, gt=0)
     rate_limit_per_min: int = Field(10, gt=0)
     log_content: bool = False
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     debug_scores: bool = False
     api_host: str = "127.0.0.1"
     api_port: int = Field(8000, gt=0, lt=65536)
@@ -154,7 +180,7 @@ class Settings(BaseSettings):
     fake_backends: bool = False
 
     # Local accounts (M13, DESIGN_V2 "Accounts and encrypted store"). Tests use cheap argon2 parameters.
-    app_db_path: Path = DATA_DIR / "app.db"
+    app_db_path: Path = USER_DATA_DIR / "app.db"
     argon2_time_cost: int = Field(3, gt=0)
     argon2_memory_kib: int = Field(65_536, ge=8)
     argon2_parallelism: int = Field(2, gt=0)

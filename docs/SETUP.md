@@ -9,7 +9,7 @@ The full install and operation guide. For an overview of the project, see the [R
 | CPU | 4 cores, x86-64 (no GPU needed) | Ryzen 7 PRO 5850U, 16 threads |
 | RAM | 8 GB (Mistral Q4 ≈ 4.1 GB + other models ≈ 1 GB) | 15 GiB |
 | Disk | ~8 GB (Ollama model 4.4 GB, Hugging Face models 1.1 GB, Python env, indexes) | |
-| OS | Linux (tested). Windows: `scripts/run.ps1` provided, untested | Linux |
+| OS | Linux (tested). Windows: installer built by CI; `scripts/run.ps1` provided, untested | Linux |
 | Software | Python 3.11, Node.js 20+ with npm (to build the UI), [Ollama](https://ollama.com) | Python 3.11, Node 26, Ollama 0.33.3 |
 
 Expect retrieval in about 1 s and a full answer in 1–3 minutes on CPU. The first answer after start-up is the slowest (see
@@ -17,8 +17,9 @@ Expect retrieval in about 1 s and a full answer in 1–3 minutes on CPU. The fir
 
 ## Offline setup (once, with internet)
 
-The statute PDFs are not in the repository. Put the ten PDFs named in [data/sources.yaml](../data/sources.yaml) into
-`data/raw_pdfs/` first (`file:` gives each name). Then:
+The parsed corpus, `data/processed/chunks.json`, is in the repository, so the statute PDFs are not needed to run HakiAI.
+To rebuild the corpus, put the 25 PDFs named in [data/sources.yaml](../data/sources.yaml) into `data/raw_pdfs/` (`file:`
+gives each name) and delete `chunks.json` before the setup. Then:
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate      # Windows: py -3.11 -m venv .venv; .venv\Scripts\Activate.ps1
@@ -80,6 +81,32 @@ docker compose up -d api                                    # http://127.0.0.1:8
   `setup_offline.py` step can add `--skip-index`.
 - **Status.** The files validate with `docker compose config` but were not built on the development machine (no Docker
   daemon access there).
+
+## Installers and releases
+
+The Windows installer and the Linux archive package the same app with PyInstaller (`desktop/hakiai.spec`): Python, the
+backend, the built UI, `chunks.json` and the indexes in one folder. Models are not bundled.
+
+The packaged app starts `backend/app/desktop/launcher.py` (also `python -m backend.app.desktop` from source). It:
+1. Opens the browser at an already running HakiAI, if there is one on the configured port.
+2. Starts Ollama if it is installed but not running, or explains where to get it. Laws can be read without it.
+3. On the first start, downloads the four Hugging Face models and pulls the Ollama model (`--setup` does only this).
+4. Serves on 127.0.0.1 (the configured port, or a free one) and opens the browser. Closing the window quits.
+
+Accounts (`app.db`), feedback and the Ollama log go to the per-user data folder: `%LOCALAPPDATA%\HakiAI` on Windows,
+`~/.local/share/HakiAI` on Linux. Models stay in the Hugging Face cache and in Ollama, shared with a source install.
+
+| Task | Command |
+|---|---|
+| Build for Linux (`dist/HakiAI-linux-x86_64.tar.gz`) | `pip install -r desktop/requirements-build.txt && ./scripts/build_desktop.sh` |
+| Build for Windows (`dist\HakiAI-Setup-x64.exe`, needs [Inno Setup 6](https://jrsoftware.org/isinfo.php)) | `pip install -r desktop\requirements-build.txt; .\scripts\build_desktop.ps1 -Version 2.0.0` |
+| Check a build (bundled corpus, indexes, UI, and one answer on built-in test data) | `dist/HakiAI/HakiAI --self-test` |
+| Install a local Linux build | `HAKI_TARBALL=dist/HakiAI-linux-x86_64.tar.gz ./scripts/install.sh` |
+| Publish a release (both builds, self-tested, with `.sha256` files) | `git tag v2.0.0 && git push origin v2.0.0` |
+
+The release workflow (`.github/workflows/release.yml`) builds on ubuntu-22.04 and windows-2022. The Linux build therefore
+needs glibc 2.35 or newer. The README's download link and `scripts/install.sh` always fetch the latest release. Builds
+are not code-signed, so Windows SmartScreen warns on first run.
 
 ## Tests and checks
 

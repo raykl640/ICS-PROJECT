@@ -1,0 +1,3 @@
+# Build-time only: packages the desktop app (desktop/hakiai.spec). Install on top of backend/requirements.txt.
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8

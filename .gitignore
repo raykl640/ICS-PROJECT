@@ -27,6 +27,8 @@ legacy/
 data/processed/*
 data/indexes/*
 !data/processed/.gitkeep
+# The parsed corpus ships with the desktop release; CI rebuilds the indexes from it (D34).
+!data/processed/chunks.json
 !data/indexes/.gitkeep
 data/feedback.jsonl
 
@@ -41,3 +43,7 @@ eval/usability_responses.csv
 
 # Local accounts database (encrypted history; personal data, never committed)
 data/app.db*
+
+# Desktop app builds (scripts/build_desktop.sh / .ps1)
+/dist/
+/build/

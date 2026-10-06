@@ -25,6 +25,7 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 | D31 | "Registry" redesign replaces the Mahakama/Jua look | visual parts superseded by D33 |
 | D32 | corpus of 25 Acts (15 added after M15) | in force |
 | D33 | "Quiet registry": Home/Ask merged, sidebar frame, calmer look | in force (supersedes the visual parts of D31) |
+| D34 | installers: Windows .exe, Linux install script, browser launcher (before M17) | in force (M17 extends it) |
 
 ## D1 Embedding windows instead of one vector per chunk (§4.1) — docs: amend design
 - What: long sections are embedded as overlapping, header-prefixed windows; chunk score = max over its windows.
@@ -426,3 +427,25 @@ Final as of v1.0 (M10). A one-page summary of the built system against the spec 
 - Why: owner feedback ("too much going on", Home duplicating Ask).
 - Impact: supersedes the visual parts of D31 and D28's guest banner. Tests updated for the merged Home/Ask, the nav label
   and the dark canvas colour; screenshots now include Laws, an Act, a section and the Library. axe is clean in light and dark.
+
+## D34 Installers before M17: browser launcher, Windows .exe, Linux install script — owner request during M16
+- What: a packaged app ahead of M17, smaller than DESIGN_V2 "Desktop app" in these ways:
+  - (a) The launcher (backend/app/desktop/launcher.py) opens the system browser and keeps a console window for progress,
+    instead of a pywebview window and a /setup wizard page. First-time setup (Hugging Face models + `ollama pull` through
+    Ollama's HTTP API) runs in a child process; the server runs offline (HF_HUB_OFFLINE) and logs at WARNING.
+  - (b) Single instance = "a HakiAI health body already answers on api_port → open the browser there"; a busy port
+    otherwise falls back to a free one.
+  - (c) Ollama is not managed: the Windows installer optionally downloads and silently runs Ollama's own installer
+    (unpinned, from ollama.com); the Linux script optionally runs Ollama's official install script. The launcher starts
+    an installed but stopped Ollama (`ollama serve`, detached; log in the user data folder).
+  - (d) Linux ships as a tarball + `scripts/install.sh` (per user, checksum-verified, menu entry, `hakiai` command,
+    uninstall) instead of AppImage/.deb, so one command covers every glibc ≥ 2.35 distribution without FUSE or a package
+    manager.
+  - (e) Writable files (app.db, feedback.jsonl, ollama.log) go to platformdirs' user data folder only when frozen; source
+    runs keep data/. Models stay in the default Hugging Face cache (D19), shared with a source install.
+  - (f) `data/processed/chunks.json` is now tracked in git so CI can build the indexes and bundle them; the PDFs are
+    still not in the repository.
+  - (g) No USB offline bundle, no auto-update, unsigned builds.
+- Why: owner asked for a downloadable .exe and a one-line Linux install now, while M16 is in progress.
+- Impact: M17 can replace (a) with the pywebview shell and wizard and add (g) on top of the same spec, scripts and
+  release workflow. The Windows build is produced and self-tested only in CI (windows-2022).

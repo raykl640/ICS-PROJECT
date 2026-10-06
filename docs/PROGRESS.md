@@ -576,3 +576,34 @@ Open issues:
 - New Kiswahili strings (area names, Home lines) await review (HUMAN_TODO). README hero screenshot shows the old Home.
 - Letter workspace and Matter pages were restyled only through shared components; not screenshot-reviewed.
 Not committed: left for the owner to review.
+
+## Installers: Windows .exe, Linux one-line install, packaged launcher (2026-10-06, owner request, not a milestone)
+Done:
+- README "Install" section (Windows download, Linux `curl … | bash`, from source; replaces "Quick start"), download badge;
+  USER_GUIDE "Installing HakiAI"; SETUP "Installers and releases"; .env.example HAKI_LOG_LEVEL.
+- backend/app/desktop/launcher.py (+ `python -m backend.app.desktop`): reuse a running instance, start an installed Ollama,
+  first-run setup in an online child (`--setup`: HF models + Ollama HTTP pull with progress), serve offline on 127.0.0.1 and
+  open the browser; `--self-test` (bundled corpus/indexes/UI + one fake-backend answer over real HTTP, temp data only).
+- config: frozen-aware resource_root/user_data_root (app.db, feedback, ollama.log → platformdirs folder when packaged),
+  ollama_download_url, ollama_log_path, ollama_start_wait_s, self_test_timeout_s, log_level. platformdirs==4.12.2 pinned.
+- offline.py: model downloads skip ONNX/OpenVINO/TF/Flax/Rust weights (unused; hundreds of MB each).
+- Packaging: desktop/hakiai.spec (PyInstaller onedir), desktop/windows/hakiai.iss (Inno Setup, per user, optional Ollama
+  download, uninstall asks about data), icons from the favicon, scripts/build_desktop.sh/.ps1, scripts/install.sh
+  (checksum-verified per-user install, menu entry, `hakiai`, Ollama offer, --uninstall/--purge),
+  .github/workflows/release.yml (ubuntu-22.04 + windows-2022 → self-test → release on v* tags).
+- data/processed/chunks.json is now tracked so CI can rebuild the indexes (D34f).
+- Tests: test_desktop.py (26) and test_install_script.py (3, real bash on a fake archive). check.sh: 842 passed, 95.7%.
+- Real Linux run of the packaged app (installed by install.sh into a throwaway HOME): build 381 MB tar.gz / 1.1 GB unpacked,
+  frozen --self-test OK; launcher started Ollama, loaded all models offline, health ok; one real question: 169 s cold,
+  429 tokens, format_ok, 2/2 citations verified; second start reused the running instance; uninstall --purge clean.
+Decisions: DEVIATIONS D34 (browser + console instead of pywebview/wizard, tarball + script instead of AppImage/.deb,
+unmanaged Ollama via its official installers, chunks.json in git).
+Fixed during the real run: snapshot_download(local_files_only) calls a cache "incomplete" without every repo file →
+models now count as present when config + PyTorch weights are cached; the self-test no longer writes app.db to the real
+user folder; Hugging Face Xet/token warnings hidden in the setup child.
+Open issues:
+- Windows build not run here: it is built and self-tested only by the release workflow (HUMAN_TODO: tag, check the run,
+  try the installer on a real Windows machine). README links and install.sh 404 until the first v* release exists.
+- Unsigned builds (SmartScreen warning); Linux build needs glibc ≥ 2.35; console window instead of an app window (M17).
+- Statute-text redistribution terms unchecked now that chunks.json is public (HUMAN_TODO).
+Not committed: left for the owner to review.
