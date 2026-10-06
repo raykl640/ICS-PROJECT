@@ -6,8 +6,10 @@ import pytest
 from backend.app.config import Settings
 from backend.app.ingestion.build_index import build_indexes
 from backend.app.models import RetrievedChunk
+from backend.app.retrieval import hybrid
 from backend.app.retrieval import pipeline as pipeline_module
 from backend.app.retrieval.hybrid import RetrievalResult
+from backend.app.retrieval.meta import IndexMismatchError
 from backend.app.retrieval.pipeline import ContextPipeline, load_pipeline
 from backend.tests.corpus import EMPLOYMENT, make_chunk
 from backend.tests.fake_pipeline import EMB, STORE, fake_pipeline
@@ -189,3 +191,17 @@ def test_load_pipeline_from_built_indexes(tmp_path: Path) -> None:
     build_indexes(settings, EMB)
     pipe = load_pipeline(settings, EMB, FakeReranker())
     assert pipe.retrieve_context("landlord evict tenant").chunks
+
+
+def test_missing_indexes_fail_before_any_model_loads(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """CI has no model cache: the index check must come first, or a download is attempted (and blocked)."""
+
+    def no_model(*args: object) -> None:
+        raise AssertionError("a model was loaded before the indexes were checked")
+
+    monkeypatch.setattr(hybrid, "STEmbedder", no_model)
+    monkeypatch.setattr(pipeline_module, "CEReranker", no_model)
+    settings = Settings(chunks_path=tmp_path / "chunks.json", index_dir=tmp_path / "indexes")
+    STORE.save(settings.chunks_path)
+    with pytest.raises(IndexMismatchError):
+        load_pipeline(settings)

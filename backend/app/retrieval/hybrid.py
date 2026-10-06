@@ -73,6 +73,11 @@ class HybridRetriever:
         """The chunks this retriever returns."""
         return self._store
 
+    @property
+    def embedder(self) -> Embedder:
+        """The query encoder (shared with the scope check)."""
+        return self._embedder
+
     def retrieve(self, question: str) -> RetrievalResult:
         """Top-n hybrid candidates; the dense and sparse searches run concurrently."""
         start = time.perf_counter()

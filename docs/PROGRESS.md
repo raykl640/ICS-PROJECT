@@ -607,3 +607,11 @@ Open issues:
 - Unsigned builds (SmartScreen warning); Linux build needs glibc ≥ 2.35; console window instead of an app window (M17).
 - Statute-text redistribution terms unchecked now that chunks.json is public (HUMAN_TODO).
 Not committed: left for the owner to review.
+
+## Fix: backend CI red since 2026-10-05 (2026-10-06)
+- Cause: load_pipeline built the MiniLM embedder before load_retriever checked the indexes, so
+  test_bench_without_indexes_exits_2 tried a model download on the CI runner (empty HF cache, sockets disabled).
+  Passed locally only because the model was cached. Reproduced in a clean clone with an empty HOME.
+- Fix: load_retriever checks the indexes first and builds the embedder; the pipeline reuses it (HybridRetriever.embedder).
+  Regression test test_missing_indexes_fail_before_any_model_loads fails on the old code even with a warm cache.
+- CI-like run (clean clone, fresh venv, empty HOME, TZ=UTC, minimal env): 815 passed.

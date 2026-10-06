@@ -12,7 +12,6 @@ from typing import Protocol
 from backend.app.config import Settings
 from backend.app.interfaces import CrossEncoderLike, Embedder
 from backend.app.models import LegalChunk, RetrievedChunk
-from backend.app.retrieval.embedder import STEmbedder
 from backend.app.retrieval.hybrid import RetrievalResult, load_retriever
 from backend.app.retrieval.reranker import CEReranker, is_confident, rerank
 from backend.app.retrieval.scope import load_scope
@@ -114,9 +113,8 @@ def load_pipeline(
     settings: Settings, embedder: Embedder | None = None, reranker: CrossEncoderLike | None = None
 ) -> ContextPipeline:
     """Load the indexes (IndexMismatchError if stale or missing) and wire the production models unless given them."""
-    embedder = embedder or STEmbedder(settings.embedding_model, settings.embed_batch_size)
-    retriever = load_retriever(settings, embedder)
+    retriever = load_retriever(settings, embedder)  # checks the indexes before it loads any model
     reranker = reranker or CEReranker(
         settings.reranker_model, settings.reranker_max_length, settings.reranker_batch_size
     )
-    return ContextPipeline(retriever, reranker, load_scope(settings, embedder), settings, retriever.store)
+    return ContextPipeline(retriever, reranker, load_scope(settings, retriever.embedder), settings, retriever.store)
